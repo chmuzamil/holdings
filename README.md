@@ -35,7 +35,8 @@ https://founder-os.maker.example
 - Empty states for clean first-run usage
 - Responsive desktop and mobile layouts
 - Browser storage persistence for records on the same device
-- Supabase-ready data shape for future persistence
+- Optional Supabase persistence with browser storage fallback
+- GitHub repository auto-fetch by username or personal access token
 
 ## Demo Data
 
@@ -77,6 +78,8 @@ Update the login values:
 VITE_LOGIN_EMAIL=founder@example.com
 VITE_LOGIN_PASSWORD=change-me
 VITE_LOGIN_NAME=Founder
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 Start the development server:
@@ -104,6 +107,8 @@ npm run preview
 | `VITE_LOGIN_EMAIL` | Email used by the frontend mock login |
 | `VITE_LOGIN_PASSWORD` | Password used by the frontend mock login |
 | `VITE_LOGIN_NAME` | Display name shown in the app |
+| `VITE_SUPABASE_URL` | Supabase project URL for cloud persistence |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon key for the dashboard client |
 
 > Important: Vite frontend environment variables are bundled into the browser build. This login is useful for demos and private prototypes, but it is not secure authentication. Use Supabase Auth or another server-backed auth provider before storing sensitive data.
 
@@ -119,12 +124,36 @@ Founder OS currently keeps records in local React state using module arrays:
 
 Each record tracks a name, provider, cost, currency, renewal date, expiry date, and status. Domain records support notes for where the domain is used or pointed. VPS/server records support IP addresses and notes for hosting context. Costs support `USD` and `PKR`; dashboard totals normalize records through a simple exchange-rate map before displaying them in the selected reporting currency.
 
-Records are persisted to browser `localStorage`, so changes survive refreshes, Nginx reloads, and redeploys on the same browser/device. For true permanent storage, multi-device sync, backups, and private server-side access control, connect the same data model to Supabase tables.
+Records are persisted to browser `localStorage`, so changes survive refreshes, Nginx reloads, and redeploys on the same browser/device. When Supabase env variables are configured, records also sync to the `founder_os_records` table.
+
+Run `supabase-schema.sql` in the Supabase SQL editor to create the table.
+
+## GitHub Auto-Fetch
+
+The Settings page includes fields for:
+
+- GitHub username
+- REST API base URL
+- Personal access token
+
+Without a token, Founder OS fetches public repositories from:
+
+```text
+https://api.github.com/users/{username}/repos
+```
+
+With a token, Founder OS fetches repositories available to the token from:
+
+```text
+https://api.github.com/user/repos
+```
+
+> Token note: storing a GitHub token in browser storage is convenient for a private prototype, but it is not ideal for production. For stronger security, move GitHub sync to a Supabase Edge Function or another backend so the token is never stored in the browser.
 
 ## Roadmap
 
 - Supabase Auth
-- Supabase database persistence
+- Supabase Auth with private row-level security
 - CSV import/export
 - Reminder notifications
 - GitHub repository metadata sync

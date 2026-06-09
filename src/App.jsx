@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import {
   AlertTriangle,
   CalendarClock,
@@ -15,6 +16,7 @@ import {
   Server,
   Settings,
   ShieldCheck,
+  RefreshCw,
   LogIn,
   LogOut,
   Trash2,
@@ -66,6 +68,7 @@ const moduleConfig = {
     fields: [
       { key: 'name', label: 'Repository', type: 'text' },
       { key: 'provider', label: 'Owner / org', type: 'text' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
       { key: 'cost', label: 'Monthly cost', type: 'number' },
       { key: 'currency', label: 'Currency', type: 'currency' },
       { key: 'renewalDate', label: 'Review date', type: 'date' },
@@ -113,6 +116,11 @@ const currencyRatesToUsd = {
 }
 
 const storageKey = 'founder-os-records-v1'
+const settingsStorageKey = 'founder-os-settings-v1'
+const supabaseTable = 'founder_os_records'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null
 
 const demoUser = {
   email: import.meta.env.VITE_LOGIN_EMAIL || 'founder@maker.example',
@@ -164,6 +172,7 @@ const initialRecords = {
       id: 'repo-1',
       name: 'PakDataKit repo',
       provider: 'GitHub',
+      notes: 'Open-source data toolkit repository.',
       cost: 0,
       currency: 'USD',
       renewalDate: '2026-09-10',
@@ -174,6 +183,7 @@ const initialRecords = {
       id: 'repo-2',
       name: 'TrendPulse / NewsBite',
       provider: 'GitHub',
+      notes: 'Content and trends project repository.',
       cost: 0,
       currency: 'USD',
       renewalDate: '2026-07-02',
@@ -259,6 +269,12 @@ const emptyRecord = {
   status: 'Active',
 }
 
+const defaultSettings = {
+  githubUsername: '',
+  githubApiBase: 'https://api.github.com',
+  githubToken: '',
+}
+
 function loadSavedRecords() {
   try {
     const saved = window.localStorage.getItem(storageKey)
@@ -274,6 +290,42 @@ function loadSavedRecords() {
   } catch {
     return initialRecords
   }
+}
+
+function loadSavedSettings() {
+  try {
+    const saved = window.localStorage.getItem(settingsStorageKey)
+    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings
+  } catch {
+    return defaultSettings
+  }
+}
+
+function rowsToRecords(rows) {
+  const next = Object.fromEntries(Object.keys(initialRecords).map((moduleKey) => [moduleKey, []]))
+  rows.forEach((row) => {
+    if (next[row.module_key] && row.record) {
+      next[row.module_key].push(row.record)
+    }
+  })
+
+  return Object.fromEntries(
+    Object.entries(initialRecords).map(([moduleKey, fallbackRecords]) => [
+      moduleKey,
+      next[moduleKey]?.length ? next[moduleKey] : fallbackRecords,
+    ]),
+  )
+}
+
+function recordsToRows(recordsByModule) {
+  return Object.entries(recordsByModule).flatMap(([moduleKey, items]) =>
+    items.map((record) => ({
+      id: record.id,
+      module_key: moduleKey,
+      record,
+      updated_at: new Date().toISOString(),
+    })),
+  )
 }
 
 function money(value, currency = 'USD') {
@@ -331,12 +383,62 @@ function App() {
   const [statusFilter, setStatusFilter] = useState('All')
   const [sortBy, setSortBy] = useState('renewalDate')
   const [displayCurrency, setDisplayCurrency] = useState('USD')
+  const [appSettings, setAppSettings] = useState(loadSavedSettings)
+  const [remoteReady, setRemoteReady] = useState(!supabase)
+  const [syncStatus, setSyncStatus] = useState(supabase ? 'Supabase ready to connect after login.' : 'Local browser storage active.')
+  const [githubSyncStatus, setGithubSyncStatus] = useState('')
   const [modal, setModal] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(records))
   }, [records])
+
+  useEffect(() => {
+    window.localStorage.setItem(settingsStorageKey, JSON.stringify(appSettings))
+  }, [appSettings])
+
+  useEffect(() => {
+    if (!isAuthenticated || !supabase || remoteReady) return
+
+    async function loadRemoteRecords() {
+      setSyncStatus('Loading Supabase records...')
+      const { data, error } = await supabase
+        .from(supabaseTable)
+        .select('id,module_key,record')
+        .order('updated_at', { ascending: false })
+
+      if (error) {
+        setSyncStatus(`Supabase unavailable: ${error.message}`)
+        setRemoteReady(true)
+        return
+      }
+
+      if (data?.length) {
+        setRecords(rowsToRecords(data))
+        setSyncStatus('Supabase records loaded.')
+      } else {
+        setSyncStatus('Supabase is empty. Current local records will be synced.')
+      }
+      setRemoteReady(true)
+    }
+
+    loadRemoteRecords()
+  }, [isAuthenticated, remoteReady])
+
+  useEffect(() => {
+    if (!supabase || !isAuthenticated || !remoteReady) return
+
+    const syncTimer = window.setTimeout(async () => {
+      const { error } = await supabase
+        .from(supabaseTable)
+        .upsert(recordsToRows(records), { onConflict: 'id' })
+
+      setSyncStatus(error ? `Supabase sync failed: ${error.message}` : 'Saved to Supabase.')
+    }, 700)
+
+    return () => window.clearTimeout(syncTimer)
+  }, [records, isAuthenticated, remoteReady])
 
   const flatRecords = useMemo(
     () =>
@@ -413,11 +515,74 @@ function App() {
   }
 
   function deleteRecord() {
+    const deletedRecord = deleteTarget
     setRecords((current) => ({
       ...current,
-      [deleteTarget.moduleKey]: current[deleteTarget.moduleKey].filter((item) => item.id !== deleteTarget.id),
+      [deletedRecord.moduleKey]: current[deletedRecord.moduleKey].filter((item) => item.id !== deletedRecord.id),
     }))
+    if (supabase && remoteReady) {
+      supabase.from(supabaseTable).delete().eq('id', deletedRecord.id).then(({ error }) => {
+        setSyncStatus(error ? `Supabase delete failed: ${error.message}` : 'Deleted from Supabase.')
+      })
+    }
     setDeleteTarget(null)
+  }
+
+  async function syncGitHubRepos() {
+    const username = appSettings.githubUsername.trim()
+    const apiBase = appSettings.githubApiBase.trim().replace(/\/$/, '') || defaultSettings.githubApiBase
+    const token = appSettings.githubToken.trim()
+
+    if (!username && !token) {
+      setGithubSyncStatus('Add a GitHub username or personal access token first.')
+      return
+    }
+
+    setGithubSyncStatus('Fetching GitHub repositories...')
+    const endpoint = token
+      ? `${apiBase}/user/repos?per_page=100&sort=updated`
+      : `${apiBase}/users/${encodeURIComponent(username)}/repos?per_page=100&sort=updated`
+
+    try {
+      const response = await fetch(endpoint, {
+        headers: {
+          Accept: 'application/vnd.github+json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`GitHub returned ${response.status}`)
+      }
+
+      const repos = await response.json()
+      const importedRepos = repos.map((repo) => ({
+        id: `github-${repo.id}`,
+        name: repo.full_name || repo.name,
+        provider: repo.owner?.login || username || 'GitHub',
+        notes: [repo.description, repo.private ? 'Private repo' : 'Public repo', repo.html_url].filter(Boolean).join(' - '),
+        cost: 0,
+        currency: 'USD',
+        renewalDate: repo.updated_at ? repo.updated_at.slice(0, 10) : '',
+        expiryDate: repo.pushed_at ? repo.pushed_at.slice(0, 10) : '',
+        status: 'Active',
+      }))
+
+      setRecords((current) => {
+        const incomingIds = new Set(importedRepos.map((repo) => repo.id))
+        return {
+          ...current,
+          repos: [
+            ...importedRepos.map((repo) => ({ ...current.repos.find((item) => item.id === repo.id), ...repo })),
+            ...current.repos.filter((repo) => !incomingIds.has(repo.id)),
+          ],
+        }
+      })
+      setActivePage('repos')
+      setGithubSyncStatus(`Imported ${importedRepos.length} GitHub repositories.`)
+    } catch (error) {
+      setGithubSyncStatus(`GitHub sync failed: ${error.message}`)
+    }
   }
 
   function handleLogin(event) {
@@ -535,7 +700,15 @@ function App() {
           />
         )}
 
-        {activePage === 'settings' && <SettingsView />}
+        {activePage === 'settings' && (
+          <SettingsView
+            appSettings={appSettings}
+            setAppSettings={setAppSettings}
+            syncStatus={syncStatus}
+            githubSyncStatus={githubSyncStatus}
+            syncGitHubRepos={syncGitHubRepos}
+          />
+        )}
       </main>
 
       {modal && (
@@ -704,7 +877,7 @@ function ModuleView({
               <div>
                 <strong>{record.name}</strong>
                 <small>{getReminder(record)}</small>
-                {(moduleKey === 'domains' || moduleKey === 'servers') && record.notes && (
+                {(moduleKey === 'domains' || moduleKey === 'servers' || moduleKey === 'repos') && record.notes && (
                   <small className="record-note">{record.notes}</small>
                 )}
               </div>
@@ -743,7 +916,11 @@ function ModuleView({
   )
 }
 
-function SettingsView() {
+function SettingsView({ appSettings, setAppSettings, syncStatus, githubSyncStatus, syncGitHubRepos }) {
+  function updateSetting(key, value) {
+    setAppSettings((current) => ({ ...current, [key]: value }))
+  }
+
   return (
     <section className="settings-grid">
       <div className="panel">
@@ -761,7 +938,7 @@ function SettingsView() {
       <div className="panel">
         <div className="panel-heading">
           <h2>Data Roadmap</h2>
-          <p>Browser storage now, Supabase tables later.</p>
+          <p>Supabase sync now, browser storage fallback always.</p>
         </div>
         <div className="checklist">
           {['domains', 'servers', 'github_repos', 'accounts', 'subscriptions'].map((item) => (
@@ -773,11 +950,50 @@ function SettingsView() {
       <div className="panel">
         <div className="panel-heading">
           <h2>Storage Mode</h2>
-          <p>Your records are saved in this browser and survive refreshes, Nginx reloads, and app redeploys on this device.</p>
+          <p>{syncStatus}</p>
         </div>
         <div className="checklist">
           <span><ShieldCheck size={16} /> Local browser persistence enabled</span>
-          <span><Database size={16} /> Supabase recommended for multi-device sync</span>
+          <span><Database size={16} /> {supabase ? 'Supabase client configured' : 'Add Supabase env values to enable cloud sync'}</span>
+        </div>
+      </div>
+
+      <div className="panel settings-wide">
+        <div className="panel-heading">
+          <h2>GitHub Auto-Fetch</h2>
+          <p>Fetch public repos by username, or use a personal token for private repos available to the token.</p>
+        </div>
+        <div className="settings-form">
+          <label>
+            <span>GitHub username</span>
+            <input
+              value={appSettings.githubUsername}
+              onChange={(event) => updateSetting('githubUsername', event.target.value)}
+              placeholder="chmuzamil"
+            />
+          </label>
+          <label>
+            <span>REST API base URL</span>
+            <input
+              value={appSettings.githubApiBase}
+              onChange={(event) => updateSetting('githubApiBase', event.target.value)}
+              placeholder="https://api.github.com"
+            />
+          </label>
+          <label>
+            <span>Personal access token</span>
+            <input
+              type="password"
+              value={appSettings.githubToken}
+              onChange={(event) => updateSetting('githubToken', event.target.value)}
+              placeholder="github_pat_..."
+            />
+          </label>
+          <button className="primary-button" type="button" onClick={syncGitHubRepos}>
+            <RefreshCw size={16} />
+            Fetch GitHub Repos
+          </button>
+          {githubSyncStatus && <p className="settings-status">{githubSyncStatus}</p>}
         </div>
       </div>
     </section>

@@ -625,6 +625,42 @@ option {
   color: var(--text-strong);
 }
 
+.settings-wide {
+  grid-column: 1 / -1;
+}
+
+.settings-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.settings-form label {
+  display: grid;
+  gap: 8px;
+}
+
+.settings-form label span {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.settings-form input {
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.16);
+  padding: 0 11px;
+}
+
+.settings-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text-muted);
+}
+
 .login-shell {
   min-height: 100vh;
   display: grid;
@@ -896,6 +932,7 @@ option {
   .metrics-grid,
   .content-grid,
   .settings-grid,
+  .settings-form,
   .form-grid {
     grid-template-columns: 1fr;
   }
