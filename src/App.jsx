@@ -33,6 +33,7 @@ const moduleConfig = {
     fields: [
       { key: 'name', label: 'Domain', type: 'text' },
       { key: 'provider', label: 'Registrar', type: 'text' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
       { key: 'cost', label: 'Yearly cost', type: 'number' },
       { key: 'currency', label: 'Currency', type: 'currency' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
@@ -123,6 +124,7 @@ const initialRecords = {
       provider: 'PKNIC',
       cost: 9500,
       currency: 'PKR',
+      notes: 'Used for Unity Store Pakistan. Pointed to the ecommerce hosting stack.',
       renewalDate: '2026-07-18',
       expiryDate: '2026-08-18',
       status: 'Expiring Soon',
@@ -133,6 +135,7 @@ const initialRecords = {
       provider: 'Namecheap',
       cost: 16,
       currency: 'USD',
+      notes: 'Main brand domain. Used for personal apps and wildcard subdomains.',
       renewalDate: '2026-11-03',
       expiryDate: '2026-12-03',
       status: 'Active',
@@ -241,6 +244,7 @@ const navItems = [
 const emptyRecord = {
   name: '',
   provider: '',
+  notes: '',
   cost: 0,
   currency: 'USD',
   renewalDate: '',
@@ -338,7 +342,7 @@ function App() {
     if (!currentConfig) return []
     return [...records[activePage]]
       .filter((item) => {
-        const haystack = `${item.name} ${item.provider}`.toLowerCase()
+        const haystack = `${item.name} ${item.provider} ${item.notes || ''}`.toLowerCase()
         const matchesSearch = haystack.includes(query.toLowerCase())
         const matchesStatus = statusFilter === 'All' || item.status === statusFilter
         return matchesSearch && matchesStatus
@@ -672,6 +676,9 @@ function ModuleView({
               <div>
                 <strong>{record.name}</strong>
                 <small>{getReminder(record)}</small>
+                {moduleKey === 'domains' && record.notes && (
+                  <small className="record-note">{record.notes}</small>
+                )}
               </div>
             </div>
             <span data-label="Provider">{record.provider}</span>
@@ -817,6 +824,16 @@ function RecordModal({ modal, config, setModal, saveRecord }) {
                 >
                   {currencies.map((currency) => <option key={currency}>{currency}</option>)}
                 </select>
+              ) : field.type === 'textarea' ? (
+                <textarea
+                  value={modal.values[field.key] || ''}
+                  onChange={(event) => setModal((current) => ({
+                    ...current,
+                    values: { ...current.values, [field.key]: event.target.value },
+                  }))}
+                  placeholder="Where is this domain used or pointed?"
+                  rows={3}
+                />
               ) : (
                 <input
                   type={field.type}

@@ -441,7 +441,8 @@ h2 {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   box-sizing: border-box;
   border: 0;
@@ -449,6 +450,11 @@ select {
   color: var(--text-strong);
   background: transparent;
   font: inherit;
+}
+
+textarea {
+  resize: vertical;
+  line-height: 1.5;
 }
 
 select {
@@ -511,6 +517,13 @@ option {
 .record-title strong,
 .renewal-item strong {
   color: var(--text-strong);
+}
+
+.record-note {
+  max-width: 460px;
+  margin-top: 4px;
+  color: var(--text);
+  line-height: 1.45;
 }
 
 .record-icon {
@@ -776,12 +789,18 @@ option {
 }
 
 .form-grid input,
-.form-grid select {
+.form-grid select,
+.form-grid textarea {
   height: 42px;
   border: 1px solid var(--border);
   border-radius: 7px;
   background: rgba(0, 0, 0, 0.16);
   padding: 0 11px;
+}
+
+.form-grid textarea {
+  min-height: 86px;
+  padding: 10px 11px;
 }
 
 .modal-actions {
