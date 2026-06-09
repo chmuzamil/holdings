@@ -122,12 +122,6 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null
 
-const demoUser = {
-  email: import.meta.env.VITE_LOGIN_EMAIL || 'founder@maker.example',
-  password: import.meta.env.VITE_LOGIN_PASSWORD || 'founder-os',
-  name: import.meta.env.VITE_LOGIN_NAME || 'Founder',
-}
-
 const initialRecords = {
   domains: [
     {
@@ -376,6 +370,7 @@ function isAttention(record) {
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [session, setSession] = useState(null)
   const [loginError, setLoginError] = useState('')
   const [activePage, setActivePage] = useState('dashboard')
   const [records, setRecords] = useState(loadSavedRecords)
@@ -389,6 +384,28 @@ function App() {
   const [githubSyncStatus, setGithubSyncStatus] = useState('')
   const [modal, setModal] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+
+  useEffect(() => {
+    if (!supabase) return
+
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      setIsAuthenticated(Boolean(data.session))
+      if (data.session) {
+        setRemoteReady(false)
+      }
+    })
+
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setIsAuthenticated(Boolean(nextSession))
+      if (nextSession) {
+        setRemoteReady(false)
+      }
+    })
+
+    return () => data.subscription.unsubscribe()
+  }, [])
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(records))
@@ -585,24 +602,37 @@ function App() {
     }
   }
 
-  function handleLogin(event) {
+  async function handleLogin(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
     const email = String(formData.get('founderLoginEmail') || '').trim().toLowerCase()
     const password = String(formData.get('founderLoginPassphrase') || '')
 
-    if (email === demoUser.email && password === demoUser.password) {
-      setIsAuthenticated(true)
-      setLoginError('')
+    if (!supabase) {
+      setLoginError('Supabase is not configured.')
       return
     }
 
-    setLoginError('Email or password is incorrect.')
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (error) {
+      setLoginError(error.message)
+      return
+    }
+
+    setSession(data.session)
+    setIsAuthenticated(true)
+    setLoginError('')
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    if (supabase) {
+      await supabase.auth.signOut()
+    }
+    setSession(null)
     setIsAuthenticated(false)
     setActivePage('dashboard')
+    setRemoteReady(!supabase)
     setModal(null)
     setDeleteTarget(null)
   }
@@ -641,7 +671,7 @@ function App() {
 
         <div className="sidebar-card">
           <ShieldCheck size={18} />
-          <p>Signed in as {demoUser.name}. Supabase auth can replace this mock session later.</p>
+          <p>Signed in as {session?.user?.email || 'Supabase user'}.</p>
           <button className="sign-out-button" type="button" onClick={handleLogout}>
             <LogOut size={16} />
             Sign out

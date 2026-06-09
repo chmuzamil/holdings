@@ -10,7 +10,7 @@ Founder OS is a private personal dashboard for founders, indie hackers, develope
 
 ## Overview
 
-Founder OS is built to feel like a polished open-source SaaS dashboard while staying useful as a personal founder workspace. It starts with mock data and a frontend-only login gate, with a simple structure that can later be connected to Supabase Auth and database tables.
+Founder OS is built to feel like a polished open-source SaaS dashboard while staying useful as a personal founder workspace. It starts with mock asset data, Supabase Auth, optional Supabase persistence, and a simple structure that can grow into a full private operating dashboard.
 
 Live demo:
 
@@ -31,7 +31,7 @@ https://founder-os.maker.example
 - Renewal reminders and attention highlighting
 - Monthly and yearly cost calculations
 - USD and PKR currency support with a dashboard reporting toggle
-- Private login screen powered by environment variables
+- Private login screen powered by Supabase Auth
 - Empty states for clean first-run usage
 - Responsive desktop and mobile layouts
 - Browser storage persistence for records on the same device
@@ -72,12 +72,9 @@ Create a local environment file:
 cp .env.example .env
 ```
 
-Update the login values:
+Add your Supabase project values:
 
 ```bash
-VITE_LOGIN_EMAIL=founder@example.com
-VITE_LOGIN_PASSWORD=change-me
-VITE_LOGIN_NAME=Founder
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
@@ -104,13 +101,10 @@ npm run preview
 
 | Variable | Description |
 | --- | --- |
-| `VITE_LOGIN_EMAIL` | Email used by the frontend mock login |
-| `VITE_LOGIN_PASSWORD` | Password used by the frontend mock login |
-| `VITE_LOGIN_NAME` | Display name shown in the app |
 | `VITE_SUPABASE_URL` | Supabase project URL for cloud persistence |
-| `VITE_SUPABASE_ANON_KEY` | Supabase anon key for the dashboard client |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon key for Auth and dashboard persistence |
 
-> Important: Vite frontend environment variables are bundled into the browser build. This login is useful for demos and private prototypes, but it is not secure authentication. Use Supabase Auth or another server-backed auth provider before storing sensitive data.
+Create at least one user in Supabase Auth before logging into Founder OS.
 
 ## Data Model
 
@@ -126,7 +120,7 @@ Each record tracks a name, provider, cost, currency, renewal date, expiry date, 
 
 Records are persisted to browser `localStorage`, so changes survive refreshes, Nginx reloads, and redeploys on the same browser/device. When Supabase env variables are configured, records also sync to the `founder_os_records` table.
 
-Run `supabase-schema.sql` in the Supabase SQL editor to create the table.
+Run `supabase-schema.sql` in the Supabase SQL editor to create the records table.
 
 ## GitHub Auto-Fetch
 
@@ -152,8 +146,7 @@ https://api.github.com/user/repos
 
 ## Roadmap
 
-- Supabase Auth
-- Supabase Auth with private row-level security
+- Private row-level security tied to Supabase user IDs
 - CSV import/export
 - Reminder notifications
 - GitHub repository metadata sync
