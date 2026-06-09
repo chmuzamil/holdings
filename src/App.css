@@ -529,7 +529,8 @@ option {
   line-height: 1.45;
 }
 
-.lookup-summary {
+.lookup-summary,
+.domain-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -537,6 +538,7 @@ option {
 }
 
 .lookup-summary span,
+.domain-meta span,
 .inline-status {
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -545,6 +547,11 @@ option {
   font-size: 12px;
   line-height: 1.3;
   padding: 5px 8px;
+}
+
+.domain-meta span {
+  color: var(--text-strong);
+  background: rgba(125, 211, 252, 0.08);
 }
 
 .inline-status {

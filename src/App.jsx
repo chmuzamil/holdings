@@ -36,6 +36,8 @@ const moduleConfig = {
       { key: 'name', label: 'Domain', type: 'text' },
       { key: 'provider', label: 'Registrar', type: 'text' },
       { key: 'notes', label: 'Notes', type: 'textarea' },
+      { key: 'subdomains', label: 'Subdomains', type: 'textarea' },
+      { key: 'serverId', label: 'Attached VPS / Server', type: 'serverLink' },
       { key: 'cost', label: 'Yearly cost', type: 'number' },
       { key: 'currency', label: 'Currency', type: 'currency' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
@@ -131,6 +133,8 @@ const initialRecords = {
       cost: 9500,
       currency: 'PKR',
       notes: 'Used for Unity Store Pakistan. Pointed to the ecommerce hosting stack.',
+      subdomains: 'www, shop, admin',
+      serverId: 'server-1',
       renewalDate: '2026-07-18',
       expiryDate: '2026-08-18',
       status: 'Expiring Soon',
@@ -142,6 +146,8 @@ const initialRecords = {
       cost: 16,
       currency: 'USD',
       notes: 'Main brand domain. Used for personal apps and wildcard subdomains.',
+      subdomains: 'founder-os, ai',
+      serverId: 'server-1',
       renewalDate: '2026-11-03',
       expiryDate: '2026-12-03',
       status: 'Active',
@@ -256,6 +262,8 @@ const emptyRecord = {
   provider: '',
   ipAddress: '',
   notes: '',
+  subdomains: '',
+  serverId: '',
   cost: 0,
   currency: 'USD',
   renewalDate: '',
@@ -490,7 +498,8 @@ function App() {
     if (!currentConfig) return []
     return [...records[activePage]]
       .filter((item) => {
-        const haystack = `${item.name} ${item.provider} ${item.ipAddress || ''} ${item.notes || ''}`.toLowerCase()
+        const attachedServer = records.servers.find((server) => server.id === item.serverId)
+        const haystack = `${item.name} ${item.provider} ${item.ipAddress || ''} ${item.notes || ''} ${item.subdomains || ''} ${attachedServer?.name || ''} ${attachedServer?.ipAddress || ''}`.toLowerCase()
         const matchesSearch = haystack.includes(query.toLowerCase())
         const matchesStatus = statusFilter === 'All' || item.status === statusFilter
         return matchesSearch && matchesStatus
@@ -746,6 +755,7 @@ function App() {
             sortBy={sortBy}
             setSortBy={setSortBy}
             records={visibleRecords}
+            servers={records.servers}
             displayCurrency={displayCurrency}
             openCreate={openCreate}
             openEdit={openEdit}
@@ -770,6 +780,7 @@ function App() {
         <RecordModal
           modal={modal}
           config={moduleConfig[modal.moduleKey]}
+          servers={records.servers}
           setModal={setModal}
           saveRecord={saveRecord}
         />
@@ -886,6 +897,7 @@ function ModuleView({
   sortBy,
   setSortBy,
   records,
+  servers,
   displayCurrency,
   openCreate,
   openEdit,
@@ -940,6 +952,9 @@ function ModuleView({
                 {(moduleKey === 'domains' || moduleKey === 'servers' || moduleKey === 'repos') && record.notes && (
                   <small className="record-note">{record.notes}</small>
                 )}
+                {moduleKey === 'domains' && (
+                  <DomainMeta record={record} servers={servers} />
+                )}
                 {moduleKey === 'domains' && record.lookup && (
                   <DomainLookupSummary lookup={record.lookup} />
                 )}
@@ -979,6 +994,27 @@ function ModuleView({
         )}
       </div>
     </section>
+  )
+}
+
+function DomainMeta({ record, servers }) {
+  const attachedServer = servers.find((server) => server.id === record.serverId)
+  const subdomains = String(record.subdomains || '')
+    .split(/[\n,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (!attachedServer && !subdomains.length) return null
+
+  return (
+    <div className="domain-meta">
+      {subdomains.length > 0 && (
+        <span>Subdomains: {subdomains.slice(0, 6).join(', ')}{subdomains.length > 6 ? ` +${subdomains.length - 6}` : ''}</span>
+      )}
+      {attachedServer && (
+        <span>Attached VPS: {attachedServer.name}{attachedServer.ipAddress ? ` - ${attachedServer.ipAddress}` : ''}</span>
+      )}
+    </div>
   )
 }
 
@@ -1133,7 +1169,7 @@ function LoginPage({ loginError, handleLogin }) {
   )
 }
 
-function RecordModal({ modal, config, setModal, saveRecord }) {
+function RecordModal({ modal, config, servers, setModal, saveRecord }) {
   return (
     <div className="modal-backdrop" role="presentation">
       <form className="modal" onSubmit={saveRecord}>
@@ -1168,6 +1204,21 @@ function RecordModal({ modal, config, setModal, saveRecord }) {
                 >
                   {currencies.map((currency) => <option key={currency}>{currency}</option>)}
                 </select>
+              ) : field.type === 'serverLink' ? (
+                <select
+                  value={modal.values[field.key] || ''}
+                  onChange={(event) => setModal((current) => ({
+                    ...current,
+                    values: { ...current.values, [field.key]: event.target.value },
+                  }))}
+                >
+                  <option value="">Not attached</option>
+                  {servers.map((server) => (
+                    <option key={server.id} value={server.id}>
+                      {server.name}{server.ipAddress ? ` - ${server.ipAddress}` : ''}
+                    </option>
+                  ))}
+                </select>
               ) : field.type === 'textarea' ? (
                 <textarea
                   value={modal.values[field.key] || ''}
@@ -1175,7 +1226,7 @@ function RecordModal({ modal, config, setModal, saveRecord }) {
                     ...current,
                     values: { ...current.values, [field.key]: event.target.value },
                   }))}
-                  placeholder="Where is this domain used or pointed?"
+                  placeholder={field.key === 'subdomains' ? 'www, app, admin, api' : 'Where is this domain used or pointed?'}
                   rows={3}
                 />
               ) : (

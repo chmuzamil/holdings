@@ -23,6 +23,7 @@ https://founder-os.maker.example
 - Dashboard cards for domains, servers, repos, accounts, costs, renewals, and attention items
 - Modules for domains, VPS/servers, GitHub repos, accounts, and subscriptions
 - Domain notes for usage context, pointing details, or internal reminders
+- Domain subdomain tracking and VPS/server attachment
 - VPS/server IP address and notes for hosting context
 - Add, edit, and delete records
 - Delete confirmation modal
@@ -123,7 +124,7 @@ Founder OS currently keeps records in local React state using module arrays:
 - `accounts`
 - `subscriptions`
 
-Each record tracks a name, provider, cost, currency, renewal date, expiry date, and status. Domain records support notes for where the domain is used or pointed. VPS/server records support IP addresses and notes for hosting context. Costs support `USD` and `PKR`; dashboard totals normalize records through a simple exchange-rate map before displaying them in the selected reporting currency.
+Each record tracks a name, provider, cost, currency, renewal date, expiry date, and status. Domain records support notes, subdomains, and attached VPS/server references for where the domain is used or pointed. VPS/server records support IP addresses and notes for hosting context. Costs support `USD` and `PKR`; dashboard totals normalize records through a simple exchange-rate map before displaying them in the selected reporting currency.
 
 Records are persisted to browser `localStorage`, so changes survive refreshes, Nginx reloads, and redeploys on the same browser/device. When Supabase env variables are configured, records also sync to the `founder_os_records` table.
 
