@@ -11,7 +11,7 @@
 .sidebar {
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: 100svh;
   padding: 22px 16px;
   border-right: 1px solid var(--border);
   background: rgba(12, 13, 18, 0.86);
@@ -19,6 +19,8 @@
   display: flex;
   flex-direction: column;
   gap: 22px;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .brand,
@@ -99,25 +101,26 @@
   margin-top: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 14px;
+  padding: 12px;
   color: var(--text);
   background: rgba(255, 255, 255, 0.04);
 }
 
 .sidebar-card p {
-  margin: 9px 0 0;
+  margin: 8px 0 0;
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .sign-out-button {
   width: 100%;
-  min-height: 36px;
+  min-height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: 13px;
+  margin-top: 10px;
   border: 1px solid var(--border);
   border-radius: 7px;
   color: var(--text-strong);
