@@ -23,6 +23,7 @@ https://founder-os.maker.example
 - Dashboard cards for domains, servers, repos, accounts, costs, renewals, and attention items
 - Modules for domains, VPS/servers, GitHub repos, accounts, and subscriptions
 - Domain notes for usage context, pointing details, or internal reminders
+- VPS/server IP address and notes for hosting context
 - Add, edit, and delete records
 - Delete confirmation modal
 - Search, status filter, and sorting by renewal date, expiry date, or cost
@@ -115,7 +116,7 @@ Founder OS currently keeps records in local React state using module arrays:
 - `accounts`
 - `subscriptions`
 
-Each record tracks a name, provider, cost, currency, renewal date, expiry date, and status. Domain records also support notes for where the domain is used or pointed. Costs support `USD` and `PKR`; dashboard totals normalize records through a simple exchange-rate map before displaying them in the selected reporting currency.
+Each record tracks a name, provider, cost, currency, renewal date, expiry date, and status. Domain records support notes for where the domain is used or pointed. VPS/server records support IP addresses and notes for hosting context. Costs support `USD` and `PKR`; dashboard totals normalize records through a simple exchange-rate map before displaying them in the selected reporting currency.
 
 ## Roadmap
 
@@ -124,6 +125,7 @@ Each record tracks a name, provider, cost, currency, renewal date, expiry date, 
 - CSV import/export
 - Reminder notifications
 - GitHub repository metadata sync
+- GitHub API repo import using a personal access token
 - Deployment guide for Nginx/VPS hosting
 
 ## Not Included

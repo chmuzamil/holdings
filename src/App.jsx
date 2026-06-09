@@ -49,6 +49,8 @@ const moduleConfig = {
     fields: [
       { key: 'name', label: 'Server', type: 'text' },
       { key: 'provider', label: 'Provider', type: 'text' },
+      { key: 'ipAddress', label: 'IP Address', type: 'text' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
       { key: 'cost', label: 'Monthly cost', type: 'number' },
       { key: 'currency', label: 'Currency', type: 'currency' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
@@ -146,6 +148,8 @@ const initialRecords = {
       id: 'server-1',
       name: 'Main VPS',
       provider: 'Hostinger Cloud',
+      ipAddress: '203.0.113.10',
+      notes: 'Hosts Founder OS and wildcard app subdomains.',
       cost: 18,
       currency: 'USD',
       renewalDate: '2026-06-28',
@@ -244,6 +248,7 @@ const navItems = [
 const emptyRecord = {
   name: '',
   provider: '',
+  ipAddress: '',
   notes: '',
   cost: 0,
   currency: 'USD',
@@ -342,7 +347,7 @@ function App() {
     if (!currentConfig) return []
     return [...records[activePage]]
       .filter((item) => {
-        const haystack = `${item.name} ${item.provider} ${item.notes || ''}`.toLowerCase()
+        const haystack = `${item.name} ${item.provider} ${item.ipAddress || ''} ${item.notes || ''}`.toLowerCase()
         const matchesSearch = haystack.includes(query.toLowerCase())
         const matchesStatus = statusFilter === 'All' || item.status === statusFilter
         return matchesSearch && matchesStatus
@@ -676,12 +681,17 @@ function ModuleView({
               <div>
                 <strong>{record.name}</strong>
                 <small>{getReminder(record)}</small>
-                {moduleKey === 'domains' && record.notes && (
+                {(moduleKey === 'domains' || moduleKey === 'servers') && record.notes && (
                   <small className="record-note">{record.notes}</small>
                 )}
               </div>
             </div>
-            <span data-label="Provider">{record.provider}</span>
+            <span data-label={moduleKey === 'servers' ? 'Provider / IP' : 'Provider'}>
+              {record.provider}
+              {moduleKey === 'servers' && record.ipAddress && (
+                <small className="converted-cost">{record.ipAddress}</small>
+              )}
+            </span>
             <span data-label="Cost">
               {money(Number(record.cost || 0), record.currency)}
               {record.currency !== displayCurrency && (
