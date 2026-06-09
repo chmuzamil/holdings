@@ -588,8 +588,8 @@ function App() {
   function handleLogin(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
-    const email = String(formData.get('email') || '').trim().toLowerCase()
-    const password = String(formData.get('password') || '')
+    const email = String(formData.get('founderLoginEmail') || '').trim().toLowerCase()
+    const password = String(formData.get('founderLoginPassphrase') || '')
 
     if (email === demoUser.email && password === demoUser.password) {
       setIsAuthenticated(true)
@@ -597,7 +597,7 @@ function App() {
       return
     }
 
-    setLoginError('Use the demo credentials shown on this page.')
+    setLoginError('Email or password is incorrect.')
   }
 
   function handleLogout() {
@@ -1027,16 +1027,16 @@ function LoginPage({ loginError, handleLogin }) {
       <section className="login-card" aria-label="Sign in">
         <div className="panel-heading">
           <h2>Sign in</h2>
-          <p>Use the demo credentials now. Connect Supabase Auth later.</p>
+          <p>Enter your private Founder OS credentials.</p>
         </div>
-        <form className="login-form" onSubmit={handleLogin}>
+        <form className="login-form" autoComplete="off" onSubmit={handleLogin}>
           <label>
             <span>Email</span>
-            <input name="email" type="email" defaultValue={demoUser.email} autoComplete="email" required />
+            <input name="founderLoginEmail" type="email" autoComplete="off" required />
           </label>
           <label>
             <span>Password</span>
-            <input name="password" type="password" defaultValue={demoUser.password} autoComplete="current-password" required />
+            <input name="founderLoginPassphrase" type="password" autoComplete="new-password" required />
           </label>
           {loginError && <p className="login-error">{loginError}</p>}
           <button className="primary-button" type="submit">
