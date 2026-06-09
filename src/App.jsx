@@ -382,6 +382,7 @@ function App() {
   const [remoteReady, setRemoteReady] = useState(!supabase)
   const [syncStatus, setSyncStatus] = useState(supabase ? 'Supabase ready to connect after login.' : 'Local browser storage active.')
   const [githubSyncStatus, setGithubSyncStatus] = useState('')
+  const [domainLookupStatus, setDomainLookupStatus] = useState('')
   const [modal, setModal] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
 
@@ -602,6 +603,28 @@ function App() {
     }
   }
 
+  async function refreshDomainLookup(record) {
+    setDomainLookupStatus(`Checking ${record.name}...`)
+    try {
+      const response = await fetch(`/api/domain-lookup?domain=${encodeURIComponent(record.name)}`)
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || `Lookup returned ${response.status}`)
+      }
+
+      setRecords((current) => ({
+        ...current,
+        domains: current.domains.map((domain) =>
+          domain.id === record.id ? { ...domain, lookup: result } : domain,
+        ),
+      }))
+      setDomainLookupStatus(`Updated DNS / WHOIS for ${record.name}.`)
+    } catch (error) {
+      setDomainLookupStatus(`Lookup failed for ${record.name}: ${error.message}`)
+    }
+  }
+
   async function handleLogin(event) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
@@ -726,6 +749,8 @@ function App() {
             displayCurrency={displayCurrency}
             openCreate={openCreate}
             openEdit={openEdit}
+            refreshDomainLookup={refreshDomainLookup}
+            domainLookupStatus={domainLookupStatus}
             setDeleteTarget={setDeleteTarget}
           />
         )}
@@ -864,6 +889,8 @@ function ModuleView({
   displayCurrency,
   openCreate,
   openEdit,
+  refreshDomainLookup,
+  domainLookupStatus,
   setDeleteTarget,
 }) {
   const Icon = config.icon
@@ -892,6 +919,9 @@ function ModuleView({
       </div>
 
       <div className="records-table">
+        {moduleKey === 'domains' && domainLookupStatus && (
+          <div className="inline-status">{domainLookupStatus}</div>
+        )}
         <div className="table-head">
           <span>Name</span>
           <span>Provider</span>
@@ -909,6 +939,9 @@ function ModuleView({
                 <small>{getReminder(record)}</small>
                 {(moduleKey === 'domains' || moduleKey === 'servers' || moduleKey === 'repos') && record.notes && (
                   <small className="record-note">{record.notes}</small>
+                )}
+                {moduleKey === 'domains' && record.lookup && (
+                  <DomainLookupSummary lookup={record.lookup} />
                 )}
               </div>
             </div>
@@ -929,6 +962,9 @@ function ModuleView({
             <span data-label="Renewal">{prettyDate(record.renewalDate)}</span>
             <StatusBadge status={record.status} />
             <div className="row-actions">
+              {moduleKey === 'domains' && (
+                <button type="button" title="Lookup DNS / WHOIS" onClick={() => refreshDomainLookup(record)}><RefreshCw size={16} /></button>
+              )}
               <button type="button" title="Edit" onClick={() => openEdit(moduleKey, record)}><Edit3 size={16} /></button>
               <button type="button" title="Delete" onClick={() => setDeleteTarget({ ...record, moduleKey })}><Trash2 size={16} /></button>
             </div>
@@ -943,6 +979,24 @@ function ModuleView({
         )}
       </div>
     </section>
+  )
+}
+
+function DomainLookupSummary({ lookup }) {
+  const aRecords = lookup.dns?.a?.value || []
+  const nsRecords = lookup.dns?.ns?.value || lookup.whois?.nameservers || []
+  const mxRecords = lookup.dns?.mx?.value || []
+  const mxLabels = mxRecords.map((mx) => `${mx.exchange} (${mx.priority})`)
+
+  return (
+    <div className="lookup-summary">
+      <span>DNS A: {aRecords.length ? aRecords.join(', ') : 'none'}</span>
+      <span>NS: {nsRecords.length ? nsRecords.slice(0, 3).join(', ') : 'none'}</span>
+      <span>MX: {mxLabels.length ? mxLabels.slice(0, 2).join(', ') : 'none'}</span>
+      <span>Registrar: {lookup.whois?.registrar || 'unknown'}</span>
+      <span>Expires: {lookup.whois?.expires ? prettyDate(lookup.whois.expires.slice(0, 10)) : 'unknown'}</span>
+      <span>Checked: {prettyDate(lookup.checkedAt.slice(0, 10))}</span>
+    </div>
   )
 }
 

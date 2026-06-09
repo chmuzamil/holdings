@@ -37,6 +37,7 @@ https://founder-os.maker.example
 - Browser storage persistence for records on the same device
 - Optional Supabase persistence with browser storage fallback
 - GitHub repository auto-fetch by username or personal access token
+- Self-hosted DNS and RDAP lookup API for domain records
 
 ## Demo Data
 
@@ -97,6 +98,12 @@ Preview the production build:
 npm run preview
 ```
 
+Run the self-hosted domain lookup API:
+
+```bash
+npm run api
+```
+
 ## Environment Variables
 
 | Variable | Description |
@@ -143,6 +150,18 @@ https://api.github.com/user/repos
 ```
 
 > Token note: storing a GitHub token in browser storage is convenient for a private prototype, but it is not ideal for production. For stronger security, move GitHub sync to a Supabase Edge Function or another backend so the token is never stored in the browser.
+
+## DNS and WHOIS Lookup
+
+Founder OS includes a small self-hosted API at `server/domain-api.mjs`.
+
+It provides:
+
+- DNS records: `A`, `AAAA`, `CNAME`, `MX`, `NS`, `TXT`, `SOA`
+- WHOIS-style structured data through RDAP
+- Registrar, status, nameserver, created, updated, and expiry details where available
+
+In production, proxy `/api/domain-lookup` to the Node API service. The Domains module has a refresh button per domain that saves lookup results into the domain record.
 
 ## Roadmap
 
