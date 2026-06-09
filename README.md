@@ -34,6 +34,7 @@ https://founder-os.maker.example
 - Private login screen powered by environment variables
 - Empty states for clean first-run usage
 - Responsive desktop and mobile layouts
+- Browser storage persistence for records on the same device
 - Supabase-ready data shape for future persistence
 
 ## Demo Data
@@ -117,6 +118,8 @@ Founder OS currently keeps records in local React state using module arrays:
 - `subscriptions`
 
 Each record tracks a name, provider, cost, currency, renewal date, expiry date, and status. Domain records support notes for where the domain is used or pointed. VPS/server records support IP addresses and notes for hosting context. Costs support `USD` and `PKR`; dashboard totals normalize records through a simple exchange-rate map before displaying them in the selected reporting currency.
+
+Records are persisted to browser `localStorage`, so changes survive refreshes, Nginx reloads, and redeploys on the same browser/device. For true permanent storage, multi-device sync, backups, and private server-side access control, connect the same data model to Supabase tables.
 
 ## Roadmap
 

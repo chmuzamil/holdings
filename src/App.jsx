@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   CalendarClock,
@@ -111,6 +111,8 @@ const currencyRatesToUsd = {
   USD: 1,
   PKR: 1 / 278,
 }
+
+const storageKey = 'founder-os-records-v1'
 
 const demoUser = {
   email: import.meta.env.VITE_LOGIN_EMAIL || 'founder@maker.example',
@@ -257,6 +259,23 @@ const emptyRecord = {
   status: 'Active',
 }
 
+function loadSavedRecords() {
+  try {
+    const saved = window.localStorage.getItem(storageKey)
+    if (!saved) return initialRecords
+    const parsed = JSON.parse(saved)
+
+    return Object.fromEntries(
+      Object.entries(initialRecords).map(([moduleKey, fallbackRecords]) => [
+        moduleKey,
+        Array.isArray(parsed[moduleKey]) ? parsed[moduleKey] : fallbackRecords,
+      ]),
+    )
+  } catch {
+    return initialRecords
+  }
+}
+
 function money(value, currency = 'USD') {
   return new Intl.NumberFormat(currency === 'PKR' ? 'en-PK' : 'en-US', {
     style: 'currency',
@@ -307,13 +326,17 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loginError, setLoginError] = useState('')
   const [activePage, setActivePage] = useState('dashboard')
-  const [records, setRecords] = useState(initialRecords)
+  const [records, setRecords] = useState(loadSavedRecords)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [sortBy, setSortBy] = useState('renewalDate')
   const [displayCurrency, setDisplayCurrency] = useState('USD')
   const [modal, setModal] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+
+  useEffect(() => {
+    window.localStorage.setItem(storageKey, JSON.stringify(records))
+  }, [records])
 
   const flatRecords = useMemo(
     () =>
@@ -738,12 +761,23 @@ function SettingsView() {
       <div className="panel">
         <div className="panel-heading">
           <h2>Data Roadmap</h2>
-          <p>Mock data now, Supabase tables later.</p>
+          <p>Browser storage now, Supabase tables later.</p>
         </div>
         <div className="checklist">
           {['domains', 'servers', 'github_repos', 'accounts', 'subscriptions'].map((item) => (
             <span key={item}><Database size={16} /> {item}</span>
           ))}
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-heading">
+          <h2>Storage Mode</h2>
+          <p>Your records are saved in this browser and survive refreshes, Nginx reloads, and app redeploys on this device.</p>
+        </div>
+        <div className="checklist">
+          <span><ShieldCheck size={16} /> Local browser persistence enabled</span>
+          <span><Database size={16} /> Supabase recommended for multi-device sync</span>
         </div>
       </div>
     </section>
