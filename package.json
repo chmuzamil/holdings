@@ -9,7 +9,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "api": "node server/domain-api.mjs"
+    "api": "node server/domain-api.mjs",
+    "supabase:clear": "node scripts/clear-supabase-records.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",

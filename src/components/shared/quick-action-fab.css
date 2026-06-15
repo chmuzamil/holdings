@@ -1,0 +1,61 @@
+.quick-fab {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 90;
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.quick-fab-menu {
+  display: grid;
+  gap: 8px;
+  animation: ui-fade-in 0.15s ease;
+}
+
+.quick-fab-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.95);
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  transition: transform 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+.quick-fab-action:hover {
+  transform: translateX(-2px);
+  background: rgba(30, 41, 59, 0.98);
+}
+
+.quick-fab-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(52, 211, 153, 0.16));
+  color: var(--text-strong);
+  cursor: pointer;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.quick-fab-trigger:hover {
+  transform: scale(1.04);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
+}
+
+.quick-fab.open .quick-fab-trigger {
+  transform: rotate(0deg);
+}

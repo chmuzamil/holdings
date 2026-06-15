@@ -1,0 +1,249 @@
+.projects-view {
+  display: grid;
+  gap: 18px;
+}
+
+.projects-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 480px;
+}
+
+.projects-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.projects-stat-card {
+  padding: 16px 18px;
+}
+
+.projects-stat-card span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.projects-stat-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-strong);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.project-table {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.project-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.project-card {
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.project-card-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.project-card-title strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: 15px;
+}
+
+.project-card-title small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.project-card-health {
+  display: grid;
+  gap: 8px;
+}
+
+.project-card-health-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.project-card-assets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-card-asset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.project-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle, var(--border));
+}
+
+.project-card-footer strong {
+  color: var(--text-strong);
+  font-size: 15px;
+}
+
+.project-table-head,
+.project-table-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) 0.75fr 0.6fr 1.3fr 0.8fr 0.75fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.project-table-head {
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.project-table-row {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  transition: background 0.15s ease;
+}
+
+.project-table-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.project-table-row:last-child {
+  border-bottom: none;
+}
+
+.project-main strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.project-main small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.project-asset-cell {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.project-cost {
+  color: var(--text-strong);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.project-drawer-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.project-drawer-hero h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 20px;
+}
+
+.project-drawer-hero p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.project-asset-list {
+  display: grid;
+  gap: 10px;
+}
+
+.project-asset-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.project-asset-item strong {
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.project-asset-item small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.project-cost-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+@media (max-width: 1080px) {
+  .projects-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .project-table-head {
+    display: none;
+  }
+
+  .project-table-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}

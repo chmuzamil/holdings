@@ -2,7 +2,8 @@
   --bg: #08090d;
   --surface: #101217;
   --surface-soft: #151821;
-  --border: rgba(148, 163, 184, 0.16);
+  --border: rgba(148, 163, 184, 0.1);
+  --border-subtle: rgba(148, 163, 184, 0.06);
   --text: #a7b0c0;
   --text-muted: #70798a;
   --text-strong: #f4f7fb;

@@ -3,14 +3,18 @@ import { createClient } from '@supabase/supabase-js'
 import {
   AlertTriangle,
   CalendarClock,
-  Check,
   ChevronDown,
+  Clock,
   Database,
   DollarSign,
   Edit3,
   FolderGit2,
+  GitBranch,
   Globe2,
+  HeartPulse,
   LayoutDashboard,
+  Layers,
+  Lightbulb,
   Plus,
   Search,
   Server,
@@ -25,6 +29,34 @@ import {
   X,
 } from 'lucide-react'
 import './App.css'
+import { DomainsView } from './components/domains/DomainsView'
+import { ReposView } from './components/repos/ReposView'
+import { RepoRecordModal } from './components/repos/RepoRecordModal'
+import { ProjectsView } from './components/projects/ProjectsView'
+import { ProjectRecordModal } from './components/projects/ProjectRecordModal'
+import { ServersView } from './components/servers/ServersView'
+import { EmptyState } from './components/EmptyState'
+import { normalizeDomainRecord, normalizeSubdomains } from './lib/domain-helpers'
+import {
+  dedupeRepoRecords,
+  emptyRepoRecord,
+  mapGitHubRepo,
+  mergeGitHubImportedRepos,
+  normalizeRepoRecord,
+} from './lib/repo-helpers'
+import { emptyProjectRecord, normalizeProjectRecord } from './lib/project-helpers'
+import { emptyServerRecord, normalizeServerRecord } from './lib/server-helpers'
+import { getSeedRecords, isRecordsEmpty } from './lib/seed-data'
+import { DashboardView } from './components/dashboard/DashboardView'
+import { InfrastructureMapView } from './components/command-center/InfrastructureMapView'
+import { InsightsView } from './components/command-center/InsightsView'
+import { AttentionCenterView } from './components/command-center/AttentionCenterView'
+import { TimelineView } from './components/command-center/TimelineView'
+import { CommandPalette } from './components/command-palette/CommandPalette'
+import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
+import { ProjectHealthView } from './components/command-center/ProjectHealthView'
+import { isRenewableModule, isRenewableRecord } from './lib/renewal-helpers'
+import { getPageMeta } from './lib/page-config'
 
 const moduleConfig = {
   domains: {
@@ -36,14 +68,20 @@ const moduleConfig = {
       { key: 'name', label: 'Domain', type: 'text' },
       { key: 'provider', label: 'Registrar', type: 'text' },
       { key: 'notes', label: 'Notes', type: 'textarea' },
-      { key: 'subdomains', label: 'Subdomains', type: 'textarea' },
-      { key: 'serverId', label: 'Attached VPS / Server', type: 'serverLink' },
+      { key: 'subdomains', label: 'Subdomains', type: 'subdomainList' },
       { key: 'cost', label: 'Yearly cost', type: 'number' },
       { key: 'currency', label: 'Currency', type: 'currency' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
       { key: 'expiryDate', label: 'Expiry date', type: 'date' },
       { key: 'status', label: 'Status', type: 'status' },
     ],
+  },
+  projects: {
+    title: 'Projects',
+    singular: 'Project',
+    icon: Layers,
+    empty: 'No projects tracked yet.',
+    fields: [],
   },
   servers: {
     title: 'VPS / Servers',
@@ -53,7 +91,15 @@ const moduleConfig = {
     fields: [
       { key: 'name', label: 'Server', type: 'text' },
       { key: 'provider', label: 'Provider', type: 'text' },
+      { key: 'packageName', label: 'Package name', type: 'text' },
       { key: 'ipAddress', label: 'IP Address', type: 'text' },
+      { key: 'cpu', label: 'CPU cores', type: 'number' },
+      { key: 'ramGb', label: 'RAM (GB)', type: 'number' },
+      { key: 'storage', label: 'Storage', type: 'text' },
+      { key: 'bandwidth', label: 'Bandwidth', type: 'text' },
+      { key: 'os', label: 'OS', type: 'text' },
+      { key: 'location', label: 'Location', type: 'text' },
+      { key: 'hostedServices', label: 'Hosted services (comma separated)', type: 'text' },
       { key: 'notes', label: 'Notes', type: 'textarea' },
       { key: 'cost', label: 'Monthly cost', type: 'number' },
       { key: 'currency', label: 'Currency', type: 'currency' },
@@ -64,19 +110,10 @@ const moduleConfig = {
   },
   repos: {
     title: 'GitHub Repos',
-    singular: 'Repo',
+    singular: 'Repository',
     icon: FolderGit2,
     empty: 'No repositories tracked yet.',
-    fields: [
-      { key: 'name', label: 'Repository', type: 'text' },
-      { key: 'provider', label: 'Owner / org', type: 'text' },
-      { key: 'notes', label: 'Notes', type: 'textarea' },
-      { key: 'cost', label: 'Monthly cost', type: 'number' },
-      { key: 'currency', label: 'Currency', type: 'currency' },
-      { key: 'renewalDate', label: 'Review date', type: 'date' },
-      { key: 'expiryDate', label: 'Attention date', type: 'date' },
-      { key: 'status', label: 'Status', type: 'status' },
-    ],
+    fields: [],
   },
   accounts: {
     title: 'Accounts',
@@ -117,155 +154,70 @@ const currencyRatesToUsd = {
   PKR: 1 / 278,
 }
 
-const storageKey = 'founder-os-records-v1'
+const storageKey = 'founder-os-records-v2'
+const legacyStorageKey = 'founder-os-records-v1'
 const settingsStorageKey = 'founder-os-settings-v1'
 const supabaseTable = 'founder_os_records'
+const supabaseSettingsTable = 'founder_os_settings'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null
 
-const initialRecords = {
-  domains: [
-    {
-      id: 'domain-1',
-      name: 'shopfront.example',
-      provider: 'PKNIC',
-      cost: 9500,
-      currency: 'PKR',
-      notes: 'Used for Unity Store Pakistan. Pointed to the ecommerce hosting stack.',
-      subdomains: 'www, shop, admin',
-      serverId: 'server-1',
-      renewalDate: '2026-07-18',
-      expiryDate: '2026-08-18',
-      status: 'Expiring Soon',
-    },
-    {
-      id: 'domain-2',
-      name: 'maker.example',
-      provider: 'Namecheap',
-      cost: 16,
-      currency: 'USD',
-      notes: 'Main brand domain. Used for personal apps and wildcard subdomains.',
-      subdomains: 'founder-os, ai',
-      serverId: 'server-1',
-      renewalDate: '2026-11-03',
-      expiryDate: '2026-12-03',
-      status: 'Active',
-    },
-  ],
-  servers: [
-    {
-      id: 'server-1',
-      name: 'Main VPS',
-      provider: 'Hostinger Cloud',
-      ipAddress: '203.0.113.10',
-      notes: 'Hosts Founder OS and wildcard app subdomains.',
-      cost: 18,
-      currency: 'USD',
-      renewalDate: '2026-06-28',
-      expiryDate: '2026-07-01',
-      status: 'Expiring Soon',
-    },
-  ],
-  repos: [
-    {
-      id: 'repo-1',
-      name: 'PakDataKit repo',
-      provider: 'GitHub',
-      notes: 'Open-source data toolkit repository.',
-      cost: 0,
-      currency: 'USD',
-      renewalDate: '2026-09-10',
-      expiryDate: '2026-09-10',
-      status: 'Active',
-    },
-    {
-      id: 'repo-2',
-      name: 'TrendPulse / NewsBite',
-      provider: 'GitHub',
-      notes: 'Content and trends project repository.',
-      cost: 0,
-      currency: 'USD',
-      renewalDate: '2026-07-02',
-      expiryDate: '2026-07-02',
-      status: 'Active',
-    },
-  ],
-  accounts: [
-    {
-      id: 'account-1',
-      name: 'GitHub',
-      provider: 'Developer account',
-      cost: 0,
-      currency: 'USD',
-      renewalDate: '2026-10-01',
-      expiryDate: '2026-10-01',
-      status: 'Active',
-    },
-    {
-      id: 'account-2',
-      name: 'Supabase',
-      provider: 'Database platform',
-      cost: 25,
-      currency: 'USD',
-      renewalDate: '2026-06-22',
-      expiryDate: '2026-06-22',
-      status: 'Expiring Soon',
-    },
-    {
-      id: 'account-3',
-      name: 'OpenRouter',
-      provider: 'AI gateway',
-      cost: 12,
-      currency: 'USD',
-      renewalDate: '2026-07-15',
-      expiryDate: '2026-07-15',
-      status: 'Active',
-    },
-  ],
-  subscriptions: [
-    {
-      id: 'sub-1',
-      name: 'OpenRouter',
-      provider: 'API credits',
-      cost: 12,
-      currency: 'USD',
-      renewalDate: '2026-07-15',
-      expiryDate: '2026-07-15',
-      status: 'Active',
-    },
-    {
-      id: 'sub-2',
-      name: 'Supabase',
-      provider: 'Pro workspace',
-      cost: 25,
-      currency: 'USD',
-      renewalDate: '2026-06-22',
-      expiryDate: '2026-06-22',
-      status: 'Expiring Soon',
-    },
-  ],
+const recordModules = ['domains', 'servers', 'repos', 'projects', 'accounts', 'subscriptions']
+
+function createEmptyRecords() {
+  return Object.fromEntries(recordModules.map((moduleKey) => [moduleKey, []]))
+}
+
+function normalizeRecordsByModule(recordsByModule) {
+  return Object.fromEntries(
+    recordModules.map((moduleKey) => {
+      const records = Array.isArray(recordsByModule[moduleKey]) ? recordsByModule[moduleKey] : []
+      return [
+        moduleKey,
+        moduleKey === 'domains'
+          ? records.map(normalizeDomainRecord)
+          : moduleKey === 'repos'
+            ? dedupeRepoRecords(records.map(normalizeRepoRecord))
+            : moduleKey === 'servers'
+              ? records.map(normalizeServerRecord)
+              : moduleKey === 'projects'
+                ? records.map(normalizeProjectRecord)
+                : records,
+      ]
+    }),
+  )
 }
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+  { id: 'insights', label: 'Insights', icon: Lightbulb },
+  { id: 'attention', label: 'Attention', icon: AlertTriangle },
+  { id: 'timeline', label: 'Timeline', icon: Clock },
+  { type: 'divider' },
+  { id: 'infrastructure-map', label: 'Infrastructure', icon: GitBranch },
+  { id: 'project-health', label: 'Health', icon: HeartPulse },
+  { type: 'divider' },
+  { id: 'projects', label: 'Projects', icon: Layers },
   { id: 'domains', label: 'Domains', icon: Globe2 },
-  { id: 'servers', label: 'VPS / Servers', icon: Server },
-  { id: 'repos', label: 'GitHub Repos', icon: FolderGit2 },
+  { id: 'servers', label: 'Servers', icon: Server },
+  { id: 'repos', label: 'Repos', icon: FolderGit2 },
   { id: 'accounts', label: 'Accounts', icon: UserCircle },
   { id: 'subscriptions', label: 'Subscriptions', icon: WalletCards },
+  { type: 'divider' },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
+
+const creatablePages = ['projects', 'domains', 'servers', 'repos', 'accounts', 'subscriptions']
 
 const emptyRecord = {
   name: '',
   provider: '',
   ipAddress: '',
   notes: '',
-  subdomains: '',
-  serverId: '',
+  subdomains: [],
   cost: 0,
-  currency: 'USD',
+  currency: 'PKR',
   renewalDate: '',
   expiryDate: '',
   status: 'Active',
@@ -277,52 +229,81 @@ const defaultSettings = {
   githubToken: '',
 }
 
+function persistableSettings(settings) {
+  const { githubToken, ...persistable } = settings
+  return persistable
+}
+
 function loadSavedRecords() {
   try {
-    const saved = window.localStorage.getItem(storageKey)
-    if (!saved) return initialRecords
+    let saved = window.localStorage.getItem(storageKey)
+    if (!saved) {
+      const legacy = window.localStorage.getItem(legacyStorageKey)
+      if (legacy) {
+        window.localStorage.setItem(storageKey, legacy)
+        saved = legacy
+      }
+    }
+    if (!saved) return normalizeRecordsByModule(getSeedRecords())
     const parsed = JSON.parse(saved)
-
-    return Object.fromEntries(
-      Object.entries(initialRecords).map(([moduleKey, fallbackRecords]) => [
-        moduleKey,
-        Array.isArray(parsed[moduleKey]) ? parsed[moduleKey] : fallbackRecords,
-      ]),
-    )
+    if (!parsed.projects) parsed.projects = []
+    const normalized = normalizeRecordsByModule(parsed)
+    if (isRecordsEmpty(normalized)) return normalizeRecordsByModule(getSeedRecords())
+    return normalized
   } catch {
-    return initialRecords
+    return normalizeRecordsByModule(getSeedRecords())
   }
 }
 
 function loadSavedSettings() {
   try {
     const saved = window.localStorage.getItem(settingsStorageKey)
-    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings
+    if (!saved) return { ...defaultSettings }
+
+    const parsed = JSON.parse(saved)
+    const { githubToken, ...persistable } = parsed
+
+    if (githubToken) {
+      window.localStorage.setItem(settingsStorageKey, JSON.stringify(persistable))
+    }
+
+    return { ...defaultSettings, ...persistable, githubToken: '' }
   } catch {
-    return defaultSettings
+    return { ...defaultSettings }
   }
 }
 
 function rowsToRecords(rows) {
-  const next = Object.fromEntries(Object.keys(initialRecords).map((moduleKey) => [moduleKey, []]))
+  const next = createEmptyRecords()
   rows.forEach((row) => {
     if (next[row.module_key] && row.record) {
       next[row.module_key].push(row.record)
     }
   })
 
-  return Object.fromEntries(
-    Object.entries(initialRecords).map(([moduleKey, fallbackRecords]) => [
-      moduleKey,
-      next[moduleKey]?.length ? next[moduleKey] : fallbackRecords,
-    ]),
-  )
+  return normalizeRecordsByModule(next)
 }
 
-function recordsToRows(recordsByModule) {
+function mergeRecordSets(local, remote) {
+  const merged = createEmptyRecords()
+  recordModules.forEach((moduleKey) => {
+    const byId = new Map()
+    ;(remote[moduleKey] || []).forEach((item) => byId.set(item.id, item))
+    ;(local[moduleKey] || []).forEach((item) => {
+      if (!byId.has(item.id)) byId.set(item.id, item)
+    })
+    merged[moduleKey] = moduleKey === 'repos'
+      ? dedupeRepoRecords(Array.from(byId.values()))
+      : Array.from(byId.values())
+  })
+  return normalizeRecordsByModule(merged)
+}
+
+function recordsToRows(recordsByModule, userId) {
   return Object.entries(recordsByModule).flatMap(([moduleKey, items]) =>
     items.map((record) => ({
       id: record.id,
+      user_id: userId,
       module_key: moduleKey,
       record,
       updated_at: new Date().toISOString(),
@@ -330,7 +311,15 @@ function recordsToRows(recordsByModule) {
   )
 }
 
-function money(value, currency = 'USD') {
+function persistRecords(records) {
+  try {
+    window.localStorage.setItem(storageKey, JSON.stringify(records))
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function money(value, currency = 'PKR') {
   return new Intl.NumberFormat(currency === 'PKR' ? 'en-PK' : 'en-US', {
     style: 'currency',
     currency,
@@ -364,6 +353,7 @@ function daysUntil(value) {
 }
 
 function getReminder(record) {
+  if (record.moduleKey && !isRenewableModule(record.moduleKey)) return ''
   const days = daysUntil(record.renewalDate || record.expiryDate)
   if (days === null) return 'No date set'
   if (days < 0) return `${Math.abs(days)} days overdue`
@@ -372,6 +362,7 @@ function getReminder(record) {
 }
 
 function isAttention(record) {
+  if (record.moduleKey && !isRenewableModule(record.moduleKey)) return false
   const days = daysUntil(record.renewalDate || record.expiryDate)
   return record.status === 'Expired' || record.status === 'Expiring Soon' || (days !== null && days <= 30)
 }
@@ -385,14 +376,27 @@ function App() {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [sortBy, setSortBy] = useState('renewalDate')
-  const [displayCurrency, setDisplayCurrency] = useState('USD')
+  const [displayCurrency, setDisplayCurrency] = useState('PKR')
   const [appSettings, setAppSettings] = useState(loadSavedSettings)
   const [remoteReady, setRemoteReady] = useState(!supabase)
+  const [settingsReady, setSettingsReady] = useState(!supabase)
   const [syncStatus, setSyncStatus] = useState(supabase ? 'Supabase ready to connect after login.' : 'Local browser storage active.')
   const [githubSyncStatus, setGithubSyncStatus] = useState('')
   const [domainLookupStatus, setDomainLookupStatus] = useState('')
   const [modal, setModal] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [commandOpen, setCommandOpen] = useState(false)
+
+  useEffect(() => {
+    function onKeyDown(event) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setCommandOpen((open) => !open)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   useEffect(() => {
     if (!supabase) return
@@ -402,6 +406,10 @@ function App() {
       setIsAuthenticated(Boolean(data.session))
       if (data.session) {
         setRemoteReady(false)
+        setSettingsReady(false)
+      } else {
+        setRemoteReady(true)
+        setSettingsReady(true)
       }
     })
 
@@ -410,6 +418,10 @@ function App() {
       setIsAuthenticated(Boolean(nextSession))
       if (nextSession) {
         setRemoteReady(false)
+        setSettingsReady(false)
+      } else {
+        setRemoteReady(true)
+        setSettingsReady(true)
       }
     })
 
@@ -417,11 +429,11 @@ function App() {
   }, [])
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(records))
+    persistRecords(records)
   }, [records])
 
   useEffect(() => {
-    window.localStorage.setItem(settingsStorageKey, JSON.stringify(appSettings))
+    window.localStorage.setItem(settingsStorageKey, JSON.stringify(persistableSettings(appSettings)))
   }, [appSettings])
 
   useEffect(() => {
@@ -429,42 +441,86 @@ function App() {
 
     async function loadRemoteRecords() {
       setSyncStatus('Loading Supabase records...')
-      const { data, error } = await supabase
-        .from(supabaseTable)
-        .select('id,module_key,record')
-        .order('updated_at', { ascending: false })
+      const [recordsResult, settingsResult] = await Promise.all([
+        supabase
+          .from(supabaseTable)
+          .select('id,module_key,record')
+          .order('updated_at', { ascending: false }),
+        supabase
+          .from(supabaseSettingsTable)
+          .select('github_username,github_api_base,github_token')
+          .maybeSingle(),
+      ])
 
-      if (error) {
-        setSyncStatus(`Supabase unavailable: ${error.message}`)
+      if (recordsResult.error) {
+        setSyncStatus(`Supabase unavailable: ${recordsResult.error.message}`)
         setRemoteReady(true)
+        setSettingsReady(true)
         return
       }
 
-      if (data?.length) {
-        setRecords(rowsToRecords(data))
-        setSyncStatus('Supabase records loaded.')
+      if (recordsResult.data?.length) {
+        setRecords((local) => mergeRecordSets(local, rowsToRecords(recordsResult.data)))
+        setSyncStatus('Supabase records loaded and merged with local data.')
       } else {
         setSyncStatus('Supabase is empty. Current local records will be synced.')
       }
+
+      if (!settingsResult.error && settingsResult.data) {
+        setAppSettings({
+          githubUsername: settingsResult.data.github_username ?? '',
+          githubApiBase: settingsResult.data.github_api_base || defaultSettings.githubApiBase,
+          githubToken: settingsResult.data.github_token ?? '',
+        })
+      }
+
       setRemoteReady(true)
+      setSettingsReady(true)
     }
 
     loadRemoteRecords()
   }, [isAuthenticated, remoteReady])
 
   useEffect(() => {
-    if (!supabase || !isAuthenticated || !remoteReady) return
+    if (!supabase || !isAuthenticated || !remoteReady || !session?.user?.id) return
 
+    const userId = session.user.id
     const syncTimer = window.setTimeout(async () => {
+      const rows = recordsToRows(records, userId)
+      if (!rows.length) return
+
       const { error } = await supabase
         .from(supabaseTable)
-        .upsert(recordsToRows(records), { onConflict: 'id' })
+        .upsert(rows, { onConflict: 'id' })
 
       setSyncStatus(error ? `Supabase sync failed: ${error.message}` : 'Saved to Supabase.')
     }, 700)
 
     return () => window.clearTimeout(syncTimer)
-  }, [records, isAuthenticated, remoteReady])
+  }, [records, isAuthenticated, remoteReady, session])
+
+  useEffect(() => {
+    if (!supabase || !isAuthenticated || !settingsReady || !session?.user?.id) return
+
+    const syncTimer = window.setTimeout(async () => {
+      const { error } = await supabase.from(supabaseSettingsTable).upsert(
+        {
+          user_id: session.user.id,
+          github_username: appSettings.githubUsername,
+          github_api_base: appSettings.githubApiBase,
+          github_token: appSettings.githubToken,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' },
+      )
+
+      if (error) {
+        setSyncStatus(`Settings sync failed: ${error.message}`)
+      }
+    }, 700)
+
+    return () => window.clearTimeout(syncTimer)
+  }, [appSettings, isAuthenticated, settingsReady, session])
 
   const flatRecords = useMemo(
     () =>
@@ -475,12 +531,13 @@ function App() {
   )
 
   const stats = useMemo(() => {
+    const domainYearly = records.domains.reduce((sum, item) => sum + toUsd(item), 0)
     const monthly = records.servers.reduce((sum, item) => sum + toUsd(item), 0)
-      + records.repos.reduce((sum, item) => sum + toUsd(item), 0)
       + records.accounts.reduce((sum, item) => sum + toUsd(item), 0)
       + records.subscriptions.reduce((sum, item) => sum + toUsd(item), 0)
-    const domainYearly = records.domains.reduce((sum, item) => sum + toUsd(item), 0)
-    const attention = flatRecords.filter(isAttention)
+      + domainYearly / 12
+    const renewableRecords = flatRecords.filter(isRenewableRecord)
+    const attention = renewableRecords.filter(isAttention)
     return {
       domains: records.domains.length,
       servers: records.servers.length,
@@ -489,17 +546,23 @@ function App() {
       monthly,
       yearly: monthly * 12 + domainYearly,
       upcoming: attention.filter((item) => item.status !== 'Expired').length,
-      expired: flatRecords.filter((item) => item.status === 'Expired' || daysUntil(item.expiryDate) < 0).length,
+      expired: renewableRecords.filter((item) => item.status === 'Expired' || daysUntil(item.expiryDate) < 0).length,
     }
   }, [records, flatRecords])
 
   const currentConfig = moduleConfig[activePage]
+  const pageMeta = getPageMeta(activePage)
   const visibleRecords = useMemo(() => {
     if (!currentConfig) return []
     return [...records[activePage]]
       .filter((item) => {
-        const attachedServer = records.servers.find((server) => server.id === item.serverId)
-        const haystack = `${item.name} ${item.provider} ${item.ipAddress || ''} ${item.notes || ''} ${item.subdomains || ''} ${attachedServer?.name || ''} ${attachedServer?.ipAddress || ''}`.toLowerCase()
+        const subdomainHaystack = activePage === 'domains'
+          ? normalizeSubdomains(item).map((sub) => {
+              const server = records.servers.find((entry) => entry.id === sub.serverId)
+              return `${sub.name} ${sub.notes || ''} ${server?.name || ''} ${server?.ipAddress || ''}`
+            }).join(' ')
+          : ''
+        const haystack = `${item.name} ${item.provider} ${item.ipAddress || ''} ${item.notes || ''} ${subdomainHaystack}`.toLowerCase()
         const matchesSearch = haystack.includes(query.toLowerCase())
         const matchesStatus = statusFilter === 'All' || item.status === statusFilter
         return matchesSearch && matchesStatus
@@ -511,31 +574,76 @@ function App() {
   }, [activePage, currentConfig, query, records, sortBy, statusFilter])
 
   function openCreate(moduleKey) {
-    setModal({ moduleKey, mode: 'create', values: emptyRecord })
+    const values = moduleKey === 'repos'
+      ? emptyRepoRecord
+      : moduleKey === 'projects'
+        ? emptyProjectRecord
+        : moduleKey === 'servers'
+          ? emptyServerRecord
+          : emptyRecord
+    setModal({ moduleKey, mode: 'create', values })
   }
 
   function openEdit(moduleKey, record) {
-    setModal({ moduleKey, mode: 'edit', id: record.id, values: { ...record } })
+    const values = moduleKey === 'domains'
+      ? normalizeDomainRecord(record)
+      : moduleKey === 'repos'
+        ? normalizeRepoRecord(record)
+        : moduleKey === 'projects'
+          ? normalizeProjectRecord(record)
+          : moduleKey === 'servers'
+            ? normalizeServerRecord(record)
+            : { ...record }
+    setModal({ moduleKey, mode: 'edit', id: record.id, values })
   }
 
   function saveRecord(event) {
     event.preventDefault()
-    const values = {
-      ...modal.values,
-      cost: Number(modal.values.cost || 0),
-    }
+    const values = modal.moduleKey === 'repos'
+      ? normalizeRepoRecord({
+          ...modal.values,
+          stars: Number(modal.values.stars || 0),
+          forks: Number(modal.values.forks || 0),
+          openIssues: Number(modal.values.openIssues || 0),
+          watchers: Number(modal.values.watchers || 0),
+        })
+      : modal.moduleKey === 'projects'
+        ? normalizeProjectRecord(modal.values)
+        : modal.moduleKey === 'servers'
+          ? normalizeServerRecord({
+              ...modal.values,
+              cost: Number(modal.values.cost || 0),
+              cpu: Number(modal.values.cpu || 0),
+              ramGb: Number(modal.values.ramGb || 0),
+              hostedServices: Array.isArray(modal.values.hostedServices)
+                ? modal.values.hostedServices
+                : String(modal.values.hostedServices || '')
+                  .split(/[\n,]+/)
+                  .map((item) => item.trim())
+                  .filter(Boolean),
+            })
+          : {
+              ...modal.values,
+              cost: Number(modal.values.cost || 0),
+              ...(modal.moduleKey === 'domains'
+                ? {
+                    subdomains: (modal.values.subdomains || []).filter((sub) => sub.name?.trim()),
+                  }
+                : {}),
+            }
     setRecords((current) => {
       const next = { ...current }
       if (modal.mode === 'create') {
         next[modal.moduleKey] = [
           { ...values, id: `${modal.moduleKey}-${crypto.randomUUID()}` },
-          ...current[modal.moduleKey],
+          ...(current[modal.moduleKey] || []),
         ]
       } else {
-        next[modal.moduleKey] = current[modal.moduleKey].map((item) =>
+        next[modal.moduleKey] = (current[modal.moduleKey] || []).map((item) =>
           item.id === modal.id ? { ...item, ...values } : item,
         )
       }
+      persistRecords(next)
       return next
     })
     setModal(null)
@@ -583,33 +691,46 @@ function App() {
       }
 
       const repos = await response.json()
-      const importedRepos = repos.map((repo) => ({
-        id: `github-${repo.id}`,
-        name: repo.full_name || repo.name,
-        provider: repo.owner?.login || username || 'GitHub',
-        notes: [repo.description, repo.private ? 'Private repo' : 'Public repo', repo.html_url].filter(Boolean).join(' - '),
-        cost: 0,
-        currency: 'USD',
-        renewalDate: repo.updated_at ? repo.updated_at.slice(0, 10) : '',
-        expiryDate: repo.pushed_at ? repo.pushed_at.slice(0, 10) : '',
-        status: 'Active',
-      }))
+      const importedRepos = repos.map((repo) => mapGitHubRepo(repo, username))
 
-      setRecords((current) => {
-        const incomingIds = new Set(importedRepos.map((repo) => repo.id))
-        return {
-          ...current,
-          repos: [
-            ...importedRepos.map((repo) => ({ ...current.repos.find((item) => item.id === repo.id), ...repo })),
-            ...current.repos.filter((repo) => !incomingIds.has(repo.id)),
-          ],
-        }
-      })
+      setRecords((current) => ({
+        ...current,
+        repos: mergeGitHubImportedRepos(current.repos, importedRepos),
+      }))
       setActivePage('repos')
       setGithubSyncStatus(`Imported ${importedRepos.length} GitHub repositories.`)
     } catch (error) {
       setGithubSyncStatus(`GitHub sync failed: ${error.message}`)
     }
+  }
+
+  function checkDomainHealth(record) {
+    setRecords((current) => ({
+      ...current,
+      domains: current.domains.map((domain) =>
+        domain.id === record.id
+          ? {
+              ...domain,
+              health: {
+                ...normalizeDomainRecord(domain).health,
+                lastChecked: new Date().toISOString().slice(0, 10),
+              },
+            }
+          : domain,
+      ),
+    }))
+    setDomainLookupStatus(`Health check timestamp updated for ${record.name}.`)
+  }
+
+  function updateRepoStats(results) {
+    setRecords((current) => ({
+      ...current,
+      repos: current.repos.map((repo) => {
+        const result = results.find((item) => item.id === repo.id)
+        if (!result?.stats) return normalizeRepoRecord(repo)
+        return normalizeRepoRecord({ ...repo, ...result.stats })
+      }),
+    }))
   }
 
   async function refreshDomainLookup(record) {
@@ -665,8 +786,10 @@ function App() {
     setIsAuthenticated(false)
     setActivePage('dashboard')
     setRemoteReady(!supabase)
+    setSettingsReady(!supabase)
     setModal(null)
     setDeleteTarget(null)
+    setAppSettings((current) => ({ ...current, githubToken: '' }))
   }
 
   if (!isAuthenticated) {
@@ -684,8 +807,11 @@ function App() {
           </span>
         </button>
 
-        <nav className="nav">
-          {navItems.map((item) => {
+        <nav className="nav nav-flat">
+          {navItems.map((item, index) => {
+            if (item.type === 'divider') {
+              return <div key={`divider-${index}`} className="nav-divider" />
+            }
             const Icon = item.icon
             return (
               <button
@@ -694,12 +820,18 @@ function App() {
                 type="button"
                 onClick={() => setActivePage(item.id)}
               >
-                <Icon size={18} />
+                <Icon size={17} />
                 <span>{item.label}</span>
               </button>
             )
           })}
         </nav>
+
+        <button type="button" className="command-palette-trigger" onClick={() => setCommandOpen(true)}>
+          <Search size={15} />
+          <span>Search...</span>
+          <kbd>Ctrl K</kbd>
+        </button>
 
         <div className="sidebar-card">
           <ShieldCheck size={18} />
@@ -712,39 +844,144 @@ function App() {
       </aside>
 
       <main className="main">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">founder-os</p>
-            <h1>{currentConfig ? currentConfig.title : 'Founder OS'}</h1>
-            <p className="tagline">Your personal command center for domains, servers, repos, accounts, and renewals.</p>
+        <header className="topbar page-header">
+          <div className="page-header-copy">
+            <h1 className="page-title">{pageMeta.title}</h1>
+            <p className="page-description">{pageMeta.tagline}</p>
           </div>
           <div className="topbar-actions">
+            <button type="button" className="command-action-btn" onClick={() => setCommandOpen(true)}>
+              <Search size={15} />
+              Search
+            </button>
             <label className="currency-switch">
               <span>Currency</span>
               <select value={displayCurrency} onChange={(event) => setDisplayCurrency(event.target.value)}>
                 {currencies.map((currency) => <option key={currency}>{currency}</option>)}
               </select>
             </label>
-            {currentConfig && (
-              <button className="primary-button" type="button" onClick={() => openCreate(activePage)}>
-                <Plus size={17} />
-                Add {currentConfig.singular}
-              </button>
-            )}
+            <AddAssetDropdown onAdd={(moduleKey) => {
+              setActivePage(moduleKey)
+              openCreate(moduleKey)
+            }} />
           </div>
         </header>
 
         {activePage === 'dashboard' && (
-          <Dashboard
+          <DashboardView
+            records={records}
             flatRecords={flatRecords}
             stats={stats}
             displayCurrency={displayCurrency}
+            money={money}
+            prettyDate={prettyDate}
+            fromUsd={fromUsd}
+            toUsd={toUsd}
+            getReminder={getReminder}
+            isAttention={isAttention}
             setActivePage={setActivePage}
-            openCreate={openCreate}
           />
         )}
 
-        {currentConfig && (
+        {activePage === 'infrastructure-map' && (
+          <InfrastructureMapView records={records} setActivePage={setActivePage} />
+        )}
+
+        {activePage === 'project-health' && (
+          <ProjectHealthView records={records} flatRecords={flatRecords} />
+        )}
+
+        {activePage === 'insights' && (
+          <InsightsView
+            records={records}
+            flatRecords={flatRecords}
+            displayCurrency={displayCurrency}
+            money={money}
+            fromUsd={fromUsd}
+            toUsd={toUsd}
+          />
+        )}
+
+        {activePage === 'attention' && (
+          <AttentionCenterView
+            records={records}
+            flatRecords={flatRecords}
+            setActivePage={setActivePage}
+          />
+        )}
+
+        {activePage === 'timeline' && (
+          <TimelineView records={records} />
+        )}
+
+        {activePage === 'projects' && (
+          <ProjectsView
+            records={records}
+            displayCurrency={displayCurrency}
+            money={money}
+            toUsd={toUsd}
+            fromUsd={fromUsd}
+            openCreate={openCreate}
+            openEdit={openEdit}
+            setDeleteTarget={setDeleteTarget}
+          />
+        )}
+
+        {activePage === 'domains' && (
+          <DomainsView
+            records={visibleRecords}
+            allRecords={records}
+            servers={records.servers}
+            query={query}
+            setQuery={setQuery}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            displayCurrency={displayCurrency}
+            domainLookupStatus={domainLookupStatus}
+            statuses={statuses}
+            money={money}
+            prettyDate={prettyDate}
+            toUsd={toUsd}
+            fromUsd={fromUsd}
+            isAttention={isAttention}
+            openCreate={openCreate}
+            openEdit={openEdit}
+            refreshDomainLookup={refreshDomainLookup}
+            setDeleteTarget={setDeleteTarget}
+            onCheckHealth={checkDomainHealth}
+          />
+        )}
+
+        {activePage === 'servers' && (
+          <ServersView
+            records={records}
+            displayCurrency={displayCurrency}
+            money={money}
+            prettyDate={prettyDate}
+            toUsd={toUsd}
+            fromUsd={fromUsd}
+            isAttention={isAttention}
+            openCreate={openCreate}
+            openEdit={openEdit}
+            setDeleteTarget={setDeleteTarget}
+          />
+        )}
+
+        {activePage === 'repos' && (
+          <ReposView
+            records={records.repos}
+            allRecords={records}
+            openCreate={openCreate}
+            openEdit={openEdit}
+            setDeleteTarget={setDeleteTarget}
+            onUpdateRepos={updateRepoStats}
+            githubToken={appSettings.githubToken || import.meta.env.VITE_GITHUB_TOKEN || ''}
+          />
+        )}
+
+        {currentConfig && !['domains', 'repos', 'servers', 'projects', 'dashboard', 'settings', 'infrastructure-map', 'project-health', 'insights', 'attention', 'timeline'].includes(activePage) && (
           <ModuleView
             config={currentConfig}
             moduleKey={activePage}
@@ -755,12 +992,9 @@ function App() {
             sortBy={sortBy}
             setSortBy={setSortBy}
             records={visibleRecords}
-            servers={records.servers}
             displayCurrency={displayCurrency}
             openCreate={openCreate}
             openEdit={openEdit}
-            refreshDomainLookup={refreshDomainLookup}
-            domainLookupStatus={domainLookupStatus}
             setDeleteTarget={setDeleteTarget}
           />
         )}
@@ -776,7 +1010,24 @@ function App() {
         )}
       </main>
 
-      {modal && (
+      {modal?.moduleKey === 'repos' && (
+        <RepoRecordModal
+          modal={modal}
+          setModal={setModal}
+          saveRecord={saveRecord}
+        />
+      )}
+
+      {modal?.moduleKey === 'projects' && (
+        <ProjectRecordModal
+          modal={modal}
+          setModal={setModal}
+          saveRecord={saveRecord}
+          records={records}
+        />
+      )}
+
+      {modal && !['repos', 'projects'].includes(modal.moduleKey) && (
         <RecordModal
           modal={modal}
           config={moduleConfig[modal.moduleKey]}
@@ -793,97 +1044,15 @@ function App() {
           deleteRecord={deleteRecord}
         />
       )}
+
+      <CommandPalette
+        open={commandOpen}
+        onClose={() => setCommandOpen(false)}
+        records={records}
+        onNavigate={setActivePage}
+      />
+
     </div>
-  )
-}
-
-function Dashboard({ flatRecords, stats, displayCurrency, setActivePage, openCreate }) {
-  const metricCards = [
-    { label: 'Total Domains', value: stats.domains, icon: Globe2, page: 'domains' },
-    { label: 'Total VPS / Servers', value: stats.servers, icon: Server, page: 'servers' },
-    { label: 'Total GitHub Repos', value: stats.repos, icon: FolderGit2, page: 'repos' },
-    { label: 'Total Accounts', value: stats.accounts, icon: UserCircle, page: 'accounts' },
-    { label: 'Monthly Cost', value: money(fromUsd(stats.monthly, displayCurrency), displayCurrency), icon: DollarSign },
-    { label: 'Yearly Cost', value: money(fromUsd(stats.yearly, displayCurrency), displayCurrency), icon: CalendarClock },
-    { label: 'Upcoming Renewals', value: stats.upcoming, icon: AlertTriangle },
-    { label: 'Expired / Attention Needed', value: stats.expired, icon: AlertTriangle },
-  ]
-
-  const upcoming = [...flatRecords]
-    .filter(isAttention)
-    .sort((a, b) => new Date(`${a.renewalDate}T00:00:00`) - new Date(`${b.renewalDate}T00:00:00`))
-    .slice(0, 6)
-
-  return (
-    <section className="dashboard-stack">
-      <div className="repo-hero">
-        <div>
-          <span className="repo-pill"><Database size={15} /> GitHub-profile-ready</span>
-          <h2>Personal founder dashboard to manage domains, servers, GitHub repos, accounts, subscriptions, and renewals.</h2>
-        </div>
-        <div className="hero-actions">
-          <button type="button" onClick={() => openCreate('domains')}>
-            <Plus size={16} />
-            Add asset
-          </button>
-          <button type="button" onClick={() => setActivePage('subscriptions')}>
-            <WalletCards size={16} />
-            Costs
-          </button>
-        </div>
-      </div>
-
-      <div className="metrics-grid">
-        {metricCards.map((card) => {
-          const Icon = card.icon
-          return (
-            <button
-              className="metric-card"
-              key={card.label}
-              type="button"
-              onClick={() => card.page && setActivePage(card.page)}
-            >
-              <span><Icon size={18} /></span>
-              <small>{card.label}</small>
-              <strong>{card.value}</strong>
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="content-grid">
-        <section className="panel">
-          <div className="panel-heading">
-            <h2>Renewal Radar</h2>
-            <p>Records needing attention in the next 30 days.</p>
-          </div>
-          <div className="renewal-list">
-            {upcoming.length ? upcoming.map((item) => (
-              <button className="renewal-item" key={item.id} type="button" onClick={() => setActivePage(item.moduleKey)}>
-                <span className={`status-dot ${statusClass(item.status)}`} />
-                <div>
-                  <strong>{item.name}</strong>
-                  <small>{moduleConfig[item.moduleKey].title} - {getReminder(item)}</small>
-                </div>
-                <span>{prettyDate(item.renewalDate)}</span>
-              </button>
-            )) : <EmptyState title="All clear" text="No renewals need attention right now." />}
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panel-heading">
-            <h2>Open Source Finish</h2>
-            <p>Project identity tuned for a premium GitHub profile repository.</p>
-          </div>
-          <div className="checklist">
-            {['Dark SaaS dashboard UI', 'Mock data included', 'CRUD-ready modules', 'Supabase-ready structure'].map((item) => (
-              <span key={item}><Check size={16} /> {item}</span>
-            ))}
-          </div>
-        </section>
-      </div>
-    </section>
   )
 }
 
@@ -897,17 +1066,14 @@ function ModuleView({
   sortBy,
   setSortBy,
   records,
-  servers,
   displayCurrency,
   openCreate,
   openEdit,
-  refreshDomainLookup,
-  domainLookupStatus,
   setDeleteTarget,
 }) {
   const Icon = config.icon
   return (
-    <section className="module-stack">
+    <section className="page-content module-stack">
       <div className="toolbar">
         <label className="search-box">
           <Search size={17} />
@@ -931,9 +1097,6 @@ function ModuleView({
       </div>
 
       <div className="records-table">
-        {moduleKey === 'domains' && domainLookupStatus && (
-          <div className="inline-status">{domainLookupStatus}</div>
-        )}
         <div className="table-head">
           <span>Name</span>
           <span>Provider</span>
@@ -943,20 +1106,17 @@ function ModuleView({
           <span>Actions</span>
         </div>
         {records.length ? records.map((record) => (
-          <article className={isAttention(record) ? 'record-row attention' : 'record-row'} key={record.id}>
+          <article
+            className={isAttention(record) ? 'record-row attention' : 'record-row'}
+            key={record.id}
+          >
             <div className="record-title">
               <span className="record-icon"><Icon size={17} /></span>
               <div>
                 <strong>{record.name}</strong>
                 <small>{getReminder(record)}</small>
-                {(moduleKey === 'domains' || moduleKey === 'servers' || moduleKey === 'repos') && record.notes && (
+                {(moduleKey === 'servers' || moduleKey === 'repos') && record.notes && (
                   <small className="record-note">{record.notes}</small>
-                )}
-                {moduleKey === 'domains' && (
-                  <DomainMeta record={record} servers={servers} />
-                )}
-                {moduleKey === 'domains' && record.lookup && (
-                  <DomainLookupSummary lookup={record.lookup} />
                 )}
               </div>
             </div>
@@ -977,9 +1137,6 @@ function ModuleView({
             <span data-label="Renewal">{prettyDate(record.renewalDate)}</span>
             <StatusBadge status={record.status} />
             <div className="row-actions">
-              {moduleKey === 'domains' && (
-                <button type="button" title="Lookup DNS / WHOIS" onClick={() => refreshDomainLookup(record)}><RefreshCw size={16} /></button>
-              )}
               <button type="button" title="Edit" onClick={() => openEdit(moduleKey, record)}><Edit3 size={16} /></button>
               <button type="button" title="Delete" onClick={() => setDeleteTarget({ ...record, moduleKey })}><Trash2 size={16} /></button>
             </div>
@@ -997,52 +1154,13 @@ function ModuleView({
   )
 }
 
-function DomainMeta({ record, servers }) {
-  const attachedServer = servers.find((server) => server.id === record.serverId)
-  const subdomains = String(record.subdomains || '')
-    .split(/[\n,]+/)
-    .map((item) => item.trim())
-    .filter(Boolean)
-
-  if (!attachedServer && !subdomains.length) return null
-
-  return (
-    <div className="domain-meta">
-      {subdomains.length > 0 && (
-        <span>Subdomains: {subdomains.slice(0, 6).join(', ')}{subdomains.length > 6 ? ` +${subdomains.length - 6}` : ''}</span>
-      )}
-      {attachedServer && (
-        <span>Attached VPS: {attachedServer.name}{attachedServer.ipAddress ? ` - ${attachedServer.ipAddress}` : ''}</span>
-      )}
-    </div>
-  )
-}
-
-function DomainLookupSummary({ lookup }) {
-  const aRecords = lookup.dns?.a?.value || []
-  const nsRecords = lookup.dns?.ns?.value || lookup.whois?.nameservers || []
-  const mxRecords = lookup.dns?.mx?.value || []
-  const mxLabels = mxRecords.map((mx) => `${mx.exchange} (${mx.priority})`)
-
-  return (
-    <div className="lookup-summary">
-      <span>DNS A: {aRecords.length ? aRecords.join(', ') : 'none'}</span>
-      <span>NS: {nsRecords.length ? nsRecords.slice(0, 3).join(', ') : 'none'}</span>
-      <span>MX: {mxLabels.length ? mxLabels.slice(0, 2).join(', ') : 'none'}</span>
-      <span>Registrar: {lookup.whois?.registrar || 'unknown'}</span>
-      <span>Expires: {lookup.whois?.expires ? prettyDate(lookup.whois.expires.slice(0, 10)) : 'unknown'}</span>
-      <span>Checked: {prettyDate(lookup.checkedAt.slice(0, 10))}</span>
-    </div>
-  )
-}
-
 function SettingsView({ appSettings, setAppSettings, syncStatus, githubSyncStatus, syncGitHubRepos }) {
   function updateSetting(key, value) {
     setAppSettings((current) => ({ ...current, [key]: value }))
   }
 
   return (
-    <section className="settings-grid">
+    <section className="page-content settings-grid">
       <div className="panel">
         <div className="panel-heading">
           <h2>Repository Identity</h2>
@@ -1107,8 +1225,14 @@ function SettingsView({ appSettings, setAppSettings, syncStatus, githubSyncStatu
               value={appSettings.githubToken}
               onChange={(event) => updateSetting('githubToken', event.target.value)}
               placeholder="github_pat_..."
+              autoComplete="off"
             />
           </label>
+          <p className="settings-status">
+            {supabase
+              ? 'Username and API base are saved locally. When signed in, all GitHub settings including your token sync to Supabase (not browser storage).'
+              : 'Token stays in this session only. Sign in with Supabase to persist your token securely in the cloud.'}
+          </p>
           <button className="primary-button" type="button" onClick={syncGitHubRepos}>
             <RefreshCw size={16} />
             Fetch GitHub Repos
@@ -1169,6 +1293,60 @@ function LoginPage({ loginError, handleLogin }) {
   )
 }
 
+function SubdomainListField({ subdomains, servers, onChange }) {
+  function updateSubdomain(id, patch) {
+    onChange(subdomains.map((sub) => (sub.id === id ? { ...sub, ...patch } : sub)))
+  }
+
+  function addSubdomain() {
+    onChange([
+      ...subdomains,
+      { id: `sub-${crypto.randomUUID()}`, name: '', serverId: '', notes: '' },
+    ])
+  }
+
+  function removeSubdomain(id) {
+    onChange(subdomains.filter((sub) => sub.id !== id))
+  }
+
+  return (
+    <div className="subdomain-list">
+      {subdomains.map((sub) => (
+        <div key={sub.id} className="subdomain-row">
+          <input
+            value={sub.name}
+            onChange={(event) => updateSubdomain(sub.id, { name: event.target.value })}
+            placeholder="www"
+          />
+          <select
+            value={sub.serverId || ''}
+            onChange={(event) => updateSubdomain(sub.id, { serverId: event.target.value })}
+          >
+            <option value="">No VPS attached</option>
+            {servers.map((server) => (
+              <option key={server.id} value={server.id}>
+                {server.name}{server.ipAddress ? ` - ${server.ipAddress}` : ''}
+              </option>
+            ))}
+          </select>
+          <input
+            value={sub.notes}
+            onChange={(event) => updateSubdomain(sub.id, { notes: event.target.value })}
+            placeholder="Notes for this subdomain"
+          />
+          <button type="button" title="Remove subdomain" onClick={() => removeSubdomain(sub.id)}>
+            <X size={16} />
+          </button>
+        </div>
+      ))}
+      <button className="ghost-button subdomain-add" type="button" onClick={addSubdomain}>
+        <Plus size={16} />
+        Add subdomain
+      </button>
+    </div>
+  )
+}
+
 function RecordModal({ modal, config, servers, setModal, saveRecord }) {
   return (
     <div className="modal-backdrop" role="presentation">
@@ -1180,11 +1358,21 @@ function RecordModal({ modal, config, servers, setModal, saveRecord }) {
           </div>
           <button type="button" onClick={() => setModal(null)}><X size={18} /></button>
         </div>
+        <div className="modal-body">
         <div className="form-grid">
           {config.fields.map((field) => (
-            <label key={field.key}>
+            <label key={field.key} className={field.type === 'subdomainList' ? 'full-span' : undefined}>
               <span>{field.label}</span>
-              {field.type === 'status' ? (
+              {field.type === 'subdomainList' ? (
+                <SubdomainListField
+                  subdomains={modal.values.subdomains || []}
+                  servers={servers}
+                  onChange={(subdomains) => setModal((current) => ({
+                    ...current,
+                    values: { ...current.values, subdomains },
+                  }))}
+                />
+              ) : field.type === 'status' ? (
                 <select
                   value={modal.values[field.key]}
                   onChange={(event) => setModal((current) => ({
@@ -1226,7 +1414,7 @@ function RecordModal({ modal, config, servers, setModal, saveRecord }) {
                     ...current,
                     values: { ...current.values, [field.key]: event.target.value },
                   }))}
-                  placeholder={field.key === 'subdomains' ? 'www, app, admin, api' : 'Where is this domain used or pointed?'}
+                  placeholder="Where is this domain used or pointed?"
                   rows={3}
                 />
               ) : (
@@ -1244,6 +1432,7 @@ function RecordModal({ modal, config, servers, setModal, saveRecord }) {
               )}
             </label>
           ))}
+        </div>
         </div>
         <div className="modal-actions">
           <button className="ghost-button" type="button" onClick={() => setModal(null)}>Cancel</button>
@@ -1270,17 +1459,6 @@ function ConfirmDelete({ target, setDeleteTarget, deleteRecord }) {
           <button className="danger-button" type="button" onClick={deleteRecord}>Delete</button>
         </div>
       </div>
-    </div>
-  )
-}
-
-function EmptyState({ title, text, action, actionLabel }) {
-  return (
-    <div className="empty-state">
-      <Database size={28} />
-      <strong>{title}</strong>
-      <p>{text}</p>
-      {action && <button type="button" onClick={action}><Plus size={16} /> {actionLabel}</button>}
     </div>
   )
 }

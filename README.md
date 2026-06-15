@@ -23,7 +23,7 @@ https://founder-os.maker.example
 - Dashboard cards for domains, servers, repos, accounts, costs, renewals, and attention items
 - Modules for domains, VPS/servers, GitHub repos, accounts, and subscriptions
 - Domain notes for usage context, pointing details, or internal reminders
-- Domain subdomain tracking and VPS/server attachment
+- Per-subdomain tracking with individual VPS/server attachment and notes
 - VPS/server IP address and notes for hosting context
 - Add, edit, and delete records
 - Delete confirmation modal
@@ -124,11 +124,11 @@ Founder OS currently keeps records in local React state using module arrays:
 - `accounts`
 - `subscriptions`
 
-Each record tracks a name, provider, cost, currency, renewal date, expiry date, and status. Domain records support notes, subdomains, and attached VPS/server references for where the domain is used or pointed. VPS/server records support IP addresses and notes for hosting context. Costs support `USD` and `PKR`; dashboard totals normalize records through a simple exchange-rate map before displaying them in the selected reporting currency.
+Each record tracks a name, provider, cost, currency, renewal date, expiry date, and status. Domain records support notes plus a list of subdomains, where each subdomain has its own name, attached VPS/server, and notes for where that hostname is used or pointed. VPS/server records support IP addresses and notes for hosting context. Costs support `USD` and `PKR`; dashboard totals normalize records through a simple exchange-rate map before displaying them in the selected reporting currency.
 
 Records are persisted to browser `localStorage`, so changes survive refreshes, Nginx reloads, and redeploys on the same browser/device. When Supabase env variables are configured, records also sync to the `founder_os_records` table.
 
-Run `supabase-schema.sql` in the Supabase SQL editor to create the records table.
+Run `supabase-schema.sql` in the Supabase SQL editor to create the records and settings tables.
 
 ## GitHub Auto-Fetch
 
@@ -150,7 +150,7 @@ With a token, Founder OS fetches repositories available to the token from:
 https://api.github.com/user/repos
 ```
 
-> Token note: storing a GitHub token in browser storage is convenient for a private prototype, but it is not ideal for production. For stronger security, move GitHub sync to a Supabase Edge Function or another backend so the token is never stored in the browser.
+> Token note: When Supabase is configured and you are signed in, GitHub settings (including the personal access token) sync to the `founder_os_settings` table under your user account. Tokens are never written to `localStorage`; they are cleared from memory on logout and restored on the next login. Username and API base URL are also saved locally as a fallback. For production, consider moving GitHub API calls to a Supabase Edge Function so the token never leaves the server.
 
 ## DNS and WHOIS Lookup
 

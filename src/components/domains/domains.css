@@ -1,0 +1,305 @@
+.domains-view {
+  display: grid;
+  gap: 18px;
+}
+
+.domains-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.domain-card {
+  height: 148px;
+  padding: 16px 18px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.domain-card:hover {
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
+}
+
+.domain-card.attention {
+  border-color: rgba(245, 158, 11, 0.28);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), var(--surface));
+}
+
+.domain-card-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) 0.9fr 0.9fr 0.8fr auto;
+  gap: 16px;
+  align-items: center;
+  height: 100%;
+}
+
+.domain-card-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  height: 100%;
+}
+
+.domain-avatar .domain-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.domain-avatar {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.domain-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.domain-card-copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.domain-card-title {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.domain-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.domain-health-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.domain-health-chips.compact .domain-health-label {
+  display: none;
+}
+
+.domain-health-label {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.domain-connected-assets {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.domain-connected-assets small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.domain-card-description {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.domain-card-meta,
+.domain-card-renewal {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.domain-card-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.domain-card-value {
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.domain-card-subvalue {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.domain-card-stats {
+  display: grid;
+  gap: 6px;
+}
+
+.domain-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.domain-stat span:first-child {
+  color: var(--text-muted);
+}
+
+.domain-stat strong {
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.domain-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.domain-drawer-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.domain-drawer-hero > :last-child {
+  margin-left: auto;
+}
+
+.domain-drawer-hero h3 {
+  margin: 0 0 4px;
+  color: var(--text-strong);
+  font-size: 16px;
+}
+
+.domain-drawer-hero p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.domain-drawer-section {
+  display: grid;
+  gap: 10px;
+}
+
+.domain-drawer-section h4 {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.domain-subdomain-list {
+  display: grid;
+  gap: 8px;
+}
+
+.domain-subdomain-item {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.domain-subdomain-item strong {
+  color: var(--text-strong);
+  font-size: 13px;
+}
+
+.domain-subdomain-item span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.domain-empty-panel {
+  padding: 24px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 1080px) {
+  .domain-card {
+    height: auto;
+    min-height: 148px;
+  }
+
+  .domain-card-grid {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'info actions'
+      'meta renewal'
+      'stats stats';
+    row-gap: 14px;
+  }
+
+  .domain-card-info { grid-area: info; }
+  .domain-card-meta { grid-area: meta; }
+  .domain-card-renewal { grid-area: renewal; }
+  .domain-card-stats { grid-area: stats; }
+  .domain-card-actions {
+    grid-area: actions;
+    align-self: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .domain-card-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'info'
+      'meta'
+      'renewal'
+      'stats'
+      'actions';
+  }
+
+  .domain-card-actions {
+    justify-content: flex-end;
+  }
+}
