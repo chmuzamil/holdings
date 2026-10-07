@@ -8,6 +8,7 @@ import {
   missingRates,
   parseRatesResponse,
   rateFor,
+  currencyOptions,
 } from './currency'
 
 const rates = { USD: 1, EUR: 0.9, PKR: 280 }
@@ -42,16 +43,36 @@ describe('rates in use', () => {
   it('finds currencies that have no rate', () => {
     expect(missingRates(records, rates)).toEqual(['GBP'])
   })
+
+  it('also checks the chosen main and second currencies', () => {
+    expect(missingRates(records, rates, ['AED', '', 'EUR'])).toEqual(['AED', 'GBP'])
+  })
+
+  it('offers common currencies plus any with a rate, USD first', () => {
+    const options = currencyOptions({ USD: 1, XAF: 600 })
+    expect(options[0]).toBe('USD')
+    expect(options).toContain('XAF')
+    expect(options).toContain('PKR')
+  })
 })
 
 describe('fetched rates', () => {
-  it('parses a frankfurter response and ignores junk', () => {
-    const parsed = parseRatesResponse({ base: 'USD', date: '2026-10-07', rates: { EUR: 0.89, GBP: 0.76, bad: 3, JPY: -1 } })
-    expect(parsed).toEqual({ ratesPerUsd: { USD: 1, EUR: 0.89, GBP: 0.76 }, date: '2026-10-07' })
+  it('parses an ExchangeRate-API response and ignores junk', () => {
+    const parsed = parseRatesResponse({
+      result: 'success',
+      base_code: 'USD',
+      time_last_update_unix: 1791331352,
+      rates: { USD: 1, EUR: 0.89, PKR: 276.74, bad: 3, JPY: -1 },
+    })
+    expect(parsed).toEqual({ ratesPerUsd: { USD: 1, EUR: 0.89, PKR: 276.74 }, date: '2026-10-07' })
   })
 
-  it('rejects an unexpected response', () => {
-    expect(() => parseRatesResponse({ base: 'EUR', rates: {} })).toThrow()
+  it.each([
+    [{ result: 'error', 'error-type': 'unsupported-code' }],
+    [{ result: 'success', base_code: 'EUR', rates: {} }],
+    [null],
+  ])('rejects an unexpected response %#', (json) => {
+    expect(() => parseRatesResponse(json)).toThrow()
   })
 
   it('keeps manual rates the service does not cover', () => {
@@ -59,9 +80,9 @@ describe('fetched rates', () => {
   })
 
   it('fetches from the documented URL only', async () => {
-    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ base: 'USD', rates: { EUR: 0.9 } }) })
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ result: 'success', base_code: 'USD', rates: { EUR: 0.9 } }) })
     await fetchLatestRates(fetchImpl)
-    expect(fetchImpl).toHaveBeenCalledWith('https://api.frankfurter.dev/v1/latest?base=USD')
+    expect(fetchImpl).toHaveBeenCalledWith('https://open.er-api.com/v6/latest/USD')
   })
 })
 
