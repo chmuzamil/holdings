@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
-  CalendarClock,
   ChevronDown,
   Clock,
   Database,
-  DollarSign,
   Download,
   Edit3,
   FolderGit2,
@@ -198,8 +196,6 @@ const navItems = [
   { type: 'divider' },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
-
-const creatablePages = ['projects', 'domains', 'servers', 'repos', 'accounts', 'subscriptions']
 
 const emptyRecord = {
   name: '',
@@ -853,12 +849,14 @@ function App() {
         />
       )}
 
-      <CommandPalette
-        open={commandOpen}
-        onClose={() => setCommandOpen(false)}
-        records={records}
-        onNavigate={setActivePage}
-      />
+      {commandOpen && (
+        <CommandPalette
+          open={commandOpen}
+          onClose={() => setCommandOpen(false)}
+          records={records}
+          onNavigate={setActivePage}
+        />
+      )}
 
     </div>
   )

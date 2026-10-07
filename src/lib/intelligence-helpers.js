@@ -18,10 +18,6 @@ function domainMonthlyUsd(domain, toUsd) {
   return toUsd(domain) / 12
 }
 
-function assetMonthlyUsd(record, moduleKey, toUsd) {
-  return moduleKey === 'domains' ? domainMonthlyUsd(record, toUsd) : toUsd(record)
-}
-
 export function buildCommandIndex(records) {
   const items = []
 
@@ -172,7 +168,6 @@ function priorityVariant(priority) {
 
 export function getAttentionItems(records, flatRecords) {
   const items = []
-  const now = new Date()
 
   flatRecords.filter(isRenewableRecord).forEach((record) => {
     const days = daysUntilRenewal(record)
@@ -391,14 +386,6 @@ export function getInfrastructureGraph(records) {
 
 export function getDashboardWidgets(records, flatRecords, toUsd) {
   const insights = getFounderInsights(records, toUsd)
-  const projects = (records.projects || []).map((p) => ({
-    project: normalizeProjectRecord(p),
-    monthlyUsd: computeProjectMonthlyCostUsd(p, records, toUsd),
-    connections: normalizeProjectRecord(p).domainIds.length
-      + normalizeProjectRecord(p).repoIds.length
-      + normalizeProjectRecord(p).serverIds.length
-      + normalizeProjectRecord(p).subscriptionIds.length,
-  }))
 
   const nextRenewal = flatRecords
     .filter(isRenewableRecord)
