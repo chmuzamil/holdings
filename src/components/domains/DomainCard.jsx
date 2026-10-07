@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Edit3, Eye, RefreshCw, Trash2 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
@@ -8,7 +7,6 @@ import {
   countDnsRecords,
   getCountdownLabel,
   getCountdownVariant,
-  getDomainFaviconUrl,
   normalizeSubdomains,
 } from '../../lib/domain-helpers'
 import { resolveDomainConnections } from '../../lib/asset-helpers'
@@ -21,23 +19,12 @@ function statusVariant(status) {
   return 'outline'
 }
 
+// Initials only: loading favicons from a third-party service would send the
+// user's domain list to that service.
 function DomainAvatar({ name }) {
-  const [failed, setFailed] = useState(false)
-  const favicon = getDomainFaviconUrl(name)
-
   return (
     <div className="domain-avatar">
-      {favicon && !failed ? (
-        <img
-          src={favicon}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <Avatar name={name} size="sm" className="domain-avatar-fallback" />
-      )}
+      <Avatar name={name} size="sm" className="domain-avatar-fallback" />
     </div>
   )
 }
@@ -62,16 +49,15 @@ export function DomainCard({
   const nsCount = record.lookup?.dns?.ns?.value?.length
     || record.lookup?.whois?.nameservers?.length
     || 0
-  const converted = record.currency !== displayCurrency
-    ? money(fromUsd(toUsd(record), displayCurrency), displayCurrency)
-    : null
+  const shownCost = money(fromUsd(toUsd(record), displayCurrency), displayCurrency)
+  const usdCost = displayCurrency !== 'USD' ? money(toUsd(record), 'USD') : null
   const domainHealth = getDomainHealthScore(record.health)
 
   return (
     <Card className={`domain-card ${attention ? 'attention' : ''}`.trim()}>
       <div className="domain-card-grid">
         <div className="domain-card-info">
-          <DomainAvatar key={record.name} name={record.name} />
+          <DomainAvatar name={record.name} />
           <div className="domain-card-copy">
             <h3 className="domain-card-title">{record.name}</h3>
             <div className="domain-card-badges">
@@ -107,9 +93,9 @@ export function DomainCard({
         <div className="domain-card-renewal">
           <span className="domain-card-label">Renewal</span>
           <span className="domain-card-value">
-            {money(Number(record.cost || 0), record.currency)}
+            {shownCost}
           </span>
-          {converted && <span className="domain-card-subvalue">{converted}</span>}
+          {usdCost && <span className="domain-card-subvalue">{usdCost}</span>}
           <span className="domain-card-subvalue">Expires {prettyDate(record.expiryDate)}</span>
         </div>
 

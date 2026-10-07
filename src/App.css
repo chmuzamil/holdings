@@ -1338,13 +1338,6 @@ option {
   cursor: pointer;
 }
 
-.rate-table {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-}
-
 .settings-form select {
   height: 42px;
   border: 1px solid var(--border);
@@ -1352,4 +1345,14 @@ option {
   background: rgba(0, 0, 0, 0.16);
   padding: 0 11px;
   color: inherit;
+}
+
+.demo-banner {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(125, 211, 252, 0.3);
+  border-radius: 10px;
+  background: rgba(125, 211, 252, 0.07);
+  color: var(--text-strong);
+  font-size: 14px;
 }

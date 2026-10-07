@@ -12,7 +12,6 @@ export const emptyServerRecord = {
   hostedServices: [],
   connectedProjectIds: [],
   cost: 0,
-  currency: 'USD',
   renewalDate: '',
   expiryDate: '',
   status: 'Active',

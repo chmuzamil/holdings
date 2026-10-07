@@ -1,70 +1,79 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
-  convert,
-  currenciesInUse,
+  currencyOptions,
   fetchLatestRates,
   formatMoney,
-  mergeRates,
-  missingRates,
+  fromUsd,
+  migrateRecordToUsd,
   parseRatesResponse,
   rateFor,
-  currencyOptions,
+  ratesAreStale,
+  unconvertedRecords,
 } from './currency'
 
-const rates = { USD: 1, EUR: 0.9, PKR: 280 }
+const rates = { EUR: 0.9, PKR: 280 }
 
-describe('convert', () => {
-  it('converts through USD', () => {
-    expect(convert(280, 'PKR', 'USD', rates)).toBeCloseTo(1)
-    expect(convert(9, 'EUR', 'PKR', rates)).toBeCloseTo(2800)
-    expect(convert(5, 'USD', 'USD', rates)).toBe(5)
+describe('fromUsd', () => {
+  it('converts dollars into the chosen currency', () => {
+    expect(fromUsd(10, 'PKR', rates)).toBe(2800)
+    expect(fromUsd(10, 'USD', rates)).toBe(10)
   })
 
-  it('returns null when a rate is unknown, rather than guessing', () => {
-    expect(convert(10, 'GBP', 'USD', rates)).toBeNull()
-    expect(convert(10, 'USD', 'GBP', rates)).toBeNull()
+  it('returns null when the rate is not known yet', () => {
+    expect(fromUsd(10, 'GBP', rates)).toBeNull()
   })
 
-  it('treats a missing currency as USD', () => {
-    expect(rateFor(undefined, rates)).toBe(1)
+  it('treats no currency as USD', () => {
+    expect(rateFor('', rates)).toBe(1)
   })
 })
 
-describe('rates in use', () => {
-  const records = {
-    domains: [{ currency: 'USD' }, { currency: 'PKR' }],
-    subscriptions: [{ currency: 'GBP' }, {}],
-  }
+describe('ratesAreStale', () => {
+  const now = Date.parse('2026-10-07T12:00:00Z')
 
-  it('lists currencies used by records', () => {
-    expect(currenciesInUse(records)).toEqual(['GBP', 'PKR', 'USD'])
-  })
-
-  it('finds currencies that have no rate', () => {
-    expect(missingRates(records, rates)).toEqual(['GBP'])
-  })
-
-  it('also checks the chosen main and second currencies', () => {
-    expect(missingRates(records, rates, ['AED', '', 'EUR'])).toEqual(['AED', 'GBP'])
-  })
-
-  it('offers common currencies plus any with a rate, USD first', () => {
-    const options = currencyOptions({ USD: 1, XAF: 600 })
-    expect(options[0]).toBe('USD')
-    expect(options).toContain('XAF')
-    expect(options).toContain('PKR')
+  it.each([
+    ['', true],
+    ['not a date', true],
+    ['2026-10-06T11:00:00Z', true],
+    ['2026-10-07T06:00:00Z', false],
+  ])('%s -> %s', (fetchedAt, stale) => {
+    expect(ratesAreStale(fetchedAt, now)).toBe(stale)
   })
 })
 
-describe('fetched rates', () => {
+describe('migrateRecordToUsd', () => {
+  it('converts old PKR costs at the old fixed rate and drops the currency field', () => {
+    expect(migrateRecordToUsd({ id: 'a', cost: 2780, currency: 'PKR' })).toEqual({ id: 'a', cost: 10 })
+  })
+
+  it('rounds to cents', () => {
+    expect(migrateRecordToUsd({ id: 'a', cost: 1000, currency: 'PKR' }).cost).toBe(3.6)
+  })
+
+  it('just drops a USD currency field', () => {
+    expect(migrateRecordToUsd({ id: 'a', cost: 5, currency: 'USD' })).toEqual({ id: 'a', cost: 5 })
+  })
+
+  it('leaves records without a currency alone', () => {
+    const record = { id: 'a', cost: 5 }
+    expect(migrateRecordToUsd(record)).toBe(record)
+  })
+
+  it('keeps a currency it cannot convert, so it can be flagged', () => {
+    const record = { id: 'a', cost: 5, currency: 'XYZ' }
+    expect(migrateRecordToUsd(record)).toBe(record)
+    expect(unconvertedRecords({ domains: [record, { id: 'b', cost: 1 }] })).toEqual([record])
+  })
+})
+
+describe('rates service', () => {
   it('parses an ExchangeRate-API response and ignores junk', () => {
     const parsed = parseRatesResponse({
       result: 'success',
       base_code: 'USD',
-      time_last_update_unix: 1791331352,
       rates: { USD: 1, EUR: 0.89, PKR: 276.74, bad: 3, JPY: -1 },
     })
-    expect(parsed).toEqual({ ratesPerUsd: { USD: 1, EUR: 0.89, PKR: 276.74 }, date: '2026-10-07' })
+    expect(parsed).toEqual({ EUR: 0.89, PKR: 276.74 })
   })
 
   it.each([
@@ -75,14 +84,24 @@ describe('fetched rates', () => {
     expect(() => parseRatesResponse(json)).toThrow()
   })
 
-  it('keeps manual rates the service does not cover', () => {
-    expect(mergeRates({ USD: 1, PKR: 280, EUR: 0.8 }, { USD: 1, EUR: 0.9 })).toEqual({ USD: 1, PKR: 280, EUR: 0.9 })
-  })
-
   it('fetches from the documented URL only', async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ result: 'success', base_code: 'USD', rates: { EUR: 0.9 } }) })
-    await fetchLatestRates(fetchImpl)
+    expect(await fetchLatestRates(fetchImpl)).toEqual({ EUR: 0.9 })
     expect(fetchImpl).toHaveBeenCalledWith('https://open.er-api.com/v6/latest/USD')
+  })
+
+  it('reports HTTP errors', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 429 })
+    await expect(fetchLatestRates(fetchImpl)).rejects.toThrow('429')
+  })
+})
+
+describe('currencyOptions', () => {
+  it('offers common currencies plus any the service knows, never USD', () => {
+    const options = currencyOptions({ XAF: 600 })
+    expect(options).toContain('XAF')
+    expect(options).toContain('PKR')
+    expect(options).not.toContain('USD')
   })
 })
 
