@@ -117,12 +117,6 @@ export function normalizeDomainHost(name) {
   }
 }
 
-export function getDomainFaviconUrl(name) {
-  const host = normalizeDomainHost(name)
-  if (!host) return null
-  return `https://favicone.com/${encodeURIComponent(host)}`
-}
-
 export function normalizeDomainRecord(record) {
   const { serverId, subdomains, ...rest } = record
   return {

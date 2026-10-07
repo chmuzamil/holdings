@@ -20,9 +20,8 @@ function statusVariant(status) {
 
 function OverviewTab({ record, records, servers, money, prettyDate, toUsd, fromUsd, displayCurrency }) {
   const subdomains = normalizeSubdomains(record).filter((sub) => sub.name?.trim())
-  const converted = record.currency !== displayCurrency
-    ? money(fromUsd(toUsd(record), displayCurrency), displayCurrency)
-    : null
+  const shownCost = money(fromUsd(toUsd(record), displayCurrency), displayCurrency)
+  const usdCost = displayCurrency !== 'USD' ? money(toUsd(record), 'USD') : null
   const connections = records ? resolveDomainConnections(record, records) : { projects: [], servers: [], repos: [] }
 
   return (
@@ -54,8 +53,8 @@ function OverviewTab({ record, records, servers, money, prettyDate, toUsd, fromU
           <div className="ui-kv-row">
             <span className="ui-kv-label">Renewal cost</span>
             <span className="ui-kv-value">
-              {money(Number(record.cost || 0), record.currency)}
-              {converted ? ` (${converted})` : ''}
+              {shownCost}
+              {usdCost ? ` (${usdCost})` : ''}
             </span>
           </div>
           <div className="ui-kv-row">

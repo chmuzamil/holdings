@@ -58,17 +58,16 @@ import { buildExport, exportFileName, parseImport } from './lib/data-transfer'
 import { RECORDS_KEY, SETTINGS_KEY, migrateLegacyStorage } from './lib/storage'
 import {
   RATES_ATTRIBUTION_URL,
-  RATES_SOURCE,
-  convert,
   currencyOptions,
   defaultCurrencySettings,
   fetchLatestRates,
   formatMoney,
-  legacyRatesPerUsd,
+  fromUsd as convertFromUsd,
   legacySecondCurrency,
-  mergeRates,
-  missingRates,
+  migrateRecordToUsd,
   rateFor,
+  ratesAreStale,
+  unconvertedRecords,
 } from './lib/currency'
 
 const moduleConfig = {
@@ -82,8 +81,7 @@ const moduleConfig = {
       { key: 'provider', label: 'Registrar', type: 'text' },
       { key: 'notes', label: 'Notes', type: 'textarea' },
       { key: 'subdomains', label: 'Subdomains', type: 'subdomainList' },
-      { key: 'cost', label: 'Yearly cost', type: 'number' },
-      { key: 'currency', label: 'Currency', type: 'currency' },
+      { key: 'cost', label: 'Yearly cost (USD)', type: 'number' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
       { key: 'expiryDate', label: 'Expiry date', type: 'date' },
       { key: 'status', label: 'Status', type: 'status' },
@@ -114,8 +112,7 @@ const moduleConfig = {
       { key: 'location', label: 'Location', type: 'text' },
       { key: 'hostedServices', label: 'Hosted services (comma separated)', type: 'text' },
       { key: 'notes', label: 'Notes', type: 'textarea' },
-      { key: 'cost', label: 'Monthly cost', type: 'number' },
-      { key: 'currency', label: 'Currency', type: 'currency' },
+      { key: 'cost', label: 'Monthly cost (USD)', type: 'number' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
       { key: 'expiryDate', label: 'Expiry date', type: 'date' },
       { key: 'status', label: 'Status', type: 'status' },
@@ -136,8 +133,7 @@ const moduleConfig = {
     fields: [
       { key: 'name', label: 'Account', type: 'text' },
       { key: 'provider', label: 'Platform', type: 'text' },
-      { key: 'cost', label: 'Monthly cost', type: 'number' },
-      { key: 'currency', label: 'Currency', type: 'currency' },
+      { key: 'cost', label: 'Monthly cost (USD)', type: 'number' },
       { key: 'renewalDate', label: 'Review date', type: 'date' },
       { key: 'expiryDate', label: 'Attention date', type: 'date' },
       { key: 'status', label: 'Status', type: 'status' },
@@ -151,8 +147,7 @@ const moduleConfig = {
     fields: [
       { key: 'name', label: 'Subscription', type: 'text' },
       { key: 'provider', label: 'Provider', type: 'text' },
-      { key: 'cost', label: 'Monthly cost', type: 'number' },
-      { key: 'currency', label: 'Currency', type: 'currency' },
+      { key: 'cost', label: 'Monthly cost (USD)', type: 'number' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
       { key: 'expiryDate', label: 'Expiry date', type: 'date' },
       { key: 'status', label: 'Status', type: 'status' },
@@ -171,7 +166,7 @@ const isDemoBuild = import.meta.env.VITE_DEMO === 'true'
 function normalizeRecordsByModule(recordsByModule) {
   return Object.fromEntries(
     recordModules.map((moduleKey) => {
-      const records = Array.isArray(recordsByModule[moduleKey]) ? recordsByModule[moduleKey] : []
+      const records = (Array.isArray(recordsByModule[moduleKey]) ? recordsByModule[moduleKey] : []).map((record) => migrateRecordToUsd(record))
       return [
         moduleKey,
         moduleKey === 'domains'
@@ -214,7 +209,6 @@ const emptyRecord = {
   notes: '',
   subdomains: [],
   cost: 0,
-  currency: 'USD',
   renewalDate: '',
   expiryDate: '',
   status: 'Active',
@@ -256,13 +250,19 @@ function loadSavedSettings() {
       window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(persistable))
     }
 
-    const ratesPerUsd = persistable.ratesPerUsd || legacyRatesPerUsd
-    const ratesSource = persistable.ratesPerUsd ? persistable.ratesSource : 'Rate from an earlier version'
-    const secondCurrency = persistable.ratesPerUsd ? persistable.secondCurrency ?? '' : legacySecondCurrency
-    return { ...defaultSettings, ...persistable, ratesPerUsd, ratesSource, secondCurrency, githubToken: '' }
+    const { baseCurrency, ratesSource, ratesUpdatedAt, extraCurrencies, ...current } = persistable
+    const isLegacy = !('secondCurrency' in persistable) && !persistable.ratesPerUsd
+    const secondCurrency = isLegacy ? legacySecondCurrency : persistable.secondCurrency || ''
+    return { ...defaultSettings, ...current, secondCurrency, githubToken: '' }
   } catch {
     return { ...defaultSettings }
   }
+}
+
+// Costs typed into the form are in USD, so a saved record never keeps an old currency.
+function withoutCurrency(record) {
+  const { currency, ...rest } = record
+  return rest
 }
 
 function persistRecords(records) {
@@ -321,46 +321,37 @@ function App() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [commandOpen, setCommandOpen] = useState(false)
 
+  // All amounts are stored in USD. The second currency is for display only and
+  // can be shown once its rate has been fetched.
   const rates = appSettings.ratesPerUsd
-  const mainCurrency = rateFor(appSettings.baseCurrency, rates) ? appSettings.baseCurrency : 'USD'
-  const secondCurrency = appSettings.secondCurrency && appSettings.secondCurrency !== mainCurrency
-    && rateFor(appSettings.secondCurrency, rates) ? appSettings.secondCurrency : ''
-  const displayCurrency = showSecondCurrency && secondCurrency ? secondCurrency : mainCurrency
-  const setDisplayCurrency = (currency) => setShowSecondCurrency(currency === secondCurrency)
-  // Costs in a currency without a rate count as 0 in totals; a banner says so.
-  const toUsd = useCallback((record) => convert(record.cost, record.currency || 'USD', 'USD', rates) ?? 0, [rates])
-  const fromUsd = useCallback((value, currency) => convert(value, 'USD', currency, rates) ?? 0, [rates])
+  const secondCurrency = appSettings.secondCurrency
+  const secondReady = Boolean(secondCurrency && rateFor(secondCurrency, rates))
+  const displayCurrency = showSecondCurrency && secondReady ? secondCurrency : 'USD'
+  const setDisplayCurrency = (currency) => setShowSecondCurrency(currency !== 'USD')
+  // A cost still carrying a currency we couldn't convert is left out of totals; a banner says so.
+  const toUsd = useCallback((record) => (record.currency && record.currency !== 'USD' ? 0 : Number(record.cost || 0)), [])
+  const fromUsd = useCallback((value, currency) => convertFromUsd(value, currency, rates) ?? value, [rates])
   const money = formatMoney
-  const ratelessCurrencies = useMemo(
-    () => missingRates(records, rates, [appSettings.baseCurrency, appSettings.secondCurrency]),
-    [records, rates, appSettings.baseCurrency, appSettings.secondCurrency],
-  )
+  const unconverted = useMemo(() => unconvertedRecords(records), [records])
 
-  async function refreshRates() {
-    setRatesStatus('Fetching rates…')
-    try {
-      const { ratesPerUsd, date } = await fetchLatestRates()
-      setAppSettings((current) => ({
-        ...current,
-        ratesPerUsd: mergeRates(current.ratesPerUsd, ratesPerUsd),
-        ratesUpdatedAt: date,
-        ratesSource: RATES_SOURCE,
-      }))
-      setRatesStatus(`Updated rates for ${Object.keys(ratesPerUsd).length} currencies.`)
-    } catch (error) {
-      setRatesStatus(`Could not fetch rates: ${error.message}`)
+  // Fetch the second currency's rate when it is chosen, and refresh it daily.
+  const ratesStale = ratesAreStale(appSettings.ratesFetchedAt)
+  useEffect(() => {
+    if (!secondCurrency || (!ratesStale && rateFor(secondCurrency, rates))) return
+    let cancelled = false
+    fetchLatestRates()
+      .then((ratesPerUsd) => {
+        if (cancelled) return
+        setAppSettings((current) => ({ ...current, ratesPerUsd, ratesFetchedAt: new Date().toISOString() }))
+        setRatesStatus(ratesPerUsd[secondCurrency] ? '' : `The rates service has no rate for ${secondCurrency}.`)
+      })
+      .catch((error) => {
+        if (!cancelled) setRatesStatus(`Could not fetch the ${secondCurrency} rate: ${error.message}`)
+      })
+    return () => {
+      cancelled = true
     }
-  }
-
-  function setRate(currency, value) {
-    setAppSettings((current) => {
-      const ratesPerUsd = { ...current.ratesPerUsd }
-      if (value === '') delete ratesPerUsd[currency]
-      else ratesPerUsd[currency] = Number(value)
-      const today = new Date().toLocaleDateString('en-CA')
-      return { ...current, ratesPerUsd, ratesSource: 'Edited by hand', ratesUpdatedAt: today }
-    })
-  }
+  }, [secondCurrency, ratesStale, rates])
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -440,7 +431,7 @@ function App() {
         : moduleKey === 'servers'
           ? emptyServerRecord
           : emptyRecord
-    setModal({ moduleKey, mode: 'create', values: 'currency' in values ? { ...values, currency: displayCurrency } : values })
+    setModal({ moduleKey, mode: 'create', values })
   }
 
   function openEdit(moduleKey, record) {
@@ -495,12 +486,12 @@ function App() {
       if (modal.mode === 'create') {
         const now = new Date().toISOString()
         next[modal.moduleKey] = [
-          { ...values, id: `${modal.moduleKey}-${crypto.randomUUID()}`, addedAt: now, editedAt: now },
+          withoutCurrency({ ...values, id: `${modal.moduleKey}-${crypto.randomUUID()}`, addedAt: now, editedAt: now }),
           ...(current[modal.moduleKey] || []),
         ]
       } else {
         next[modal.moduleKey] = (current[modal.moduleKey] || []).map((item) =>
-          item.id === modal.id ? { ...item, ...values, editedAt: new Date().toISOString() } : item,
+          item.id === modal.id ? withoutCurrency({ ...item, ...values, editedAt: new Date().toISOString() }) : item,
         )
       }
       persistRecords(next)
@@ -610,6 +601,10 @@ function App() {
   }
 
   async function refreshDomainLookup(record) {
+    if (isDemoBuild) {
+      setDomainLookupStatus('DNS checks are turned off in the demo. Self-host Holdings to check your own domains.')
+      return
+    }
     setDomainLookupStatus(`Checking ${record.name}...`)
     try {
       const response = await fetch(`/api/domain-lookup?domain=${encodeURIComponent(record.name)}`)
@@ -689,8 +684,10 @@ function App() {
               <label className="currency-switch">
                 <span>Currency</span>
                 <select value={displayCurrency} onChange={(event) => setDisplayCurrency(event.target.value)}>
-                  <option>{mainCurrency}</option>
-                  <option>{secondCurrency}</option>
+                  <option value="USD">USD</option>
+                  <option value={secondCurrency} disabled={!secondReady}>
+                    {secondReady ? secondCurrency : `${secondCurrency} (getting rate…)`}
+                  </option>
                 </select>
               </label>
             )}
@@ -701,11 +698,21 @@ function App() {
           </div>
         </header>
 
-        {ratelessCurrencies.length > 0 && (
+        {isDemoBuild && (
+          <div className="page-content">
+            <p className="demo-banner" role="note">
+              This is a demo with made-up data. Anything you change stays in your browser only.{' '}
+              <button type="button" className="link-button" onClick={loadDemoData}>Reset the demo</button>
+            </p>
+          </div>
+        )}
+
+        {unconverted.length > 0 && (
           <div className="page-content">
             <p className="rate-warning" role="status">
-              No exchange rate for {ratelessCurrencies.join(', ')}. Those costs are left out of totals.{' '}
-              <button type="button" className="link-button" onClick={() => setActivePage('settings')}>Add a rate in Settings</button>
+              {unconverted.length === 1 ? '1 item has' : `${unconverted.length} items have`} a cost in a currency that
+              couldn&apos;t be converted to USD ({[...new Set(unconverted.map((item) => item.currency))].join(', ')}): {unconverted.map((item) => item.name).join(', ')}.
+              Edit {unconverted.length === 1 ? 'it' : 'them'} and enter the cost in USD. Until then {unconverted.length === 1 ? 'it is' : 'they are'} left out of totals.
             </p>
           </div>
         )}
@@ -865,10 +872,7 @@ function App() {
             exportRecords={exportRecords}
             loadDemoData={loadDemoData}
             deleteAllData={deleteAllData}
-            records={records}
-            refreshRates={refreshRates}
             ratesStatus={ratesStatus}
-            setRate={setRate}
             importRecords={importRecords}
             transferStatus={transferStatus}
           />
@@ -897,7 +901,6 @@ function App() {
           modal={modal}
           config={moduleConfig[modal.moduleKey]}
           servers={records.servers}
-          currencyChoices={currencyOptions(rates)}
           setModal={setModal}
           saveRecord={saveRecord}
         />
@@ -998,11 +1001,9 @@ function ModuleView({
               )}
             </span>
             <span data-label="Cost">
-              {money(Number(record.cost || 0), record.currency)}
-              {record.currency !== displayCurrency && (
-                <small className="converted-cost">
-                  {money(fromUsd(toUsd(record), displayCurrency), displayCurrency)}
-                </small>
+              {money(fromUsd(toUsd(record), displayCurrency), displayCurrency)}
+              {displayCurrency !== 'USD' && (
+                <small className="converted-cost">{money(toUsd(record), 'USD')}</small>
               )}
             </span>
             <span data-label="Renewal">{prettyDate(record.renewalDate)}</span>
@@ -1035,10 +1036,7 @@ function SettingsView({
   transferStatus,
   loadDemoData,
   deleteAllData,
-  records,
-  refreshRates,
   ratesStatus,
-  setRate,
 }) {
   function updateSetting(key, value) {
     setAppSettings((current) => ({ ...current, [key]: value }))
@@ -1083,10 +1081,7 @@ function SettingsView({
       <CurrencySettings
         appSettings={appSettings}
         updateSetting={updateSetting}
-        records={records}
-        refreshRates={refreshRates}
         ratesStatus={ratesStatus}
-        setRate={setRate}
       />
 
       <div className="panel settings-wide">
@@ -1147,73 +1142,37 @@ function SettingsView({
   )
 }
 
-function CurrencySettings({ appSettings, updateSetting, records, refreshRates, ratesStatus, setRate }) {
+function CurrencySettings({ appSettings, updateSetting, ratesStatus }) {
   const rates = appSettings.ratesPerUsd || {}
-  const [adding, setAdding] = useState('')
-  const used = new Set(Object.values(records).flat().map((item) => item.currency).filter(Boolean))
-  const extra = appSettings.extraCurrencies || []
-  const options = currencyOptions(rates)
-  const shown = [...new Set([...used, ...extra, appSettings.baseCurrency, appSettings.secondCurrency])]
-    .filter((code) => code && code !== 'USD')
-    .sort()
+  const second = appSettings.secondCurrency
+  const rate = rateFor(second, rates)
 
   return (
     <div className="panel settings-wide">
       <div className="panel-heading">
         <h2>Currency</h2>
         <p>
-          Totals are shown in your main currency. Pick a second currency to get a switch in the top bar. Each cost keeps
-          its own currency and is converted with the rates below (1 USD = …). {appSettings.ratesSource && <>Source: {appSettings.ratesSource}{appSettings.ratesUpdatedAt && `, ${appSettings.ratesUpdatedAt}`}.</>}
+          All costs are entered and stored in US dollars. Pick a second currency to switch totals to it from the top bar.
         </p>
       </div>
       <div className="settings-form">
         <label>
-          <span>Main currency</span>
-          <select value={appSettings.baseCurrency} onChange={(event) => updateSetting('baseCurrency', event.target.value)}>
-            {options.map((code) => <option key={code}>{code}</option>)}
-          </select>
-        </label>
-        <label>
           <span>Second currency</span>
-          <select value={appSettings.secondCurrency || ''} onChange={(event) => updateSetting('secondCurrency', event.target.value)}>
+          <select value={second || ''} onChange={(event) => updateSetting('secondCurrency', event.target.value)}>
             <option value="">None</option>
-            {options.filter((code) => code !== appSettings.baseCurrency).map((code) => <option key={code}>{code}</option>)}
+            {currencyOptions(rates).map((code) => <option key={code}>{code}</option>)}
           </select>
         </label>
-        <div className="rate-table">
-          {shown.map((code) => (
-            <label key={code}>
-              <span>1 USD = {code}{rates[code] ? '' : ' (missing)'}</span>
-              <input
-                type="number"
-                min="0"
-                step="any"
-                value={rates[code] ?? ''}
-                onChange={(event) => setRate(code, event.target.value)}
-              />
-            </label>
-          ))}
-          <label>
-            <span>Add a currency</span>
-            <select
-              value={adding}
-              onChange={(event) => {
-                setAdding('')
-                if (event.target.value) updateSetting('extraCurrencies', [...extra, event.target.value])
-              }}
-            >
-              <option value="">Choose…</option>
-              {options.filter((code) => !shown.includes(code) && code !== 'USD').map((code) => <option key={code}>{code}</option>)}
-            </select>
-          </label>
-        </div>
-        <button className="ghost-button" type="button" onClick={refreshRates}>
-          <RefreshCw size={16} />
-          Fetch latest rates
-        </button>
+        {second && (
+          <p className="settings-status">
+            {rate
+              ? <>1 USD = {rate.toLocaleString(undefined, { maximumFractionDigits: 4 })} {second}, updated {new Date(appSettings.ratesFetchedAt).toLocaleString()}.</>
+              : <>Getting the {second} rate…</>}
+          </p>
+        )}
         <p className="settings-status">
-          Optional. Asks open.er-api.com for today&apos;s rates (about 160 currencies, updated daily). Only the request
-          itself is sent, none of your data. Rates you typed for currencies it doesn&apos;t cover are kept.{' '}
+          When a second currency is set, its rate is fetched from open.er-api.com and refreshed once a day. Only the request
+          itself is sent, none of your data.{' '}
           <a href={RATES_ATTRIBUTION_URL} target="_blank" rel="noreferrer">Rates By Exchange Rate API</a>
         </p>
         {ratesStatus && <p className="settings-status">{ratesStatus}</p>}
@@ -1305,7 +1264,7 @@ function SubdomainListField({ subdomains, servers, onChange }) {
   )
 }
 
-function RecordModal({ modal, config, servers, setModal, saveRecord, currencyChoices }) {
+function RecordModal({ modal, config, servers, setModal, saveRecord }) {
   return (
     <div className="modal-backdrop" role="presentation">
       <form className="modal" onSubmit={saveRecord}>
@@ -1339,16 +1298,6 @@ function RecordModal({ modal, config, servers, setModal, saveRecord, currencyCho
                   }))}
                 >
                   {statuses.map((status) => <option key={status}>{status}</option>)}
-                </select>
-              ) : field.type === 'currency' ? (
-                <select
-                  value={modal.values[field.key]}
-                  onChange={(event) => setModal((current) => ({
-                    ...current,
-                    values: { ...current.values, [field.key]: event.target.value },
-                  }))}
-                >
-                  {currencyChoices.map((currency) => <option key={currency}>{currency}</option>)}
                 </select>
               ) : field.type === 'serverLink' ? (
                 <select
