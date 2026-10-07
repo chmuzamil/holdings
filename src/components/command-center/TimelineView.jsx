@@ -1,6 +1,6 @@
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
-import { getAssetTimeline } from '../../lib/intelligence-helpers'
+import { getAssetTimeline } from '../../lib/timeline'
 import { moduleConfig } from '../../lib/module-config'
 import './command-center.css'
 
@@ -9,6 +9,14 @@ export function TimelineView({ records }) {
 
   return (
     <section className="page-content cc-page">
+      {!timeline.length && (
+        <Card className="command-panel">
+          <p className="settings-status">
+            Nothing here yet. Events appear when you add or edit assets, import repos from GitHub,
+            or run a DNS check on a domain.
+          </p>
+        </Card>
+      )}
       <div className="timeline">
         {timeline.map((yearBlock) => (
           <Card key={yearBlock.year} className="command-panel">

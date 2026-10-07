@@ -209,7 +209,7 @@ export function getAttentionItems(records, flatRecords) {
       items.push({
         id: `health-${domain.id}`,
         priority: 'warning',
-        label: 'Missing health check',
+        label: 'DNS never checked',
         detail: domain.name,
         moduleKey: 'domains',
         recordId: domain.id,
@@ -284,89 +284,6 @@ export function getHealthScore(records, flatRecords) {
   return getHealthScoreBreakdown(records, flatRecords)
 }
 
-export function getActivityFeed(records, limit = 8) {
-  const events = []
-
-  records.domains.forEach((d) => {
-    if (d.renewalDate) {
-      events.push({ date: d.renewalDate, title: `Domain ${d.name}`, detail: 'Renewal scheduled', type: 'domain', moduleKey: 'domains' })
-    }
-    events.push({ date: '2026-01-01', title: `Added domain ${d.name}`, detail: 'Domain tracked', type: 'added', moduleKey: 'domains' })
-  })
-
-  records.servers.forEach((s) => {
-    events.push({ date: s.renewalDate || '2025-06-01', title: `Server ${s.name}`, detail: 'Infrastructure updated', type: 'server', moduleKey: 'servers' })
-  })
-
-  ;(records.projects || []).forEach((p) => {
-    const np = normalizeProjectRecord(p)
-    events.push({ date: '2026-03-01', title: `Created project ${np.name}`, detail: np.status, type: 'project', moduleKey: 'projects' })
-  })
-
-  records.repos.forEach((r) => {
-    const nr = normalizeRepoRecord(r)
-    if (nr.lastCommitAt) {
-      events.push({ date: nr.lastCommitAt, title: `Updated ${nr.name}`, detail: 'Repository push', type: 'repo', moduleKey: 'repos' })
-    }
-  })
-
-  records.subscriptions.forEach((s) => {
-    events.push({ date: s.renewalDate || '2026-01-01', title: `Subscription ${s.name}`, detail: 'Billing cycle', type: 'subscription', moduleKey: 'subscriptions' })
-  })
-
-  return events
-    .filter((e) => e.date)
-    .sort((a, b) => new Date(`${b.date}T00:00:00`) - new Date(`${a.date}T00:00:00`))
-    .slice(0, limit)
-}
-
-const TIMELINE_EVENTS = [
-  { year: 2024, label: 'Created PakDataKit', moduleKey: 'projects' },
-  { year: 2025, label: 'Added Main VPS', moduleKey: 'servers' },
-  { year: 2026, label: 'Created Founder OS', moduleKey: 'projects' },
-  { year: 2026, label: 'Registered backups.example', moduleKey: 'domains' },
-  { year: 2026, label: 'Added SpaceMail', moduleKey: 'subscriptions' },
-]
-
-export function getAssetTimeline(records) {
-  const derived = []
-
-  records.repos.forEach((r) => {
-    const nr = normalizeRepoRecord(r)
-    if (nr.createdAt) {
-      derived.push({
-        year: new Date(`${nr.createdAt}T00:00:00`).getFullYear(),
-        label: `Created ${nr.name}`,
-        moduleKey: 'repos',
-        date: nr.createdAt,
-      })
-    }
-  })
-
-  records.domains.forEach((d) => {
-    if (d.renewalDate) {
-      derived.push({
-        year: new Date(`${d.renewalDate}T00:00:00`).getFullYear(),
-        label: `Registered ${d.name}`,
-        moduleKey: 'domains',
-        date: d.renewalDate,
-      })
-    }
-  })
-
-  const merged = [...TIMELINE_EVENTS, ...derived]
-  const byYear = merged.reduce((acc, event) => {
-    if (!acc[event.year]) acc[event.year] = []
-    acc[event.year].push(event)
-    return acc
-  }, {})
-
-  return Object.keys(byYear)
-    .map(Number)
-    .sort((a, b) => b - a)
-    .map((year) => ({ year, events: byYear[year] }))
-}
-
 export function getInfrastructureGraph(records) {
   return (records.projects || []).map((project) => {
     const normalized = normalizeProjectRecord(project)
@@ -409,7 +326,6 @@ export function getDashboardWidgets(records, flatRecords, toUsd) {
     latestDomain,
     latestServer,
     health: getHealthScore(records, flatRecords),
-    activity: getActivityFeed(records, 6),
     infrastructurePreview: getInfrastructureGraph(records).slice(0, 3),
   }
 }

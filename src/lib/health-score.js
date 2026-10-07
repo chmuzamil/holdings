@@ -8,14 +8,15 @@ export const HEALTH_FACTORS = [
   { id: 'renewals', label: 'Renewals on track', weight: 'Critical −8 · Warning −4' },
   { id: 'links', label: 'Projects linked to assets', weight: 'Info −2 each' },
   { id: 'repos', label: 'Repository activity', weight: 'Stale repo −4' },
-  { id: 'domains', label: 'Domain health checks', weight: 'Missing check −4' },
+  { id: 'domains', label: 'Domain DNS checks', weight: 'Never checked −4' },
 ]
 
 export function getDomainHealthScore(health) {
-  if (!health) return { score: 50, label: 'Unknown' }
+  if (!health?.lastChecked) return { score: null, label: 'Not checked' }
   const map = { healthy: 100, warning: 65, missing: 25, unknown: 50 }
-  const keys = ['dns', 'nameservers', 'email', 'website']
-  const avg = keys.reduce((sum, key) => sum + (map[health[key]] ?? 50), 0) / keys.length
+  // "none" (e.g. no email set up on purpose) doesn't count for or against.
+  const statuses = ['dns', 'nameservers', 'email'].map((key) => health[key]).filter((status) => status !== 'none')
+  const avg = statuses.reduce((sum, status) => sum + (map[status] ?? 50), 0) / statuses.length
   const score = Math.round(avg)
   const label = score >= 85 ? 'Healthy' : score >= 60 ? 'Fair' : 'At risk'
   return { score, label }
@@ -63,7 +64,7 @@ export function getHealthScoreBreakdown(records, flatRecords) {
     const d = normalizeDomainRecord(domain)
     if (!d.health?.lastChecked) {
       score -= 4
-      factors.push({ type: 'warning', text: `${domain.name} missing health check` })
+      factors.push({ type: 'warning', text: `${domain.name} has never had a DNS check` })
     }
   })
 
@@ -106,35 +107,6 @@ export function getHealthRecommendations(health) {
   }
 
   return recs.slice(0, 6)
-}
-
-export function getHealthScoreTimeline(records, flatRecords) {
-  const current = getHealthScoreBreakdown(records, flatRecords)
-  const events = [...(current.factors || [])].map((factor, index) => ({
-    daysAgo: (index + 1) * 14,
-    delta: factor.type === 'critical' ? -8 : factor.type === 'warning' ? -4 : -2,
-    reason: factor.text,
-  }))
-
-  let score = current.score
-  const points = [
-    { label: 'Today', score: current.score, reason: 'Current infrastructure health' },
-  ]
-
-  events.forEach((event) => {
-    score = Math.min(100, score - event.delta)
-    points.unshift({
-      label: `${event.daysAgo}d ago`,
-      score,
-      reason: event.reason,
-    })
-  })
-
-  if (points.length < 3) {
-    points.unshift({ label: '30d ago', score: Math.min(100, current.score + 6), reason: 'Baseline before recent changes' })
-  }
-
-  return points.slice(-5)
 }
 
 export function getProjectConnectionHealth(project) {
