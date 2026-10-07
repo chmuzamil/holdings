@@ -126,9 +126,6 @@ export function getDomainFaviconUrl(name) {
 export function normalizeDomainRecord(record) {
   const { serverId, subdomains, ...rest } = record
   return {
-    connectedProjectIds: [],
-    connectedServerIds: [],
-    connectedRepoIds: [],
     ...rest,
     subdomains: normalizeSubdomains(record),
     health: normalizeDomainHealth(record),

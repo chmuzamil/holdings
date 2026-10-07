@@ -136,7 +136,6 @@ export function ProjectDetailsDrawer({
   open,
   onClose,
   money,
-  prettyDate,
   toUsd,
   fromUsd,
   displayCurrency,

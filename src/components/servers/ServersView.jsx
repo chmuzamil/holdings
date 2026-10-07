@@ -28,7 +28,7 @@ export function ServersView({
   const [statusFilter, setStatusFilter] = useState('All')
   const [selectedServer, setSelectedServer] = useState(null)
 
-  const servers = records.servers || []
+  const servers = useMemo(() => records.servers || [], [records.servers])
   const normalized = useMemo(() => servers.map(normalizeServerRecord), [servers])
 
   const visibleServers = useMemo(() => {

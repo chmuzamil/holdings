@@ -17,6 +17,10 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Destructuring a field out to drop it from the rest object is intentional.
+      'no-unused-vars': ['error', { ignoreRestSiblings: true }],
+    },
   },
   {
     files: ['server/**/*.{js,mjs}', '*.config.js'],

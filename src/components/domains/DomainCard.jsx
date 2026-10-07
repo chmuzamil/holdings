@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Edit3, Eye, RefreshCw, Trash2 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
@@ -24,10 +24,6 @@ function statusVariant(status) {
 function DomainAvatar({ name }) {
   const [failed, setFailed] = useState(false)
   const favicon = getDomainFaviconUrl(name)
-
-  useEffect(() => {
-    setFailed(false)
-  }, [name])
 
   return (
     <div className="domain-avatar">
@@ -75,7 +71,7 @@ export function DomainCard({
     <Card className={`domain-card ${attention ? 'attention' : ''}`.trim()}>
       <div className="domain-card-grid">
         <div className="domain-card-info">
-          <DomainAvatar name={record.name} />
+          <DomainAvatar key={record.name} name={record.name} />
           <div className="domain-card-copy">
             <h3 className="domain-card-title">{record.name}</h3>
             <div className="domain-card-badges">
