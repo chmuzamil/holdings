@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   ChevronDown,
@@ -55,6 +55,17 @@ import { ProjectHealthView } from './components/command-center/ProjectHealthView
 import { isRenewableModule, isRenewableRecord } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
 import { buildExport, exportFileName, parseImport } from './lib/data-transfer'
+import {
+  CURRENCIES,
+  convert,
+  defaultCurrencySettings,
+  fetchLatestRates,
+  formatMoney,
+  legacyRatesPerUsd,
+  mergeRates,
+  missingRates,
+  rateFor,
+} from './lib/currency'
 
 const moduleConfig = {
   domains: {
@@ -146,11 +157,6 @@ const moduleConfig = {
 }
 
 const statuses = ['Active', 'Expiring Soon', 'Expired', 'Cancelled']
-const currencies = ['USD', 'PKR']
-const currencyRatesToUsd = {
-  USD: 1,
-  PKR: 1 / 278,
-}
 
 const storageKey = 'founder-os-records-v2'
 const legacyStorageKey = 'founder-os-records-v1'
@@ -206,7 +212,7 @@ const emptyRecord = {
   notes: '',
   subdomains: [],
   cost: 0,
-  currency: 'PKR',
+  currency: 'USD',
   renewalDate: '',
   expiryDate: '',
   status: 'Active',
@@ -216,6 +222,7 @@ const defaultSettings = {
   githubUsername: '',
   githubApiBase: 'https://api.github.com',
   githubToken: '',
+  ...defaultCurrencySettings,
 }
 
 function persistableSettings(settings) {
@@ -254,7 +261,9 @@ function loadSavedSettings() {
       window.localStorage.setItem(settingsStorageKey, JSON.stringify(persistable))
     }
 
-    return { ...defaultSettings, ...persistable, githubToken: '' }
+    const ratesPerUsd = persistable.ratesPerUsd || legacyRatesPerUsd
+    const ratesSource = persistable.ratesPerUsd ? persistable.ratesSource : 'Rate from an earlier version'
+    return { ...defaultSettings, ...persistable, ratesPerUsd, ratesSource, githubToken: '' }
   } catch {
     return { ...defaultSettings }
   }
@@ -266,22 +275,6 @@ function persistRecords(records) {
   } catch {
     // ignore quota errors
   }
-}
-
-function money(value, currency = 'PKR') {
-  return new Intl.NumberFormat(currency === 'PKR' ? 'en-PK' : 'en-US', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
-function toUsd(record) {
-  return Number(record.cost || 0) * (currencyRatesToUsd[record.currency] || 1)
-}
-
-function fromUsd(value, currency) {
-  return currency === 'PKR' ? value / currencyRatesToUsd.PKR : value
 }
 
 function prettyDate(value) {
@@ -322,14 +315,49 @@ function App() {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [sortBy, setSortBy] = useState('renewalDate')
-  const [displayCurrency, setDisplayCurrency] = useState('PKR')
   const [appSettings, setAppSettings] = useState(loadSavedSettings)
+  const [ratesStatus, setRatesStatus] = useState('')
   const [githubSyncStatus, setGithubSyncStatus] = useState('')
   const [domainLookupStatus, setDomainLookupStatus] = useState('')
   const [transferStatus, setTransferStatus] = useState('')
   const [modal, setModal] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [commandOpen, setCommandOpen] = useState(false)
+
+  const rates = appSettings.ratesPerUsd
+  const displayCurrency = rateFor(appSettings.baseCurrency, rates) ? appSettings.baseCurrency : 'USD'
+  const setDisplayCurrency = (baseCurrency) => setAppSettings((current) => ({ ...current, baseCurrency }))
+  // Costs in a currency without a rate count as 0 in totals; a banner says so.
+  const toUsd = useCallback((record) => convert(record.cost, record.currency || 'USD', 'USD', rates) ?? 0, [rates])
+  const fromUsd = useCallback((value, currency) => convert(value, 'USD', currency, rates) ?? 0, [rates])
+  const money = formatMoney
+  const ratelessCurrencies = useMemo(() => missingRates(records, rates), [records, rates])
+
+  async function refreshRates() {
+    setRatesStatus('Fetching rates…')
+    try {
+      const { ratesPerUsd, date } = await fetchLatestRates()
+      setAppSettings((current) => ({
+        ...current,
+        ratesPerUsd: mergeRates(current.ratesPerUsd, ratesPerUsd),
+        ratesUpdatedAt: date,
+        ratesSource: 'European Central Bank, via frankfurter.dev',
+      }))
+      setRatesStatus(`Updated rates for ${Object.keys(ratesPerUsd).length} currencies.`)
+    } catch (error) {
+      setRatesStatus(`Could not fetch rates: ${error.message}`)
+    }
+  }
+
+  function setRate(currency, value) {
+    setAppSettings((current) => {
+      const ratesPerUsd = { ...current.ratesPerUsd }
+      if (value === '') delete ratesPerUsd[currency]
+      else ratesPerUsd[currency] = Number(value)
+      const today = new Date().toLocaleDateString('en-CA')
+      return { ...current, ratesPerUsd, ratesSource: 'Edited by hand', ratesUpdatedAt: today }
+    })
+  }
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -376,7 +404,7 @@ function App() {
       upcoming: attention.filter((item) => item.status !== 'Expired').length,
       expired: renewableRecords.filter((item) => item.status === 'Expired' || daysUntil(item.expiryDate) < 0).length,
     }
-  }, [records, flatRecords])
+  }, [records, flatRecords, toUsd])
 
   const currentConfig = moduleConfig[activePage]
   const pageMeta = getPageMeta(activePage)
@@ -399,7 +427,7 @@ function App() {
         if (sortBy === 'cost') return toUsd(b) - toUsd(a)
         return new Date(`${a[sortBy] || '2999-12-31'}T00:00:00`) - new Date(`${b[sortBy] || '2999-12-31'}T00:00:00`)
       })
-  }, [activePage, currentConfig, query, records, sortBy, statusFilter])
+  }, [activePage, currentConfig, query, records, sortBy, statusFilter, toUsd])
 
   function openCreate(moduleKey) {
     const values = moduleKey === 'repos'
@@ -409,7 +437,7 @@ function App() {
         : moduleKey === 'servers'
           ? emptyServerRecord
           : emptyRecord
-    setModal({ moduleKey, mode: 'create', values })
+    setModal({ moduleKey, mode: 'create', values: 'currency' in values ? { ...values, currency: displayCurrency } : values })
   }
 
   function openEdit(moduleKey, record) {
@@ -657,7 +685,7 @@ function App() {
             <label className="currency-switch">
               <span>Currency</span>
               <select value={displayCurrency} onChange={(event) => setDisplayCurrency(event.target.value)}>
-                {currencies.map((currency) => <option key={currency}>{currency}</option>)}
+                {CURRENCIES.filter((currency) => rateFor(currency, rates)).map((currency) => <option key={currency}>{currency}</option>)}
               </select>
             </label>
             <AddAssetDropdown onAdd={(moduleKey) => {
@@ -666,6 +694,15 @@ function App() {
             }} />
           </div>
         </header>
+
+        {ratelessCurrencies.length > 0 && (
+          <div className="page-content">
+            <p className="rate-warning" role="status">
+              No exchange rate for {ratelessCurrencies.join(', ')}. Those costs are left out of totals.{' '}
+              <button type="button" className="link-button" onClick={() => setActivePage('settings')}>Add a rate in Settings</button>
+            </p>
+          </div>
+        )}
 
         {activePage === 'dashboard' && isRecordsEmpty(records) && (
           <WelcomePanel
@@ -804,6 +841,9 @@ function App() {
             setSortBy={setSortBy}
             records={visibleRecords}
             displayCurrency={displayCurrency}
+            money={money}
+            toUsd={toUsd}
+            fromUsd={fromUsd}
             openCreate={openCreate}
             openEdit={openEdit}
             setDeleteTarget={setDeleteTarget}
@@ -819,6 +859,10 @@ function App() {
             exportRecords={exportRecords}
             loadDemoData={loadDemoData}
             deleteAllData={deleteAllData}
+            records={records}
+            refreshRates={refreshRates}
+            ratesStatus={ratesStatus}
+            setRate={setRate}
             importRecords={importRecords}
             transferStatus={transferStatus}
           />
@@ -884,6 +928,9 @@ function ModuleView({
   setSortBy,
   records,
   displayCurrency,
+  money,
+  toUsd,
+  fromUsd,
   openCreate,
   openEdit,
   setDeleteTarget,
@@ -981,6 +1028,10 @@ function SettingsView({
   transferStatus,
   loadDemoData,
   deleteAllData,
+  records,
+  refreshRates,
+  ratesStatus,
+  setRate,
 }) {
   function updateSetting(key, value) {
     setAppSettings((current) => ({ ...current, [key]: value }))
@@ -1021,6 +1072,15 @@ function SettingsView({
           {transferStatus && <p className="settings-status">{transferStatus}</p>}
         </div>
       </div>
+
+      <CurrencySettings
+        appSettings={appSettings}
+        updateSetting={updateSetting}
+        records={records}
+        refreshRates={refreshRates}
+        ratesStatus={ratesStatus}
+        setRate={setRate}
+      />
 
       <div className="panel settings-wide">
         <div className="panel-heading">
@@ -1077,6 +1137,70 @@ function SettingsView({
         </div>
       </div>
     </section>
+  )
+}
+
+function CurrencySettings({ appSettings, updateSetting, records, refreshRates, ratesStatus, setRate }) {
+  const rates = appSettings.ratesPerUsd || {}
+  const [adding, setAdding] = useState('')
+  const used = new Set(Object.values(records).flat().map((item) => item.currency).filter(Boolean))
+  const extra = appSettings.extraCurrencies || []
+  const shown = [...new Set([...used, ...extra, appSettings.baseCurrency])].filter((code) => code !== 'USD').sort()
+
+  return (
+    <div className="panel settings-wide">
+      <div className="panel-heading">
+        <h2>Currency</h2>
+        <p>
+          Totals are shown in your main currency. Each cost keeps its own currency and is converted with the rates below
+          (1 USD = …). {appSettings.ratesSource && <>Source: {appSettings.ratesSource}{appSettings.ratesUpdatedAt && `, ${appSettings.ratesUpdatedAt}`}.</>}
+        </p>
+      </div>
+      <div className="settings-form">
+        <label>
+          <span>Main currency</span>
+          <select value={appSettings.baseCurrency} onChange={(event) => updateSetting('baseCurrency', event.target.value)}>
+            {CURRENCIES.filter((code) => rateFor(code, rates)).map((code) => <option key={code}>{code}</option>)}
+          </select>
+        </label>
+        <div className="rate-table">
+          {shown.map((code) => (
+            <label key={code}>
+              <span>1 USD = {code}{!rates[code] && used.has(code) ? ' (missing)' : ''}</span>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={rates[code] ?? ''}
+                onChange={(event) => setRate(code, event.target.value)}
+              />
+            </label>
+          ))}
+          <label>
+            <span>Add a currency</span>
+            <select
+              value={adding}
+              onChange={(event) => {
+                setAdding('')
+                if (event.target.value) updateSetting('extraCurrencies', [...extra, event.target.value])
+              }}
+            >
+              <option value="">Choose…</option>
+              {CURRENCIES.filter((code) => !shown.includes(code) && code !== 'USD').map((code) => <option key={code}>{code}</option>)}
+            </select>
+          </label>
+        </div>
+        <button className="ghost-button" type="button" onClick={refreshRates}>
+          <RefreshCw size={16} />
+          Fetch latest rates
+        </button>
+        <p className="settings-status">
+          Optional. Asks frankfurter.dev for today&apos;s European Central Bank rates. Only the request itself is sent, none
+          of your data. The ECB doesn&apos;t publish every currency (PKR, for example), so keep those rates up to date by hand.
+        </p>
+        {ratesStatus && <p className="settings-status">{ratesStatus}</p>}
+      </div>
+    </div>
   )
 }
 
@@ -1206,7 +1330,7 @@ function RecordModal({ modal, config, servers, setModal, saveRecord }) {
                     values: { ...current.values, [field.key]: event.target.value },
                   }))}
                 >
-                  {currencies.map((currency) => <option key={currency}>{currency}</option>)}
+                  {CURRENCIES.map((currency) => <option key={currency}>{currency}</option>)}
                 </select>
               ) : field.type === 'serverLink' ? (
                 <select
