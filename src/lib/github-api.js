@@ -23,8 +23,7 @@ export async function fetchRepoStats(url, token) {
 
   const apiBase = import.meta.env.VITE_GITHUB_API_BASE || 'https://api.github.com'
   const endpoint = `${apiBase.replace(/\/$/, '')}/repos/${parsed.owner}/${parsed.repo}`
-  const envToken = import.meta.env.VITE_GITHUB_TOKEN || ''
-  const authToken = token || envToken
+  const authToken = token
 
   const response = await fetch(endpoint, {
     headers: {

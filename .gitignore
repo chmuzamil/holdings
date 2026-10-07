@@ -27,3 +27,4 @@ founder-os-source.tar.gz
 *.njsproj
 *.sln
 *.sw?
+.claude/
