@@ -66,7 +66,7 @@ export function ProjectRecordModal({ modal, setModal, saveRecord, records }) {
             </div>
             <div className="field-group">
               <span>Slug</span>
-              <input value={values.slug} onChange={(e) => updateField('slug', e.target.value)} placeholder="founder-os" />
+              <input value={values.slug} onChange={(e) => updateField('slug', e.target.value)} placeholder="my-project" />
             </div>
             <div className="field-group full-width">
               <span>Description</span>

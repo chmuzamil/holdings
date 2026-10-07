@@ -16,6 +16,8 @@ dist-ssr
 *.local
 founder-os-*.png
 founder-os-source.tar.gz
+holdings-*.png
+holdings-export-*.json
 
 # Editor directories and files
 .vscode/*
