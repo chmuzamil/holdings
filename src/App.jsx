@@ -157,6 +157,8 @@ const legacyStorageKey = 'founder-os-records-v1'
 const settingsStorageKey = 'founder-os-settings-v1'
 
 const recordModules = ['domains', 'servers', 'repos', 'projects', 'accounts', 'subscriptions']
+// Demo builds (e.g. the public GitHub Pages site) open with the fictional portfolio.
+const isDemoBuild = import.meta.env.VITE_DEMO === 'true'
 
 function normalizeRecordsByModule(recordsByModule) {
   return Object.fromEntries(
@@ -231,14 +233,12 @@ function loadSavedRecords() {
         saved = legacy
       }
     }
-    if (!saved) return normalizeRecordsByModule(getSeedRecords())
+    if (!saved) return normalizeRecordsByModule(isDemoBuild ? getSeedRecords() : {})
     const parsed = JSON.parse(saved)
     if (!parsed.projects) parsed.projects = []
-    const normalized = normalizeRecordsByModule(parsed)
-    if (isRecordsEmpty(normalized)) return normalizeRecordsByModule(getSeedRecords())
-    return normalized
+    return normalizeRecordsByModule(parsed)
   } catch {
-    return normalizeRecordsByModule(getSeedRecords())
+    return normalizeRecordsByModule({})
   }
 }
 
@@ -531,6 +531,18 @@ function App() {
     }
   }
 
+  function loadDemoData() {
+    if (!isRecordsEmpty(records) && !window.confirm('Replace everything here with the demo portfolio?')) return
+    setRecords(normalizeRecordsByModule(getSeedRecords()))
+    setActivePage('dashboard')
+  }
+
+  function deleteAllData() {
+    if (!window.confirm('Delete every record in this browser? Export first if you want a copy. This cannot be undone.')) return
+    setRecords(normalizeRecordsByModule({}))
+    setTransferStatus('All records deleted.')
+  }
+
   function exportRecords() {
     const blob = new Blob([JSON.stringify(buildExport(records), null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -655,7 +667,18 @@ function App() {
           </div>
         </header>
 
-        {activePage === 'dashboard' && (
+        {activePage === 'dashboard' && isRecordsEmpty(records) && (
+          <WelcomePanel
+            onLoadDemo={loadDemoData}
+            onAddProject={() => {
+              setActivePage('projects')
+              openCreate('projects')
+            }}
+            onImport={() => setActivePage('settings')}
+          />
+        )}
+
+        {activePage === 'dashboard' && !isRecordsEmpty(records) && (
           <DashboardView
             records={records}
             flatRecords={flatRecords}
@@ -794,6 +817,8 @@ function App() {
             githubSyncStatus={githubSyncStatus}
             syncGitHubRepos={syncGitHubRepos}
             exportRecords={exportRecords}
+            loadDemoData={loadDemoData}
+            deleteAllData={deleteAllData}
             importRecords={importRecords}
             transferStatus={transferStatus}
           />
@@ -954,6 +979,8 @@ function SettingsView({
   exportRecords,
   importRecords,
   transferStatus,
+  loadDemoData,
+  deleteAllData,
 }) {
   function updateSetting(key, value) {
     setAppSettings((current) => ({ ...current, [key]: value }))
@@ -984,6 +1011,13 @@ function SettingsView({
               }}
             />
           </label>
+          <button className="ghost-button" type="button" onClick={loadDemoData}>
+            Load demo data
+          </button>
+          <button className="danger-button" type="button" onClick={deleteAllData}>
+            <Trash2 size={16} />
+            Delete all data
+          </button>
           {transferStatus && <p className="settings-status">{transferStatus}</p>}
         </div>
       </div>
@@ -1040,6 +1074,35 @@ function SettingsView({
             Fetch GitHub Repos
           </button>
           {githubSyncStatus && <p className="settings-status">{githubSyncStatus}</p>}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function WelcomePanel({ onLoadDemo, onAddProject, onImport }) {
+  return (
+    <section className="page-content">
+      <div className="panel welcome-panel">
+        <div className="panel-heading">
+          <h2>Welcome. Nothing is tracked yet.</h2>
+          <p>
+            Start with a project, then add the domains, servers, repos and subscriptions it runs on.
+            Or look around first with a made-up demo portfolio. You can delete it any time in Settings.
+          </p>
+        </div>
+        <div className="settings-form">
+          <button className="primary-button" type="button" onClick={onAddProject}>
+            <Plus size={16} />
+            Add your first project
+          </button>
+          <button className="ghost-button" type="button" onClick={onLoadDemo}>
+            Load demo data
+          </button>
+          <button className="ghost-button" type="button" onClick={onImport}>
+            <Upload size={16} />
+            Import a JSON export
+          </button>
         </div>
       </div>
     </section>
