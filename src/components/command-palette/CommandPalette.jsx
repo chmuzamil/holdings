@@ -36,14 +36,6 @@ export function CommandPalette({ open, onClose, records, onNavigate }) {
   }, [results])
 
   useEffect(() => {
-    if (!open) setQuery('')
-  }, [open])
-
-  useEffect(() => {
-    setActiveIndex(0)
-  }, [query])
-
-  useEffect(() => {
     if (!open) return
     function onKeyDown(event) {
       if (event.key === 'Escape') {
@@ -81,14 +73,17 @@ export function CommandPalette({ open, onClose, records, onNavigate }) {
             <Search size={16} />
             <CommandInput
               value={query}
-              onValueChange={setQuery}
+              onValueChange={(value) => {
+                setQuery(value)
+                setActiveIndex(0)
+              }}
               placeholder="Search projects, domains, servers, repos..."
             />
             <kbd className="command-kbd">ESC</kbd>
           </div>
           <CommandList>
             {!results.length && (
-              <CommandEmpty>No results found. Try newsbite, Founder OS, or Main VPS.</CommandEmpty>
+              <CommandEmpty>No results. Try a project, domain, server or repo name.</CommandEmpty>
             )}
             {Object.entries(grouped).map(([type, items]) => (
               <CommandGroup key={type} heading={TYPE_LABELS[type] || type}>

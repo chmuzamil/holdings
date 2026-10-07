@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
 export function Command({ children, className = '' }) {
   return <div className={`ui-command ${className}`.trim()}>{children}</div>
@@ -41,7 +41,7 @@ export function CommandGroup({ heading, children }) {
   )
 }
 
-export function CommandItem({ value, onSelect, children, active }) {
+export function CommandItem({ onSelect, children, active }) {
   return (
     <button
       type="button"
@@ -52,35 +52,4 @@ export function CommandItem({ value, onSelect, children, active }) {
       {children}
     </button>
   )
-}
-
-export function useCommandState(items, onSelect) {
-  const [query, setQuery] = useState('')
-  const [activeIndex, setActiveIndex] = useState(0)
-
-  useEffect(() => {
-    setActiveIndex(0)
-  }, [query])
-
-  useEffect(() => {
-    function onKeyDown(event) {
-      if (!items.length) return
-      if (event.key === 'ArrowDown') {
-        event.preventDefault()
-        setActiveIndex((i) => (i + 1) % items.length)
-      }
-      if (event.key === 'ArrowUp') {
-        event.preventDefault()
-        setActiveIndex((i) => (i - 1 + items.length) % items.length)
-      }
-      if (event.key === 'Enter' && items[activeIndex]) {
-        event.preventDefault()
-        onSelect(items[activeIndex])
-      }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [items, activeIndex, onSelect])
-
-  return { query, setQuery, activeIndex, setActiveIndex }
 }

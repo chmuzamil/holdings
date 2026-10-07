@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { Edit3, Eye, RefreshCw, Trash2 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
@@ -8,7 +7,6 @@ import {
   countDnsRecords,
   getCountdownLabel,
   getCountdownVariant,
-  getDomainFaviconUrl,
   normalizeSubdomains,
 } from '../../lib/domain-helpers'
 import { resolveDomainConnections } from '../../lib/asset-helpers'
@@ -21,27 +19,12 @@ function statusVariant(status) {
   return 'outline'
 }
 
+// Initials only: loading favicons from a third-party service would send the
+// user's domain list to that service.
 function DomainAvatar({ name }) {
-  const [failed, setFailed] = useState(false)
-  const favicon = getDomainFaviconUrl(name)
-
-  useEffect(() => {
-    setFailed(false)
-  }, [name])
-
   return (
     <div className="domain-avatar">
-      {favicon && !failed ? (
-        <img
-          src={favicon}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <Avatar name={name} size="sm" className="domain-avatar-fallback" />
-      )}
+      <Avatar name={name} size="sm" className="domain-avatar-fallback" />
     </div>
   )
 }
@@ -66,9 +49,8 @@ export function DomainCard({
   const nsCount = record.lookup?.dns?.ns?.value?.length
     || record.lookup?.whois?.nameservers?.length
     || 0
-  const converted = record.currency !== displayCurrency
-    ? money(fromUsd(toUsd(record), displayCurrency), displayCurrency)
-    : null
+  const shownCost = money(fromUsd(toUsd(record), displayCurrency), displayCurrency)
+  const usdCost = displayCurrency !== 'USD' ? money(toUsd(record), 'USD') : null
   const domainHealth = getDomainHealthScore(record.health)
 
   return (
@@ -81,9 +63,13 @@ export function DomainCard({
             <div className="domain-card-badges">
               <Badge variant={statusVariant(record.status)}>{record.status}</Badge>
               <Badge variant={getCountdownVariant(record)}>{getCountdownLabel(record)}</Badge>
-              <Badge variant={domainHealth.score >= 75 ? 'success' : domainHealth.score >= 50 ? 'warning' : 'outline'}>
-                Health {domainHealth.score}
-              </Badge>
+              {domainHealth.score === null ? (
+                <Badge variant="outline">DNS not checked</Badge>
+              ) : (
+                <Badge variant={domainHealth.score >= 75 ? 'success' : domainHealth.score >= 50 ? 'warning' : 'outline'}>
+                  Health {domainHealth.score}
+                </Badge>
+              )}
             </div>
             {record.notes && (
               <p className="domain-card-description">{record.notes}</p>
@@ -107,9 +93,9 @@ export function DomainCard({
         <div className="domain-card-renewal">
           <span className="domain-card-label">Renewal</span>
           <span className="domain-card-value">
-            {money(Number(record.cost || 0), record.currency)}
+            {shownCost}
           </span>
-          {converted && <span className="domain-card-subvalue">{converted}</span>}
+          {usdCost && <span className="domain-card-subvalue">{usdCost}</span>}
           <span className="domain-card-subvalue">Expires {prettyDate(record.expiryDate)}</span>
         </div>
 

@@ -102,7 +102,7 @@ export function ProjectsView({
   const [statusFilter, setStatusFilter] = useState('All')
   const [selectedProject, setSelectedProject] = useState(null)
 
-  const projects = records.projects || []
+  const projects = useMemo(() => records.projects || [], [records.projects])
   const normalized = useMemo(() => projects.map(normalizeProjectRecord), [projects])
   const stats = useMemo(() => computeProjectStats(projects, records, toUsd), [projects, records, toUsd])
   const useCards = normalized.length > 0 && normalized.length < 5

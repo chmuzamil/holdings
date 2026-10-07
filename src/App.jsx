@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
-  CalendarClock,
   ChevronDown,
   Clock,
   Database,
-  DollarSign,
   Download,
   Edit3,
   FolderGit2,
@@ -57,6 +55,20 @@ import { ProjectHealthView } from './components/command-center/ProjectHealthView
 import { isRenewableModule, isRenewableRecord } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
 import { buildExport, exportFileName, parseImport } from './lib/data-transfer'
+import { RECORDS_KEY, SETTINGS_KEY, migrateLegacyStorage } from './lib/storage'
+import {
+  RATES_ATTRIBUTION_URL,
+  currencyOptions,
+  defaultCurrencySettings,
+  fetchLatestRates,
+  formatMoney,
+  fromUsd as convertFromUsd,
+  legacySecondCurrency,
+  migrateRecordToUsd,
+  rateFor,
+  ratesAreStale,
+  unconvertedRecords,
+} from './lib/currency'
 
 const moduleConfig = {
   domains: {
@@ -69,8 +81,7 @@ const moduleConfig = {
       { key: 'provider', label: 'Registrar', type: 'text' },
       { key: 'notes', label: 'Notes', type: 'textarea' },
       { key: 'subdomains', label: 'Subdomains', type: 'subdomainList' },
-      { key: 'cost', label: 'Yearly cost', type: 'number' },
-      { key: 'currency', label: 'Currency', type: 'currency' },
+      { key: 'cost', label: 'Yearly cost (USD)', type: 'number' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
       { key: 'expiryDate', label: 'Expiry date', type: 'date' },
       { key: 'status', label: 'Status', type: 'status' },
@@ -101,8 +112,7 @@ const moduleConfig = {
       { key: 'location', label: 'Location', type: 'text' },
       { key: 'hostedServices', label: 'Hosted services (comma separated)', type: 'text' },
       { key: 'notes', label: 'Notes', type: 'textarea' },
-      { key: 'cost', label: 'Monthly cost', type: 'number' },
-      { key: 'currency', label: 'Currency', type: 'currency' },
+      { key: 'cost', label: 'Monthly cost (USD)', type: 'number' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
       { key: 'expiryDate', label: 'Expiry date', type: 'date' },
       { key: 'status', label: 'Status', type: 'status' },
@@ -123,8 +133,7 @@ const moduleConfig = {
     fields: [
       { key: 'name', label: 'Account', type: 'text' },
       { key: 'provider', label: 'Platform', type: 'text' },
-      { key: 'cost', label: 'Monthly cost', type: 'number' },
-      { key: 'currency', label: 'Currency', type: 'currency' },
+      { key: 'cost', label: 'Monthly cost (USD)', type: 'number' },
       { key: 'renewalDate', label: 'Review date', type: 'date' },
       { key: 'expiryDate', label: 'Attention date', type: 'date' },
       { key: 'status', label: 'Status', type: 'status' },
@@ -138,8 +147,7 @@ const moduleConfig = {
     fields: [
       { key: 'name', label: 'Subscription', type: 'text' },
       { key: 'provider', label: 'Provider', type: 'text' },
-      { key: 'cost', label: 'Monthly cost', type: 'number' },
-      { key: 'currency', label: 'Currency', type: 'currency' },
+      { key: 'cost', label: 'Monthly cost (USD)', type: 'number' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
       { key: 'expiryDate', label: 'Expiry date', type: 'date' },
       { key: 'status', label: 'Status', type: 'status' },
@@ -148,22 +156,17 @@ const moduleConfig = {
 }
 
 const statuses = ['Active', 'Expiring Soon', 'Expired', 'Cancelled']
-const currencies = ['USD', 'PKR']
-const currencyRatesToUsd = {
-  USD: 1,
-  PKR: 1 / 278,
-}
 
-const storageKey = 'founder-os-records-v2'
-const legacyStorageKey = 'founder-os-records-v1'
-const settingsStorageKey = 'founder-os-settings-v1'
+migrateLegacyStorage(window.localStorage)
 
 const recordModules = ['domains', 'servers', 'repos', 'projects', 'accounts', 'subscriptions']
+// Demo builds (e.g. the public GitHub Pages site) open with the fictional portfolio.
+const isDemoBuild = import.meta.env.VITE_DEMO === 'true'
 
 function normalizeRecordsByModule(recordsByModule) {
   return Object.fromEntries(
     recordModules.map((moduleKey) => {
-      const records = Array.isArray(recordsByModule[moduleKey]) ? recordsByModule[moduleKey] : []
+      const records = (Array.isArray(recordsByModule[moduleKey]) ? recordsByModule[moduleKey] : []).map((record) => migrateRecordToUsd(record))
       return [
         moduleKey,
         moduleKey === 'domains'
@@ -199,8 +202,6 @@ const navItems = [
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
 
-const creatablePages = ['projects', 'domains', 'servers', 'repos', 'accounts', 'subscriptions']
-
 const emptyRecord = {
   name: '',
   provider: '',
@@ -208,7 +209,6 @@ const emptyRecord = {
   notes: '',
   subdomains: [],
   cost: 0,
-  currency: 'PKR',
   renewalDate: '',
   expiryDate: '',
   status: 'Active',
@@ -218,6 +218,7 @@ const defaultSettings = {
   githubUsername: '',
   githubApiBase: 'https://api.github.com',
   githubToken: '',
+  ...defaultCurrencySettings,
 }
 
 function persistableSettings(settings) {
@@ -227,65 +228,49 @@ function persistableSettings(settings) {
 
 function loadSavedRecords() {
   try {
-    let saved = window.localStorage.getItem(storageKey)
-    if (!saved) {
-      const legacy = window.localStorage.getItem(legacyStorageKey)
-      if (legacy) {
-        window.localStorage.setItem(storageKey, legacy)
-        saved = legacy
-      }
-    }
-    if (!saved) return normalizeRecordsByModule(getSeedRecords())
+    const saved = window.localStorage.getItem(RECORDS_KEY)
+    if (!saved) return normalizeRecordsByModule(isDemoBuild ? getSeedRecords() : {})
     const parsed = JSON.parse(saved)
     if (!parsed.projects) parsed.projects = []
-    const normalized = normalizeRecordsByModule(parsed)
-    if (isRecordsEmpty(normalized)) return normalizeRecordsByModule(getSeedRecords())
-    return normalized
+    return normalizeRecordsByModule(parsed)
   } catch {
-    return normalizeRecordsByModule(getSeedRecords())
+    return normalizeRecordsByModule({})
   }
 }
 
 function loadSavedSettings() {
   try {
-    const saved = window.localStorage.getItem(settingsStorageKey)
+    const saved = window.localStorage.getItem(SETTINGS_KEY)
     if (!saved) return { ...defaultSettings }
 
     const parsed = JSON.parse(saved)
     const { githubToken, ...persistable } = parsed
 
     if (githubToken) {
-      window.localStorage.setItem(settingsStorageKey, JSON.stringify(persistable))
+      window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(persistable))
     }
 
-    return { ...defaultSettings, ...persistable, githubToken: '' }
+    const { baseCurrency, ratesSource, ratesUpdatedAt, extraCurrencies, ...current } = persistable
+    const isLegacy = !('secondCurrency' in persistable) && !persistable.ratesPerUsd
+    const secondCurrency = isLegacy ? legacySecondCurrency : persistable.secondCurrency || ''
+    return { ...defaultSettings, ...current, secondCurrency, githubToken: '' }
   } catch {
     return { ...defaultSettings }
   }
 }
 
+// Costs typed into the form are in USD, so a saved record never keeps an old currency.
+function withoutCurrency(record) {
+  const { currency, ...rest } = record
+  return rest
+}
+
 function persistRecords(records) {
   try {
-    window.localStorage.setItem(storageKey, JSON.stringify(records))
+    window.localStorage.setItem(RECORDS_KEY, JSON.stringify(records))
   } catch {
     // ignore quota errors
   }
-}
-
-function money(value, currency = 'PKR') {
-  return new Intl.NumberFormat(currency === 'PKR' ? 'en-PK' : 'en-US', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
-function toUsd(record) {
-  return Number(record.cost || 0) * (currencyRatesToUsd[record.currency] || 1)
-}
-
-function fromUsd(value, currency) {
-  return currency === 'PKR' ? value / currencyRatesToUsd.PKR : value
 }
 
 function prettyDate(value) {
@@ -326,14 +311,47 @@ function App() {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [sortBy, setSortBy] = useState('renewalDate')
-  const [displayCurrency, setDisplayCurrency] = useState('PKR')
   const [appSettings, setAppSettings] = useState(loadSavedSettings)
+  const [ratesStatus, setRatesStatus] = useState('')
+  const [showSecondCurrency, setShowSecondCurrency] = useState(false)
   const [githubSyncStatus, setGithubSyncStatus] = useState('')
   const [domainLookupStatus, setDomainLookupStatus] = useState('')
   const [transferStatus, setTransferStatus] = useState('')
   const [modal, setModal] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [commandOpen, setCommandOpen] = useState(false)
+
+  // All amounts are stored in USD. The second currency is for display only and
+  // can be shown once its rate has been fetched.
+  const rates = appSettings.ratesPerUsd
+  const secondCurrency = appSettings.secondCurrency
+  const secondReady = Boolean(secondCurrency && rateFor(secondCurrency, rates))
+  const displayCurrency = showSecondCurrency && secondReady ? secondCurrency : 'USD'
+  const setDisplayCurrency = (currency) => setShowSecondCurrency(currency !== 'USD')
+  // A cost still carrying a currency we couldn't convert is left out of totals; a banner says so.
+  const toUsd = useCallback((record) => (record.currency && record.currency !== 'USD' ? 0 : Number(record.cost || 0)), [])
+  const fromUsd = useCallback((value, currency) => convertFromUsd(value, currency, rates) ?? value, [rates])
+  const money = formatMoney
+  const unconverted = useMemo(() => unconvertedRecords(records), [records])
+
+  // Fetch the second currency's rate when it is chosen, and refresh it daily.
+  const ratesStale = ratesAreStale(appSettings.ratesFetchedAt)
+  useEffect(() => {
+    if (!secondCurrency || (!ratesStale && rateFor(secondCurrency, rates))) return
+    let cancelled = false
+    fetchLatestRates()
+      .then((ratesPerUsd) => {
+        if (cancelled) return
+        setAppSettings((current) => ({ ...current, ratesPerUsd, ratesFetchedAt: new Date().toISOString() }))
+        setRatesStatus(ratesPerUsd[secondCurrency] ? '' : `The rates service has no rate for ${secondCurrency}.`)
+      })
+      .catch((error) => {
+        if (!cancelled) setRatesStatus(`Could not fetch the ${secondCurrency} rate: ${error.message}`)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [secondCurrency, ratesStale, rates])
 
   useEffect(() => {
     function onKeyDown(event) {
@@ -351,7 +369,7 @@ function App() {
   }, [records])
 
   useEffect(() => {
-    window.localStorage.setItem(settingsStorageKey, JSON.stringify(persistableSettings(appSettings)))
+    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(persistableSettings(appSettings)))
   }, [appSettings])
 
   const flatRecords = useMemo(
@@ -380,7 +398,7 @@ function App() {
       upcoming: attention.filter((item) => item.status !== 'Expired').length,
       expired: renewableRecords.filter((item) => item.status === 'Expired' || daysUntil(item.expiryDate) < 0).length,
     }
-  }, [records, flatRecords])
+  }, [records, flatRecords, toUsd])
 
   const currentConfig = moduleConfig[activePage]
   const pageMeta = getPageMeta(activePage)
@@ -403,7 +421,7 @@ function App() {
         if (sortBy === 'cost') return toUsd(b) - toUsd(a)
         return new Date(`${a[sortBy] || '2999-12-31'}T00:00:00`) - new Date(`${b[sortBy] || '2999-12-31'}T00:00:00`)
       })
-  }, [activePage, currentConfig, query, records, sortBy, statusFilter])
+  }, [activePage, currentConfig, query, records, sortBy, statusFilter, toUsd])
 
   function openCreate(moduleKey) {
     const values = moduleKey === 'repos'
@@ -466,13 +484,14 @@ function App() {
     setRecords((current) => {
       const next = { ...current }
       if (modal.mode === 'create') {
+        const now = new Date().toISOString()
         next[modal.moduleKey] = [
-          { ...values, id: `${modal.moduleKey}-${crypto.randomUUID()}` },
+          withoutCurrency({ ...values, id: `${modal.moduleKey}-${crypto.randomUUID()}`, addedAt: now, editedAt: now }),
           ...(current[modal.moduleKey] || []),
         ]
       } else {
         next[modal.moduleKey] = (current[modal.moduleKey] || []).map((item) =>
-          item.id === modal.id ? { ...item, ...values } : item,
+          item.id === modal.id ? withoutCurrency({ ...item, ...values, editedAt: new Date().toISOString() }) : item,
         )
       }
       persistRecords(next)
@@ -520,15 +539,30 @@ function App() {
       const repos = await response.json()
       const importedRepos = repos.map((repo) => mapGitHubRepo(repo, username))
 
-      setRecords((current) => ({
-        ...current,
-        repos: mergeGitHubImportedRepos(current.repos, importedRepos),
-      }))
+      setRecords((current) => {
+        const knownIds = new Set(current.repos.map((repo) => repo.id))
+        const now = new Date().toISOString()
+        const repos = mergeGitHubImportedRepos(current.repos, importedRepos)
+          .map((repo) => (knownIds.has(repo.id) || repo.addedAt ? repo : { ...repo, addedAt: now }))
+        return { ...current, repos }
+      })
       setActivePage('repos')
       setGithubSyncStatus(`Imported ${importedRepos.length} GitHub repositories.`)
     } catch (error) {
       setGithubSyncStatus(`GitHub sync failed: ${error.message}`)
     }
+  }
+
+  function loadDemoData() {
+    if (!isRecordsEmpty(records) && !window.confirm('Replace everything here with the demo portfolio?')) return
+    setRecords(normalizeRecordsByModule(getSeedRecords()))
+    setActivePage('dashboard')
+  }
+
+  function deleteAllData() {
+    if (!window.confirm('Delete every record in this browser? Export first if you want a copy. This cannot be undone.')) return
+    setRecords(normalizeRecordsByModule({}))
+    setTransferStatus('All records deleted.')
   }
 
   function exportRecords() {
@@ -555,24 +589,6 @@ function App() {
     }
   }
 
-  function checkDomainHealth(record) {
-    setRecords((current) => ({
-      ...current,
-      domains: current.domains.map((domain) =>
-        domain.id === record.id
-          ? {
-              ...domain,
-              health: {
-                ...normalizeDomainRecord(domain).health,
-                lastChecked: new Date().toISOString().slice(0, 10),
-              },
-            }
-          : domain,
-      ),
-    }))
-    setDomainLookupStatus(`Health check timestamp updated for ${record.name}.`)
-  }
-
   function updateRepoStats(results) {
     setRecords((current) => ({
       ...current,
@@ -585,6 +601,10 @@ function App() {
   }
 
   async function refreshDomainLookup(record) {
+    if (isDemoBuild) {
+      setDomainLookupStatus('DNS checks are turned off in the demo. Self-host Holdings to check your own domains.')
+      return
+    }
     setDomainLookupStatus(`Checking ${record.name}...`)
     try {
       const response = await fetch(`/api/domain-lookup?domain=${encodeURIComponent(record.name)}`)
@@ -610,10 +630,10 @@ function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <button className="brand" type="button" onClick={() => setActivePage('dashboard')}>
-          <span className="brand-mark">FO</span>
+          <span className="brand-mark">H</span>
           <span>
-            <strong>Founder OS</strong>
-            <small>Private asset hub</small>
+            <strong>Holdings</strong>
+            <small>Everything your projects run on</small>
           </span>
         </button>
 
@@ -660,12 +680,17 @@ function App() {
               <Search size={15} />
               Search
             </button>
-            <label className="currency-switch">
-              <span>Currency</span>
-              <select value={displayCurrency} onChange={(event) => setDisplayCurrency(event.target.value)}>
-                {currencies.map((currency) => <option key={currency}>{currency}</option>)}
-              </select>
-            </label>
+            {secondCurrency && (
+              <label className="currency-switch">
+                <span>Currency</span>
+                <select value={displayCurrency} onChange={(event) => setDisplayCurrency(event.target.value)}>
+                  <option value="USD">USD</option>
+                  <option value={secondCurrency} disabled={!secondReady}>
+                    {secondReady ? secondCurrency : `${secondCurrency} (getting rate…)`}
+                  </option>
+                </select>
+              </label>
+            )}
             <AddAssetDropdown onAdd={(moduleKey) => {
               setActivePage(moduleKey)
               openCreate(moduleKey)
@@ -673,7 +698,37 @@ function App() {
           </div>
         </header>
 
-        {activePage === 'dashboard' && (
+        {isDemoBuild && (
+          <div className="page-content">
+            <p className="demo-banner" role="note">
+              This is a demo with made-up data. Anything you change stays in your browser only.{' '}
+              <button type="button" className="link-button" onClick={loadDemoData}>Reset the demo</button>
+            </p>
+          </div>
+        )}
+
+        {unconverted.length > 0 && (
+          <div className="page-content">
+            <p className="rate-warning" role="status">
+              {unconverted.length === 1 ? '1 item has' : `${unconverted.length} items have`} a cost in a currency that
+              couldn&apos;t be converted to USD ({[...new Set(unconverted.map((item) => item.currency))].join(', ')}): {unconverted.map((item) => item.name).join(', ')}.
+              Edit {unconverted.length === 1 ? 'it' : 'them'} and enter the cost in USD. Until then {unconverted.length === 1 ? 'it is' : 'they are'} left out of totals.
+            </p>
+          </div>
+        )}
+
+        {activePage === 'dashboard' && isRecordsEmpty(records) && (
+          <WelcomePanel
+            onLoadDemo={loadDemoData}
+            onAddProject={() => {
+              setActivePage('projects')
+              openCreate('projects')
+            }}
+            onImport={() => setActivePage('settings')}
+          />
+        )}
+
+        {activePage === 'dashboard' && !isRecordsEmpty(records) && (
           <DashboardView
             records={records}
             flatRecords={flatRecords}
@@ -756,7 +811,7 @@ function App() {
             openEdit={openEdit}
             refreshDomainLookup={refreshDomainLookup}
             setDeleteTarget={setDeleteTarget}
-            onCheckHealth={checkDomainHealth}
+            onCheckHealth={refreshDomainLookup}
           />
         )}
 
@@ -799,6 +854,9 @@ function App() {
             setSortBy={setSortBy}
             records={visibleRecords}
             displayCurrency={displayCurrency}
+            money={money}
+            toUsd={toUsd}
+            fromUsd={fromUsd}
             openCreate={openCreate}
             openEdit={openEdit}
             setDeleteTarget={setDeleteTarget}
@@ -812,6 +870,9 @@ function App() {
             githubSyncStatus={githubSyncStatus}
             syncGitHubRepos={syncGitHubRepos}
             exportRecords={exportRecords}
+            loadDemoData={loadDemoData}
+            deleteAllData={deleteAllData}
+            ratesStatus={ratesStatus}
             importRecords={importRecords}
             transferStatus={transferStatus}
           />
@@ -853,12 +914,14 @@ function App() {
         />
       )}
 
-      <CommandPalette
-        open={commandOpen}
-        onClose={() => setCommandOpen(false)}
-        records={records}
-        onNavigate={setActivePage}
-      />
+      {commandOpen && (
+        <CommandPalette
+          open={commandOpen}
+          onClose={() => setCommandOpen(false)}
+          records={records}
+          onNavigate={setActivePage}
+        />
+      )}
 
     </div>
   )
@@ -875,6 +938,9 @@ function ModuleView({
   setSortBy,
   records,
   displayCurrency,
+  money,
+  toUsd,
+  fromUsd,
   openCreate,
   openEdit,
   setDeleteTarget,
@@ -935,11 +1001,9 @@ function ModuleView({
               )}
             </span>
             <span data-label="Cost">
-              {money(Number(record.cost || 0), record.currency)}
-              {record.currency !== displayCurrency && (
-                <small className="converted-cost">
-                  {money(fromUsd(toUsd(record), displayCurrency), displayCurrency)}
-                </small>
+              {money(fromUsd(toUsd(record), displayCurrency), displayCurrency)}
+              {displayCurrency !== 'USD' && (
+                <small className="converted-cost">{money(toUsd(record), 'USD')}</small>
               )}
             </span>
             <span data-label="Renewal">{prettyDate(record.renewalDate)}</span>
@@ -970,6 +1034,9 @@ function SettingsView({
   exportRecords,
   importRecords,
   transferStatus,
+  loadDemoData,
+  deleteAllData,
+  ratesStatus,
 }) {
   function updateSetting(key, value) {
     setAppSettings((current) => ({ ...current, [key]: value }))
@@ -1000,9 +1067,22 @@ function SettingsView({
               }}
             />
           </label>
+          <button className="ghost-button" type="button" onClick={loadDemoData}>
+            Load demo data
+          </button>
+          <button className="danger-button" type="button" onClick={deleteAllData}>
+            <Trash2 size={16} />
+            Delete all data
+          </button>
           {transferStatus && <p className="settings-status">{transferStatus}</p>}
         </div>
       </div>
+
+      <CurrencySettings
+        appSettings={appSettings}
+        updateSetting={updateSetting}
+        ratesStatus={ratesStatus}
+      />
 
       <div className="panel settings-wide">
         <div className="panel-heading">
@@ -1056,6 +1136,74 @@ function SettingsView({
             Fetch GitHub Repos
           </button>
           {githubSyncStatus && <p className="settings-status">{githubSyncStatus}</p>}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function CurrencySettings({ appSettings, updateSetting, ratesStatus }) {
+  const rates = appSettings.ratesPerUsd || {}
+  const second = appSettings.secondCurrency
+  const rate = rateFor(second, rates)
+
+  return (
+    <div className="panel settings-wide">
+      <div className="panel-heading">
+        <h2>Currency</h2>
+        <p>
+          All costs are entered and stored in US dollars. Pick a second currency to switch totals to it from the top bar.
+        </p>
+      </div>
+      <div className="settings-form">
+        <label>
+          <span>Second currency</span>
+          <select value={second || ''} onChange={(event) => updateSetting('secondCurrency', event.target.value)}>
+            <option value="">None</option>
+            {currencyOptions(rates).map((code) => <option key={code}>{code}</option>)}
+          </select>
+        </label>
+        {second && (
+          <p className="settings-status">
+            {rate
+              ? <>1 USD = {rate.toLocaleString(undefined, { maximumFractionDigits: 4 })} {second}, updated {new Date(appSettings.ratesFetchedAt).toLocaleString()}.</>
+              : <>Getting the {second} rate…</>}
+          </p>
+        )}
+        <p className="settings-status">
+          When a second currency is set, its rate is fetched from open.er-api.com and refreshed once a day. Only the request
+          itself is sent, none of your data.{' '}
+          <a href={RATES_ATTRIBUTION_URL} target="_blank" rel="noreferrer">Rates By Exchange Rate API</a>
+        </p>
+        {ratesStatus && <p className="settings-status">{ratesStatus}</p>}
+      </div>
+    </div>
+  )
+}
+
+function WelcomePanel({ onLoadDemo, onAddProject, onImport }) {
+  return (
+    <section className="page-content">
+      <div className="panel welcome-panel">
+        <div className="panel-heading">
+          <h2>Welcome. Nothing is tracked yet.</h2>
+          <p>
+            Start with a project, then add the domains, servers, repos and subscriptions it runs on.
+            Or look around first with a made-up demo portfolio. You can delete it any time in Settings.
+          </p>
+        </div>
+        <div className="settings-form">
+          <button className="primary-button" type="button" onClick={onAddProject}>
+            <Plus size={16} />
+            Add your first project
+          </button>
+          <button className="ghost-button" type="button" onClick={onLoadDemo}>
+            Load demo data
+          </button>
+          <button className="ghost-button" type="button" onClick={onImport}>
+            <Upload size={16} />
+            Import a JSON export
+          </button>
         </div>
       </div>
     </section>
@@ -1151,16 +1299,6 @@ function RecordModal({ modal, config, servers, setModal, saveRecord }) {
                 >
                   {statuses.map((status) => <option key={status}>{status}</option>)}
                 </select>
-              ) : field.type === 'currency' ? (
-                <select
-                  value={modal.values[field.key]}
-                  onChange={(event) => setModal((current) => ({
-                    ...current,
-                    values: { ...current.values, [field.key]: event.target.value },
-                  }))}
-                >
-                  {currencies.map((currency) => <option key={currency}>{currency}</option>)}
-                </select>
               ) : field.type === 'serverLink' ? (
                 <select
                   value={modal.values[field.key] || ''}
@@ -1219,7 +1357,7 @@ function ConfirmDelete({ target, setDeleteTarget, deleteRecord }) {
         <div className="modal-heading">
           <div>
             <h2>Delete record?</h2>
-            <p>{target.name} will be removed from Founder OS.</p>
+            <p>{target.name} will be deleted.</p>
           </div>
           <button type="button" onClick={() => setDeleteTarget(null)}><X size={18} /></button>
         </div>

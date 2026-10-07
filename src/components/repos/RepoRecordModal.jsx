@@ -77,11 +77,11 @@ export function RepoRecordModal({ modal, setModal, saveRecord }) {
           <div className="repo-form-grid">
             <label>
               <span>Project name</span>
-              <input value={values.name} onChange={(e) => update('name', e.target.value)} placeholder="Founder OS" required />
+              <input value={values.name} onChange={(e) => update('name', e.target.value)} placeholder="My Project" required />
             </label>
             <label>
               <span>GitHub slug</span>
-              <input value={values.githubName} onChange={(e) => update('githubName', e.target.value)} placeholder="founder-os" />
+              <input value={values.githubName} onChange={(e) => update('githubName', e.target.value)} placeholder="my-project" />
             </label>
             <label>
               <span>Owner / org</span>
