@@ -1,186 +1,134 @@
-# Founder OS
+# Holdings
 
-**Your personal command center for domains, servers, repos, accounts, and renewals.**
+**Everything your side projects run on, in one place.** Domains, servers, repos, accounts and subscriptions, grouped by project, with what each project costs and what's about to expire.
 
-Founder OS is a private personal dashboard for founders, indie hackers, developers, and freelancers who manage a lot of digital assets. It helps track domains, VPS/servers, GitHub repositories, online accounts, subscriptions, prices, expiry dates, and renewal dates in one clean dashboard.
+[![CI](https://github.com/chmuzamil/holdings/actions/workflows/ci.yml/badge.svg)](https://github.com/chmuzamil/holdings/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
+![Status: early](https://img.shields.io/badge/status-early%20(v0.1)-f59e0b)
 
-![Founder OS dashboard](https://img.shields.io/badge/status-active-22c55e?style=flat-square)
-![React](https://img.shields.io/badge/React-19-61dafb?style=flat-square)
-![Vite](https://img.shields.io/badge/Vite-8-646cff?style=flat-square)
+![Holdings overview with a made-up demo portfolio](docs/screenshots/dashboard.png)
 
-## Overview
+If you run a handful of side projects, you probably have 20 domains at three registrars, a couple of VPSes, a pile of SaaS subscriptions and a dozen repos. They're spread across a spreadsheet, your inbox and your memory. Holdings puts them in one register, links each one to the project it belongs to, and tells you what that project costs per month and what renews next.
 
-Founder OS is built to feel like a polished open-source SaaS dashboard while staying useful as a personal founder workspace. It starts with mock asset data, Supabase Auth, optional Supabase persistence, and a simple structure that can grow into a full private operating dashboard.
+It runs entirely in your browser. No account, no tracking, no server required.
 
-Live demo:
+> **Status:** early. v0.1 is a working local-first tracker. The features that make Holdings different (see [Roadmap](#roadmap)) are being built for v0.2. Feedback and issues are very welcome.
 
-```text
-https://founder-os.maker.example
-```
+## Who it's for
 
-## Features
+Solo founders and indie hackers with **several projects**, who want to answer questions like:
 
-- Dashboard cards for domains, servers, repos, accounts, costs, renewals, and attention items
-- Modules for domains, VPS/servers, GitHub repos, accounts, and subscriptions
-- Domain notes for usage context, pointing details, or internal reminders
-- Per-subdomain tracking with individual VPS/server attachment and notes
-- VPS/server IP address and notes for hosting context
-- Add, edit, and delete records
-- Delete confirmation modal
-- Search, status filter, and sorting by renewal date, expiry date, or cost
-- Status badges for `Active`, `Expiring Soon`, `Expired`, and `Cancelled`
-- Renewal reminders and attention highlighting
-- Monthly and yearly cost calculations
-- USD and PKR currency support with a dashboard reporting toggle
-- Private login screen powered by Supabase Auth
-- Empty states for clean first-run usage
-- Responsive desktop and mobile layouts
-- Browser storage persistence for records on the same device
-- Optional Supabase persistence with browser storage fallback
-- GitHub repository auto-fetch by username or personal access token
-- Self-hosted DNS and RDAP lookup API for domain records
+- What does each project cost me per month?
+- What renews or expires in the next 30 days, and which project is it for?
+- Which subscriptions aren't attached to anything any more?
+- Which server does this domain point to, and which repo deploys there?
 
-## Demo Data
+If you want a homelab start page, [Homepage](https://github.com/gethomepage/homepage) or [Homarr](https://github.com/homarr-labs/homarr) are better fits. If you want uptime monitoring, use [Uptime Kuma](https://github.com/louislam/uptime-kuma) or [Gatus](https://github.com/TwiN/gatus).
 
-The app includes sample records for:
+## What works today (v0.1)
 
-- `shopfront.example`
-- `maker.example`
-- `PakDataKit repo`
-- `TrendPulse / NewsBite`
-- `Main VPS`
-- `OpenRouter`
-- `GitHub`
-- `Supabase`
+- **Projects as the centre.** Link domains, servers, repos and subscriptions to a project and see its monthly cost.
+- **Domains** with subdomains attached to servers, notes, renewal dates, and an optional live DNS + registry (RDAP) check: registrar, expiry, nameservers, MX and SPF.
+- **Servers, repos, accounts and subscriptions** with costs, renewal dates and notes.
+- **GitHub import**: fetch your repos by username. An optional token is kept in memory only, never saved.
+- **Attention list and health score**: overdue and upcoming renewals, stale repos, domains never checked, unlinked assets.
+- **Timeline** built only from real dates: when you added things, when repos were created, when domains were registered.
+- **Costs in USD**, with an optional second display currency. Its rate is fetched daily from [ExchangeRate-API](https://www.exchangerate-api.com).
+- **Command palette** (Ctrl/Cmd + K) to jump to anything.
+- **Export and import** everything as JSON.
+- **Demo mode** with a made-up portfolio, to look around before adding your own data.
 
-## Tech Stack
+| Projects | Domains | Infrastructure map |
+| --- | --- | --- |
+| ![Projects](docs/screenshots/projects.png) | ![Domains](docs/screenshots/domains.png) | ![Infrastructure map](docs/screenshots/infrastructure-map.png) |
 
-- React
-- Vite
-- Lucide React
-- CSS modules-style plain CSS
+## Quick start
 
-## Getting Started
-
-Clone the repo and install dependencies:
+You need Node.js 22 or newer.
 
 ```bash
-npm install
-```
-
-Create a local environment file:
-
-```bash
-cp .env.example .env
-```
-
-Add your Supabase project values:
-
-```bash
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-Start the development server:
-
-```bash
+git clone https://github.com/chmuzamil/holdings.git
+cd holdings
+npm ci
 npm run dev
 ```
 
-Build for production:
+Open http://localhost:5173. On first run you can add a project, load the demo data, or import a JSON export.
 
-```bash
-npm run build
-```
-
-Preview the production build:
-
-```bash
-npm run preview
-```
-
-Run the self-hosted domain lookup API:
+To use the live DNS/registry check, run the small lookup server in a second terminal. The dev server forwards `/api` to it.
 
 ```bash
 npm run api
 ```
 
-## Environment Variables
+### Hosting it
 
-| Variable | Description |
-| --- | --- |
-| `VITE_SUPABASE_URL` | Supabase project URL for cloud persistence |
-| `VITE_SUPABASE_ANON_KEY` | Supabase anon key for Auth and dashboard persistence |
+`npm run build` produces static files in `dist/` that any web server can serve. `npm run build:demo` builds the public demo version. [docs/hosting-the-demo.md](docs/hosting-the-demo.md) has ready-to-use Caddy and nginx configs with a tested Content-Security-Policy. A one-command Docker setup with a small server is planned for v0.2.
 
-Create at least one user in Supabase Auth before logging into Founder OS.
+## Your data and privacy
 
-## Data Model
+- Everything is stored in your browser's local storage. Nothing is sent to a server you don't run.
+- Clearing site data deletes it, so use **Settings → Export JSON** for backups.
+- The app only contacts other services when you ask it to:
+  - `api.github.com`, when you fetch or refresh GitHub repos
+  - `open.er-api.com`, once a day, if you picked a second currency
+  - your own lookup server (`npm run api`), when you run a DNS check. It queries DNS, IANA's registry directory and the domain's public registry (RDAP).
+- No analytics, no telemetry, no third-party scripts, fonts or icons.
 
-Founder OS currently keeps records in local React state using module arrays:
+## Why not…
 
-- `domains`
-- `servers`
-- `repos`
-- `accounts`
-- `subscriptions`
+| | Holdings | Wallos | Domain Locker | Uptime Kuma | Homepage | Coolify |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Domains, servers, repos, subscriptions in one place | ✅ | subscriptions | domains | – | links | apps it deploys |
+| Grouped by project, with cost per project | ✅ | – | – | – | – | – |
+| Renewal and expiry tracking | ✅ | ✅ | ✅ | domain expiry | – | – |
+| Live DNS / registry check | ✅ | – | ✅ | – | – | – |
+| Uptime monitoring | – | – | – | ✅ | status widgets | app health checks |
+| Revenue per project | planned (v0.2) | – | – | – | – | – |
+| "What breaks if…" impact view | planned (v0.2) | – | – | – | – | – |
+| Handover and sale (due-diligence) packs | planned (v0.2) | – | – | – | – | – |
+| API key and certificate expiry (metadata only) | planned (v0.2) | – | SSL | certs | – | – |
+| Built-in MCP server for AI agents | planned (v0.2) | community | – | community | – | own apps only |
+| Works with no server at all | ✅ | – | – | – | – | – |
 
-Each record tracks a name, provider, cost, currency, renewal date, expiry date, and status. Domain records support notes plus a list of subdomains, where each subdomain has its own name, attached VPS/server, and notes for where that hostname is used or pointed. VPS/server records support IP addresses and notes for hosting context. Costs support `USD` and `PKR`; dashboard totals normalize records through a simple exchange-rate map before displaying them in the selected reporting currency.
-
-Records are persisted to browser `localStorage`, so changes survive refreshes, Nginx reloads, and redeploys on the same browser/device. When Supabase env variables are configured, records also sync to the `founder_os_records` table.
-
-Run `supabase-schema.sql` in the Supabase SQL editor to create the records and settings tables.
-
-## GitHub Auto-Fetch
-
-The Settings page includes fields for:
-
-- GitHub username
-- REST API base URL
-- Personal access token
-
-Without a token, Founder OS fetches public repositories from:
-
-```text
-https://api.github.com/users/{username}/repos
-```
-
-With a token, Founder OS fetches repositories available to the token from:
-
-```text
-https://api.github.com/user/repos
-```
-
-> Token note: When Supabase is configured and you are signed in, GitHub settings (including the personal access token) sync to the `founder_os_settings` table under your user account. Tokens are never written to `localStorage`; they are cleared from memory on logout and restored on the next login. Username and API base URL are also saved locally as a fallback. For production, consider moving GitHub API calls to a Supabase Edge Function so the token never leaves the server.
-
-## DNS and WHOIS Lookup
-
-Founder OS includes a small self-hosted API at `server/domain-api.mjs`.
-
-It provides:
-
-- DNS records: `A`, `AAAA`, `CNAME`, `MX`, `NS`, `TXT`, `SOA`
-- WHOIS-style structured data through RDAP
-- Registrar, status, nameserver, created, updated, and expiry details where available
-
-In production, proxy `/api/domain-lookup` to the Node API service. The Domains module has a refresh button per domain that saves lookup results into the domain record.
+These tools are great at what they do, and Holdings doesn't try to replace them. Keep Uptime Kuma for monitoring and Coolify for deploys. Holdings is the register of what you own and what it costs.
 
 ## Roadmap
 
-- Private row-level security tied to Supabase user IDs
-- CSV import/export
-- Reminder notifications
-- GitHub repository metadata sync
-- GitHub API repo import using a personal access token
-- Deployment guide for Nginx/VPS hosting
+**v0.2: the founder's asset register**
+- **Project ledger**: monthly cost against revenue for each project (read-only Stripe, Lemon Squeezy, Paddle), with shared servers split fairly between projects.
+- **"What breaks if…"**: pick a domain, server or card and see everything that depends on it, and the revenue at risk.
+- **Expiry radar**: domains, TLS certificates, API keys, OAuth apps and card expiry dates in one list. Metadata only, never the secret.
+- **Exit pack**: a one-click asset register and transfer checklist for selling a project.
+- **Handover pack**: an encrypted "if I'm unavailable" document for someone you trust.
+- **MCP server** (read-only by default), so Claude and other agents can answer questions about your portfolio.
+- **Self-hosted mode**: one Docker container (Node + SQLite) with login, scheduled checks and notifications.
 
-## Not Included
+**v0.3**: dead-man's switch, domain risk score (registrar lock, DNSSEC, SPF/DKIM/DMARC), Uptime Kuma / Gatus status import, subscription clean-up suggestions, registrar and Cloudflare importers.
 
-Founder OS intentionally does not include:
+**Later**: verified backups via [BackupProof](https://github.com/chmuzamil/BackupProof), read-only second user.
 
-- Client module
-- SSL monitoring
-- Backup module
+## Development
+
+```bash
+npm run dev          # app with hot reload
+npm run api          # DNS/registry lookup server on 127.0.0.1:4180
+npm test             # unit tests (Vitest)
+npm run lint         # ESLint
+npm run build        # production build
+npm run build:demo   # demo build with made-up data
+```
+
+CI runs lint, tests and a build on Node 22 and 24 for every pull request.
+
+Optional environment variables are listed in [.env.example](.env.example).
+
+## Contributing
+
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). The one hard rule: **only fictional data in the repo.** Use `.example` domains and documentation IP ranges, never real ones.
+
+To report a security problem, see [SECURITY.md](SECURITY.md).
 
 ## License
 
-MIT
+[MIT](LICENSE)

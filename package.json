@@ -1,9 +1,17 @@
 {
   "name": "holdings",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Everything your side projects run on, in one place: domains, servers, repos, accounts, subscriptions and what each project costs.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chmuzamil/holdings.git"
+  },
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

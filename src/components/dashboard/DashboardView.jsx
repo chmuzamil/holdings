@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react'
 import { AlertCircle, ArrowRight, FolderGit2, HeartPulse, Layers, TrendingUp } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
-import { Skeleton } from '../ui/Skeleton'
 import { EmptyState } from '../EmptyState'
 import { getAttentionItems, getDashboardWidgets, getTotalMonthlyBurn } from '../../lib/intelligence-helpers'
 import { getHealthScoreBreakdown } from '../../lib/health-score'
@@ -34,11 +32,6 @@ export function DashboardView({
   getReminder,
   setActivePage,
 }) {
-  const [loading, setLoading] = useState(true)
-  useEffect(() => {
-    const t = window.setTimeout(() => setLoading(false), 280)
-    return () => window.clearTimeout(t)
-  }, [])
 
   const monthlyUsd = getTotalMonthlyBurn(records, toUsd)
   const widgets = getDashboardWidgets(records, flatRecords, toUsd)
@@ -67,16 +60,6 @@ export function DashboardView({
       onClick: () => setActivePage('repos'),
     },
   ].filter(Boolean)
-
-  if (loading) {
-    return (
-      <section className="page-content overview-page">
-        <div className="overview-summary-grid">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} style={{ height: 72, borderRadius: 10 }} />)}
-        </div>
-      </section>
-    )
-  }
 
   const hasSignals = attentionCount > 0 || signalWidgets.length > 0 || projectCount > 0
 
