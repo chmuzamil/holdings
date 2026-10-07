@@ -7,6 +7,7 @@ import {
   Clock,
   Database,
   DollarSign,
+  Download,
   Edit3,
   FolderGit2,
   GitBranch,
@@ -24,6 +25,7 @@ import {
   LogIn,
   LogOut,
   Trash2,
+  Upload,
   UserCircle,
   WalletCards,
   X,
@@ -57,6 +59,7 @@ import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
 import { ProjectHealthView } from './components/command-center/ProjectHealthView'
 import { isRenewableModule, isRenewableRecord } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
+import { buildExport, exportFileName, parseImport } from './lib/data-transfer'
 
 const moduleConfig = {
   domains: {
@@ -383,6 +386,7 @@ function App() {
   const [syncStatus, setSyncStatus] = useState(supabase ? 'Supabase ready to connect after login.' : 'Local browser storage active.')
   const [githubSyncStatus, setGithubSyncStatus] = useState('')
   const [domainLookupStatus, setDomainLookupStatus] = useState('')
+  const [transferStatus, setTransferStatus] = useState('')
   const [modal, setModal] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [commandOpen, setCommandOpen] = useState(false)
@@ -704,6 +708,30 @@ function App() {
     }
   }
 
+  function exportRecords() {
+    const blob = new Blob([JSON.stringify(buildExport(records), null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = exportFileName()
+    link.click()
+    URL.revokeObjectURL(url)
+    setTransferStatus('Export downloaded.')
+  }
+
+  async function importRecords(file) {
+    if (!file) return
+    try {
+      const imported = parseImport(await file.text())
+      const total = Object.values(imported).reduce((sum, items) => sum + items.length, 0)
+      if (!window.confirm(`Replace everything here with ${total} records from ${file.name}?`)) return
+      setRecords(normalizeRecordsByModule(imported))
+      setTransferStatus(`Imported ${total} records.`)
+    } catch (error) {
+      setTransferStatus(`Import failed: ${error.message}`)
+    }
+  }
+
   function checkDomainHealth(record) {
     setRecords((current) => ({
       ...current,
@@ -1006,6 +1034,9 @@ function App() {
             syncStatus={syncStatus}
             githubSyncStatus={githubSyncStatus}
             syncGitHubRepos={syncGitHubRepos}
+            exportRecords={exportRecords}
+            importRecords={importRecords}
+            transferStatus={transferStatus}
           />
         )}
       </main>
@@ -1154,13 +1185,49 @@ function ModuleView({
   )
 }
 
-function SettingsView({ appSettings, setAppSettings, syncStatus, githubSyncStatus, syncGitHubRepos }) {
+function SettingsView({
+  appSettings,
+  setAppSettings,
+  syncStatus,
+  githubSyncStatus,
+  syncGitHubRepos,
+  exportRecords,
+  importRecords,
+  transferStatus,
+}) {
   function updateSetting(key, value) {
     setAppSettings((current) => ({ ...current, [key]: value }))
   }
 
   return (
     <section className="page-content settings-grid">
+      <div className="panel settings-wide">
+        <div className="panel-heading">
+          <h2>Export and import</h2>
+          <p>Download everything as a JSON file, or load a file you exported before. Importing replaces what is here now.</p>
+        </div>
+        <div className="settings-form">
+          <button className="primary-button" type="button" onClick={exportRecords}>
+            <Download size={16} />
+            Export JSON
+          </button>
+          <label className="ghost-button">
+            <Upload size={16} />
+            Import JSON
+            <input
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={(event) => {
+                importRecords(event.target.files?.[0])
+                event.target.value = ''
+              }}
+            />
+          </label>
+          {transferStatus && <p className="settings-status">{transferStatus}</p>}
+        </div>
+      </div>
+
       <div className="panel">
         <div className="panel-heading">
           <h2>Repository Identity</h2>
