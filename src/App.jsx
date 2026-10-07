@@ -183,6 +183,11 @@ function normalizeRecordsByModule(recordsByModule) {
   )
 }
 
+function pageFromHash() {
+  const page = window.location.hash.slice(1)
+  return navItems.some((item) => item.id === page) ? page : 'dashboard'
+}
+
 const navItems = [
   { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
   { id: 'insights', label: 'Insights', icon: Lightbulb },
@@ -306,7 +311,18 @@ function isAttention(record) {
 }
 
 function App() {
-  const [activePage, setActivePage] = useState('dashboard')
+  // The open page is mirrored in the URL hash (e.g. #domains) so pages can be linked to.
+  const [activePage, setActivePageState] = useState(pageFromHash)
+  const setActivePage = useCallback((page) => {
+    setActivePageState(page)
+    window.history.replaceState(null, '', page === 'dashboard' ? window.location.pathname + window.location.search : `#${page}`)
+  }, [])
+
+  useEffect(() => {
+    const onHashChange = () => setActivePageState(pageFromHash())
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
   const [records, setRecords] = useState(loadSavedRecords)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
