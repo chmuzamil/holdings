@@ -83,7 +83,7 @@ export function CommandPalette({ open, onClose, records, onNavigate }) {
           </div>
           <CommandList>
             {!results.length && (
-              <CommandEmpty>No results found. Try newsbite, Founder OS, or Main VPS.</CommandEmpty>
+              <CommandEmpty>No results. Try a project, domain, server or repo name.</CommandEmpty>
             )}
             {Object.entries(grouped).map(([type, items]) => (
               <CommandGroup key={type} heading={TYPE_LABELS[type] || type}>

@@ -55,6 +55,7 @@ import { ProjectHealthView } from './components/command-center/ProjectHealthView
 import { isRenewableModule, isRenewableRecord } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
 import { buildExport, exportFileName, parseImport } from './lib/data-transfer'
+import { RECORDS_KEY, SETTINGS_KEY, migrateLegacyStorage } from './lib/storage'
 import {
   CURRENCIES,
   convert,
@@ -158,9 +159,7 @@ const moduleConfig = {
 
 const statuses = ['Active', 'Expiring Soon', 'Expired', 'Cancelled']
 
-const storageKey = 'founder-os-records-v2'
-const legacyStorageKey = 'founder-os-records-v1'
-const settingsStorageKey = 'founder-os-settings-v1'
+migrateLegacyStorage(window.localStorage)
 
 const recordModules = ['domains', 'servers', 'repos', 'projects', 'accounts', 'subscriptions']
 // Demo builds (e.g. the public GitHub Pages site) open with the fictional portfolio.
@@ -232,14 +231,7 @@ function persistableSettings(settings) {
 
 function loadSavedRecords() {
   try {
-    let saved = window.localStorage.getItem(storageKey)
-    if (!saved) {
-      const legacy = window.localStorage.getItem(legacyStorageKey)
-      if (legacy) {
-        window.localStorage.setItem(storageKey, legacy)
-        saved = legacy
-      }
-    }
+    const saved = window.localStorage.getItem(RECORDS_KEY)
     if (!saved) return normalizeRecordsByModule(isDemoBuild ? getSeedRecords() : {})
     const parsed = JSON.parse(saved)
     if (!parsed.projects) parsed.projects = []
@@ -251,14 +243,14 @@ function loadSavedRecords() {
 
 function loadSavedSettings() {
   try {
-    const saved = window.localStorage.getItem(settingsStorageKey)
+    const saved = window.localStorage.getItem(SETTINGS_KEY)
     if (!saved) return { ...defaultSettings }
 
     const parsed = JSON.parse(saved)
     const { githubToken, ...persistable } = parsed
 
     if (githubToken) {
-      window.localStorage.setItem(settingsStorageKey, JSON.stringify(persistable))
+      window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(persistable))
     }
 
     const ratesPerUsd = persistable.ratesPerUsd || legacyRatesPerUsd
@@ -271,7 +263,7 @@ function loadSavedSettings() {
 
 function persistRecords(records) {
   try {
-    window.localStorage.setItem(storageKey, JSON.stringify(records))
+    window.localStorage.setItem(RECORDS_KEY, JSON.stringify(records))
   } catch {
     // ignore quota errors
   }
@@ -375,7 +367,7 @@ function App() {
   }, [records])
 
   useEffect(() => {
-    window.localStorage.setItem(settingsStorageKey, JSON.stringify(persistableSettings(appSettings)))
+    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(persistableSettings(appSettings)))
   }, [appSettings])
 
   const flatRecords = useMemo(
@@ -632,10 +624,10 @@ function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <button className="brand" type="button" onClick={() => setActivePage('dashboard')}>
-          <span className="brand-mark">FO</span>
+          <span className="brand-mark">H</span>
           <span>
-            <strong>Founder OS</strong>
-            <small>Private asset hub</small>
+            <strong>Holdings</strong>
+            <small>Everything your projects run on</small>
           </span>
         </button>
 
@@ -1390,7 +1382,7 @@ function ConfirmDelete({ target, setDeleteTarget, deleteRecord }) {
         <div className="modal-heading">
           <div>
             <h2>Delete record?</h2>
-            <p>{target.name} will be removed from Founder OS.</p>
+            <p>{target.name} will be deleted.</p>
           </div>
           <button type="button" onClick={() => setDeleteTarget(null)}><X size={18} /></button>
         </div>

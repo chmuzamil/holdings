@@ -1,8 +1,8 @@
 {
-  "name": "founder-os",
+  "name": "holdings",
   "private": true,
   "version": "0.0.0",
-  "description": "Personal founder dashboard to manage domains, servers, GitHub repos, accounts, subscriptions, and renewals.",
+  "description": "Everything your side projects run on, in one place: domains, servers, repos, accounts, subscriptions and what each project costs.",
   "type": "module",
   "scripts": {
     "dev": "vite",
