@@ -462,13 +462,14 @@ function App() {
     setRecords((current) => {
       const next = { ...current }
       if (modal.mode === 'create') {
+        const now = new Date().toISOString()
         next[modal.moduleKey] = [
-          { ...values, id: `${modal.moduleKey}-${crypto.randomUUID()}` },
+          { ...values, id: `${modal.moduleKey}-${crypto.randomUUID()}`, addedAt: now, editedAt: now },
           ...(current[modal.moduleKey] || []),
         ]
       } else {
         next[modal.moduleKey] = (current[modal.moduleKey] || []).map((item) =>
-          item.id === modal.id ? { ...item, ...values } : item,
+          item.id === modal.id ? { ...item, ...values, editedAt: new Date().toISOString() } : item,
         )
       }
       persistRecords(next)
@@ -516,10 +517,13 @@ function App() {
       const repos = await response.json()
       const importedRepos = repos.map((repo) => mapGitHubRepo(repo, username))
 
-      setRecords((current) => ({
-        ...current,
-        repos: mergeGitHubImportedRepos(current.repos, importedRepos),
-      }))
+      setRecords((current) => {
+        const knownIds = new Set(current.repos.map((repo) => repo.id))
+        const now = new Date().toISOString()
+        const repos = mergeGitHubImportedRepos(current.repos, importedRepos)
+          .map((repo) => (knownIds.has(repo.id) || repo.addedAt ? repo : { ...repo, addedAt: now }))
+        return { ...current, repos }
+      })
       setActivePage('repos')
       setGithubSyncStatus(`Imported ${importedRepos.length} GitHub repositories.`)
     } catch (error) {
@@ -549,24 +553,6 @@ function App() {
     } catch (error) {
       setTransferStatus(`Import failed: ${error.message}`)
     }
-  }
-
-  function checkDomainHealth(record) {
-    setRecords((current) => ({
-      ...current,
-      domains: current.domains.map((domain) =>
-        domain.id === record.id
-          ? {
-              ...domain,
-              health: {
-                ...normalizeDomainRecord(domain).health,
-                lastChecked: new Date().toISOString().slice(0, 10),
-              },
-            }
-          : domain,
-      ),
-    }))
-    setDomainLookupStatus(`Health check timestamp updated for ${record.name}.`)
   }
 
   function updateRepoStats(results) {
@@ -752,7 +738,7 @@ function App() {
             openEdit={openEdit}
             refreshDomainLookup={refreshDomainLookup}
             setDeleteTarget={setDeleteTarget}
-            onCheckHealth={checkDomainHealth}
+            onCheckHealth={refreshDomainLookup}
           />
         )}
 

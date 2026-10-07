@@ -77,9 +77,13 @@ export function DomainCard({
             <div className="domain-card-badges">
               <Badge variant={statusVariant(record.status)}>{record.status}</Badge>
               <Badge variant={getCountdownVariant(record)}>{getCountdownLabel(record)}</Badge>
-              <Badge variant={domainHealth.score >= 75 ? 'success' : domainHealth.score >= 50 ? 'warning' : 'outline'}>
-                Health {domainHealth.score}
-              </Badge>
+              {domainHealth.score === null ? (
+                <Badge variant="outline">DNS not checked</Badge>
+              ) : (
+                <Badge variant={domainHealth.score >= 75 ? 'success' : domainHealth.score >= 50 ? 'warning' : 'outline'}>
+                  Health {domainHealth.score}
+                </Badge>
+              )}
             </div>
             {record.notes && (
               <p className="domain-card-description">{record.notes}</p>

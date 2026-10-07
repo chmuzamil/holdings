@@ -1,5 +1,3 @@
-import { getDefaultHealthForDomain } from './domain-health-helpers'
-
 export function getSeedRecords() {
   const serverMainVps = {
     id: 'server_main_vps',
@@ -37,7 +35,6 @@ export function getSeedRecords() {
       connectedProjectIds: ['project_trendpulse'],
       connectedServerIds: ['server_main_vps'],
       connectedRepoIds: ['repo_trendpulse'],
-      health: getDefaultHealthForDomain('newsbite.example'),
       subdomains: [],
     },
     {
@@ -53,7 +50,6 @@ export function getSeedRecords() {
       connectedProjectIds: ['project_founder_os'],
       connectedServerIds: ['server_main_vps'],
       connectedRepoIds: ['repo_founder_os'],
-      health: getDefaultHealthForDomain('founder-os.maker.example'),
       subdomains: [],
     },
     {
@@ -69,7 +65,6 @@ export function getSeedRecords() {
       connectedProjectIds: [],
       connectedServerIds: [],
       connectedRepoIds: [],
-      health: getDefaultHealthForDomain('maker.example'),
       subdomains: [],
     },
     {
@@ -85,7 +80,6 @@ export function getSeedRecords() {
       connectedProjectIds: ['project_backupproof'],
       connectedServerIds: [],
       connectedRepoIds: ['repo_backupproof'],
-      health: getDefaultHealthForDomain('backups.example'),
       subdomains: [],
     },
     {
@@ -101,7 +95,6 @@ export function getSeedRecords() {
       connectedProjectIds: [],
       connectedServerIds: [],
       connectedRepoIds: [],
-      health: getDefaultHealthForDomain('shopfront.example'),
       subdomains: [],
     },
     {
@@ -117,7 +110,6 @@ export function getSeedRecords() {
       connectedProjectIds: [],
       connectedServerIds: [],
       connectedRepoIds: [],
-      health: getDefaultHealthForDomain('cityguide.example'),
       subdomains: [],
     },
   ]

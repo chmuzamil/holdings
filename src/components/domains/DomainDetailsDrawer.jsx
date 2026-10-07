@@ -230,7 +230,7 @@ function HealthTab({ record, onCheckHealth }) {
         <DomainHealthDetail health={record.health} />
       </div>
       <button className="ui-btn ui-btn-primary" type="button" style={{ marginTop: 16 }} onClick={() => onCheckHealth?.(record)}>
-        Check Health
+        Run DNS check
       </button>
     </>
   )
