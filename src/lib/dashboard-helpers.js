@@ -207,10 +207,6 @@ export function getUpcomingRenewals(flatRecords, limit = 6) {
     .slice(0, limit)
 }
 
-export function getRecentActivity(_records, flatRecords, limit = 6) {
-  return getUpcomingRenewals(flatRecords, limit)
-}
-
 export function getPortfolioProjects(projects, limit = 6) {
   const priority = {
     Production: 0,

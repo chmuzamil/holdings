@@ -1,10 +1,10 @@
 import http from 'node:http'
 import { cleanDomain, createRateLimiter, lookupDomain, validateDomain } from './domain-lookup.mjs'
 
-const port = Number(process.env.FOUNDER_OS_API_PORT || 4180)
-// Leave unset to serve same-origin only (through the Vite dev proxy or your
+const port = Number(process.env.HOLDINGS_API_PORT || process.env.FOUNDER_OS_API_PORT || 4180)
+// HOLDINGS_ALLOWED_ORIGIN: leave unset to serve same-origin only (through the Vite dev proxy or your
 // reverse proxy). Set it to one exact origin to allow cross-origin calls.
-const allowedOrigin = process.env.FOUNDER_OS_ALLOWED_ORIGIN || ''
+const allowedOrigin = process.env.HOLDINGS_ALLOWED_ORIGIN || process.env.FOUNDER_OS_ALLOWED_ORIGIN || ''
 const allowRequest = createRateLimiter({ limit: 30, windowMs: 60_000 })
 
 function sendJson(request, response, status, body) {

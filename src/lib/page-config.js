@@ -88,7 +88,7 @@ export const intelligencePages = PAGE_META
 
 export function getPageMeta(activePage) {
   return PAGE_META[activePage] || {
-    title: 'Founder OS',
+    title: 'Holdings',
     tagline: 'Your personal command center.',
     icon: Activity,
   }

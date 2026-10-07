@@ -28,7 +28,7 @@ export function ServersView({
   const [statusFilter, setStatusFilter] = useState('All')
   const [selectedServer, setSelectedServer] = useState(null)
 
-  const servers = records.servers || []
+  const servers = useMemo(() => records.servers || [], [records.servers])
   const normalized = useMemo(() => servers.map(normalizeServerRecord), [servers])
 
   const visibleServers = useMemo(() => {
@@ -83,7 +83,7 @@ export function ServersView({
             <div className="project-asset-cell">{server.ipAddress || '—'}</div>
             <div className="server-specs">{formatServerSpecsLine(server)}</div>
             <div className="project-asset-cell">{server.location || '—'}</div>
-            <div className="project-cost">{money(server.cost, server.currency)}</div>
+            <div className="project-cost">{money(fromUsd(toUsd(server), displayCurrency), displayCurrency)}</div>
             <div className="project-asset-cell">{prettyDate(server.renewalDate)}</div>
             <div><Badge variant={server.status === 'Active' ? 'success' : 'warning'}>{server.status}</Badge></div>
             <div className="server-hosted-count">{countHostedServices(server)}</div>
