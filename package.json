@@ -9,11 +9,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "api": "node server/domain-api.mjs",
-    "supabase:clear": "node scripts/clear-supabase-records.mjs"
+    "api": "node server/domain-api.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.108.1",
     "lucide-react": "^1.17.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"

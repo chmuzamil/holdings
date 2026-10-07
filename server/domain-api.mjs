@@ -1,125 +1,61 @@
-import dns from 'node:dns/promises'
 import http from 'node:http'
-import { URL } from 'node:url'
+import { cleanDomain, createRateLimiter, lookupDomain, validateDomain } from './domain-lookup.mjs'
 
 const port = Number(process.env.FOUNDER_OS_API_PORT || 4180)
-const recordTypes = ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA']
+// Leave unset to serve same-origin only (through the Vite dev proxy or your
+// reverse proxy). Set it to one exact origin to allow cross-origin calls.
+const allowedOrigin = process.env.FOUNDER_OS_ALLOWED_ORIGIN || ''
+const allowRequest = createRateLimiter({ limit: 30, windowMs: 60_000 })
 
-function sendJson(response, status, body) {
-  response.writeHead(status, {
-    'Access-Control-Allow-Origin': process.env.FOUNDER_OS_ALLOWED_ORIGIN || '*',
-    'Access-Control-Allow-Methods': 'GET,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+function sendJson(request, response, status, body) {
+  const headers = {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
-  })
-  response.end(JSON.stringify(body))
-}
-
-function cleanDomain(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
-    .split('/')[0]
-    .replace(/[^a-z0-9.-]/g, '')
-}
-
-async function resolveType(domain, type) {
-  try {
-    const value = type === 'SOA' ? await dns.resolveSoa(domain) : await dns.resolve(domain, type)
-    return { type, value }
-  } catch (error) {
-    return { type, error: error.code || error.message }
+    'X-Content-Type-Options': 'nosniff',
   }
-}
-
-async function getRdapBootstrap(domain) {
-  const tld = domain.split('.').pop()
-  const response = await fetch('https://data.iana.org/rdap/dns.json')
-  if (!response.ok) return null
-
-  const bootstrap = await response.json()
-  const service = bootstrap.services.find(([tlds]) => tlds.includes(tld))
-  return service?.[1]?.[0] || null
-}
-
-function firstEvent(rdap, action) {
-  return rdap?.events?.find((event) => event.eventAction === action)?.eventDate || ''
-}
-
-function entityName(entity) {
-  const vcard = entity?.vcardArray?.[1] || []
-  return vcard.find(([name]) => name === 'fn')?.[3] || ''
-}
-
-async function lookupRdap(domain) {
-  const base = await getRdapBootstrap(domain)
-  if (!base) return { error: 'RDAP bootstrap not found for this TLD' }
-
-  const response = await fetch(new URL(`domain/${domain}`, base).toString(), {
-    headers: { Accept: 'application/rdap+json, application/json' },
-  })
-
-  if (!response.ok) {
-    return { error: `RDAP returned ${response.status}` }
+  if (allowedOrigin && request.headers.origin === allowedOrigin) {
+    headers['Access-Control-Allow-Origin'] = allowedOrigin
+    headers['Access-Control-Allow-Methods'] = 'GET,OPTIONS'
+    headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    headers.Vary = 'Origin'
   }
-
-  const rdap = await response.json()
-  const registrar = rdap.entities?.find((entity) => entity.roles?.includes('registrar'))
-
-  return {
-    registrar: entityName(registrar),
-    created: firstEvent(rdap, 'registration'),
-    updated: firstEvent(rdap, 'last changed'),
-    expires: firstEvent(rdap, 'expiration'),
-    status: rdap.status || [],
-    nameservers: rdap.nameservers?.map((server) => server.ldhName).filter(Boolean) || [],
-    rdapUrl: response.url,
-  }
-}
-
-async function lookupDomain(domain) {
-  const dnsResults = await Promise.all(recordTypes.map((type) => resolveType(domain, type)))
-  const dnsRecords = Object.fromEntries(dnsResults.map((result) => [
-    result.type.toLowerCase(),
-    result.error ? { error: result.error, value: [] } : { value: result.value },
-  ]))
-
-  return {
-    domain,
-    checkedAt: new Date().toISOString(),
-    dns: dnsRecords,
-    whois: await lookupRdap(domain),
-  }
+  response.writeHead(status, headers)
+  response.end(status === 204 ? undefined : JSON.stringify(body))
 }
 
 const server = http.createServer(async (request, response) => {
   if (request.method === 'OPTIONS') {
-    sendJson(response, 204, {})
+    sendJson(request, response, 204)
     return
   }
 
-  const url = new URL(request.url, `http://${request.headers.host}`)
-  if (request.method !== 'GET' || url.pathname !== '/domain-lookup') {
-    sendJson(response, 404, { error: 'Not found' })
+  const url = new URL(request.url, 'http://localhost')
+  const isLookupPath = url.pathname === '/api/domain-lookup' || url.pathname === '/domain-lookup'
+  if (request.method !== 'GET' || !isLookupPath) {
+    sendJson(request, response, 404, { error: 'Not found' })
+    return
+  }
+
+  if (!allowRequest(request.socket.remoteAddress || 'unknown')) {
+    sendJson(request, response, 429, { error: 'Too many lookups. Wait a minute and try again.' })
     return
   }
 
   const domain = cleanDomain(url.searchParams.get('domain'))
-  if (!domain || !domain.includes('.')) {
-    sendJson(response, 400, { error: 'Valid domain is required' })
+  const invalid = validateDomain(domain)
+  if (invalid) {
+    sendJson(request, response, 400, { error: invalid })
     return
   }
 
   try {
-    sendJson(response, 200, await lookupDomain(domain))
+    sendJson(request, response, 200, await lookupDomain(domain))
   } catch (error) {
-    sendJson(response, 500, { error: error.message })
+    console.error(`Lookup failed for ${domain}:`, error)
+    sendJson(request, response, 500, { error: 'Lookup failed. Try again later.' })
   }
 })
 
 server.listen(port, '127.0.0.1', () => {
-  console.log(`Founder OS domain API listening on http://127.0.0.1:${port}`)
+  console.log(`Domain lookup API listening on http://127.0.0.1:${port}`)
 })
