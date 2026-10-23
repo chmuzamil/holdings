@@ -20,7 +20,7 @@ function OverviewTab({ server, prettyDate, money, fromUsd, displayCurrency, toUs
       <div className="ui-kv-row"><span className="ui-kv-label">Renewal</span><span className="ui-kv-value">{prettyDate(normalized.renewalDate)}</span></div>
       <div className="ui-kv-row"><span className="ui-kv-label">Status</span><span className="ui-kv-value"><Badge variant="success">{normalized.status}</Badge></span></div>
       <div className="ui-kv-row">
-        <span className="ui-kv-label">Monthly Cost</span>
+        <span className="ui-kv-label">Per month</span>
         <span className="ui-kv-value">{money(fromUsd(metrics.monthlyUsd, displayCurrency), displayCurrency)}</span>
       </div>
     </div>
@@ -57,7 +57,7 @@ function HostedServicesTab({ server, records }) {
       </div>
       {connections.projects.length > 0 && (
         <>
-          <h4>Linked Projects</h4>
+          <h4>Projects</h4>
           <div className="project-asset-list">
             {connections.projects.map((project) => (
               <div className="project-asset-item" key={project.id}><strong>{project.name}</strong></div>
@@ -67,7 +67,7 @@ function HostedServicesTab({ server, records }) {
       )}
       {connections.domains.length > 0 && (
         <>
-          <h4>Hosted Domains</h4>
+          <h4>Domains pointing here</h4>
           <div className="project-asset-list">
             {connections.domains.map((domain) => (
               <div className="project-asset-item" key={domain.id}><strong>{domain.name}</strong></div>
@@ -77,7 +77,7 @@ function HostedServicesTab({ server, records }) {
       )}
       {connections.repos.length > 0 && (
         <>
-          <h4>Hosted Repositories</h4>
+          <h4>Repos deployed here</h4>
           <div className="project-asset-list">
             {connections.repos.map((repo) => (
               <div className="project-asset-item" key={repo.id}><strong>{repo.name}</strong></div>
@@ -121,7 +121,7 @@ export function ServerDetailsDrawer({ server, records, open, onClose, money, pre
         items={[
           { value: 'overview', label: 'Overview', content: <OverviewTab server={server} prettyDate={prettyDate} money={money} fromUsd={fromUsd} displayCurrency={displayCurrency} toUsd={toUsd} /> },
           { value: 'specs', label: 'Specs', content: <SpecsTab server={server} /> },
-          { value: 'hosted', label: 'Hosted Services', content: <HostedServicesTab server={server} records={records} /> },
+          { value: 'hosted', label: 'Running here', content: <HostedServicesTab server={server} records={records} /> },
           { value: 'costs', label: 'Costs', content: <CostsTab server={server} toUsd={toUsd} money={money} fromUsd={fromUsd} displayCurrency={displayCurrency} /> },
           { value: 'notes', label: 'Notes', content: <p>{normalized.notes || 'No notes yet.'}</p> },
         ]}

@@ -72,19 +72,19 @@ function OverviewTab({ repo, records }) {
           </span>
         </div>
         <div className="ui-kv-row">
-          <span className="ui-kv-label">Project Status</span>
+          <span className="ui-kv-label">Status</span>
           <span className="ui-kv-value"><Badge variant={devStatusVariant(repo.projectStatus)}>{repo.projectStatus}</Badge></span>
         </div>
         <div className="ui-kv-row">
-          <span className="ui-kv-label">Connected Project</span>
+          <span className="ui-kv-label">Project</span>
           <span className="ui-kv-value">{connections.projects.map((p) => p.name).join(', ') || '—'}</span>
         </div>
         <div className="ui-kv-row">
-          <span className="ui-kv-label">Connected Domain</span>
+          <span className="ui-kv-label">Domain</span>
           <span className="ui-kv-value">{connections.domains.map((d) => d.name).join(', ') || repo.connectedDomain || '—'}</span>
         </div>
         <div className="ui-kv-row">
-          <span className="ui-kv-label">Connected Server</span>
+          <span className="ui-kv-label">Server</span>
           <span className="ui-kv-value">{connections.servers.map((s) => s.name).join(', ') || '—'}</span>
         </div>
         <div className="ui-kv-row">
@@ -95,7 +95,7 @@ function OverviewTab({ repo, records }) {
 
       {repo.techStack.length > 0 && (
         <div className="repo-drawer-section">
-          <h4>Tech Stack</h4>
+          <h4>Tech stack</h4>
           <div className="repo-tech-list">
             {repo.techStack.map((tech) => (
               <span key={tech} className="repo-tech-chip">{tech}</span>
@@ -106,7 +106,7 @@ function OverviewTab({ repo, records }) {
 
       {(repo.connectedDomain || repo.deployment || repo.database) && (
         <div className="repo-drawer-section">
-          <h4>Connected Assets</h4>
+          <h4>Connected items</h4>
           <div className="ui-kv-grid">
             {repo.connectedDomain && (
               <div className="ui-kv-row">
@@ -137,7 +137,7 @@ function MetricsTab({ repo }) {
   const metrics = [
     { label: 'Stars', value: repo.stars, icon: '⭐' },
     { label: 'Forks', value: repo.forks, icon: '🍴' },
-    { label: 'Open Issues', value: repo.openIssues, icon: '🐞' },
+    { label: 'Open issues', value: repo.openIssues, icon: '🐞' },
     { label: 'Watchers', value: repo.watchers, icon: '👀' },
   ]
 

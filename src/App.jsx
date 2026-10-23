@@ -77,7 +77,7 @@ const moduleConfig = {
     title: 'Domains',
     singular: 'Domain',
     icon: Globe2,
-    empty: 'No domains tracked yet.',
+    empty: 'No domains yet.',
     fields: [
       { key: 'name', label: 'Domain', type: 'text' },
       { key: 'provider', label: 'Registrar', type: 'text' },
@@ -93,14 +93,14 @@ const moduleConfig = {
     title: 'Projects',
     singular: 'Project',
     icon: Layers,
-    empty: 'No projects tracked yet.',
+    empty: 'No projects yet.',
     fields: [],
   },
   servers: {
-    title: 'VPS / Servers',
+    title: 'Servers',
     singular: 'Server',
     icon: Server,
-    empty: 'No servers tracked yet.',
+    empty: 'No servers yet.',
     fields: [
       { key: 'name', label: 'Server', type: 'text' },
       { key: 'provider', label: 'Provider', type: 'text' },
@@ -121,17 +121,17 @@ const moduleConfig = {
     ],
   },
   repos: {
-    title: 'GitHub Repos',
-    singular: 'Repository',
+    title: 'Repos',
+    singular: 'Repo',
     icon: FolderGit2,
-    empty: 'No repositories tracked yet.',
+    empty: 'No repos yet.',
     fields: [],
   },
   accounts: {
     title: 'Accounts',
     singular: 'Account',
     icon: UserCircle,
-    empty: 'No online accounts tracked yet.',
+    empty: 'No accounts yet.',
     fields: [
       { key: 'name', label: 'Account', type: 'text' },
       { key: 'provider', label: 'Platform', type: 'text' },
@@ -145,7 +145,7 @@ const moduleConfig = {
     title: 'Subscriptions',
     singular: 'Subscription',
     icon: WalletCards,
-    empty: 'No subscriptions tracked yet.',
+    empty: 'No subscriptions yet.',
     fields: [
       { key: 'name', label: 'Subscription', type: 'text' },
       { key: 'provider', label: 'Provider', type: 'text' },
@@ -196,7 +196,7 @@ const navItems = [
   { id: 'attention', label: 'Attention', icon: AlertTriangle },
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { type: 'divider' },
-  { id: 'infrastructure-map', label: 'Infrastructure', icon: GitBranch },
+  { id: 'infrastructure-map', label: 'Map', icon: GitBranch },
   { type: 'divider' },
   { id: 'projects', label: 'Projects', icon: Layers },
   { id: 'domains', label: 'Domains', icon: Globe2 },
@@ -368,7 +368,7 @@ function App() {
         setRatesStatus(ratesPerUsd[secondCurrency] ? '' : `The rates service has no rate for ${secondCurrency}.`)
       })
       .catch((error) => {
-        if (!cancelled) setRatesStatus(`Could not fetch the ${secondCurrency} rate: ${error.message}`)
+        if (!cancelled) setRatesStatus(`Couldn't get the ${secondCurrency} rate (${error.message}). Totals stay in US dollars for now.`)
       })
     return () => {
       cancelled = true
@@ -518,11 +518,11 @@ function App() {
     const token = appSettings.githubToken.trim()
 
     if (!username && !token) {
-      setGithubSyncStatus('Add a GitHub username or personal access token first.')
+      setGithubSyncStatus('Enter your GitHub username first.')
       return
     }
 
-    setGithubSyncStatus('Fetching GitHub repositories...')
+    setGithubSyncStatus('Importing repos from GitHub…')
     const endpoint = token
       ? `${apiBase}/user/repos?per_page=100&sort=updated`
       : `${apiBase}/users/${encodeURIComponent(username)}/repos?per_page=100&sort=updated`
@@ -550,9 +550,9 @@ function App() {
         return { ...current, repos }
       })
       setActivePage('repos')
-      setGithubSyncStatus(`Imported ${importedRepos.length} GitHub repositories.`)
+      setGithubSyncStatus(`Imported ${importedRepos.length} repos from GitHub.`)
     } catch (error) {
-      setGithubSyncStatus(`GitHub sync failed: ${error.message}`)
+      setGithubSyncStatus(`Couldn't reach GitHub (${error.message}). Check the username or token and try again.`)
     }
   }
 
@@ -588,7 +588,7 @@ function App() {
       setRecords(normalizeRecordsByModule(imported))
       setTransferStatus(`Imported ${total} records.`)
     } catch (error) {
-      setTransferStatus(`Import failed: ${error.message}`)
+      setTransferStatus(`Couldn't import that file: ${error.message} Nothing was changed.`)
     }
   }
 
@@ -608,7 +608,7 @@ function App() {
       setDomainLookupStatus('DNS checks are turned off in the demo. Self-host Holdings to check your own domains.')
       return
     }
-    setDomainLookupStatus(`Checking ${record.name}...`)
+    setDomainLookupStatus(`Checking ${record.name}…`)
     try {
       const response = await fetch(`/api/domain-lookup?domain=${encodeURIComponent(record.name)}`)
       const result = await response.json()
@@ -623,9 +623,9 @@ function App() {
           domain.id === record.id ? { ...domain, lookup: result } : domain,
         ),
       }))
-      setDomainLookupStatus(`Updated DNS / WHOIS for ${record.name}.`)
+      setDomainLookupStatus(`Checked ${record.name}.`)
     } catch (error) {
-      setDomainLookupStatus(`Lookup failed for ${record.name}: ${error.message}`)
+      setDomainLookupStatus(`Couldn't check ${record.name} (${error.message}). Try again in a minute.`)
     }
   }
 
@@ -1017,9 +1017,9 @@ function ModuleView({
         )) : (
           <EmptyState
             title={config.empty}
-            text="Create the first record or clear the current filters."
+            text="Add one, or clear the search and filters."
             action={() => openCreate(moduleKey)}
-            actionLabel={`Add ${config.singular}`}
+            actionLabel={`Add ${config.singular.toLowerCase()}`}
           />
         )}
       </div>
@@ -1098,8 +1098,8 @@ function SettingsView({
 
       <div className="panel settings-wide">
         <div className="panel-heading">
-          <h2>GitHub Auto-Fetch</h2>
-          <p>Fetch public repos by username, or use a personal token for private repos available to the token.</p>
+          <h2>Import repos from GitHub</h2>
+          <p>Enter your GitHub username to import your public repos. Add a token to include private ones.</p>
         </div>
         <div className="settings-form">
           <label>
@@ -1111,7 +1111,7 @@ function SettingsView({
             />
           </label>
           <label>
-            <span>REST API base URL</span>
+            <span>API address (only for GitHub Enterprise)</span>
             <input
               value={appSettings.githubApiBase}
               onChange={(event) => updateSetting('githubApiBase', event.target.value)}
@@ -1119,7 +1119,7 @@ function SettingsView({
             />
           </label>
           <label>
-            <span>Personal access token</span>
+            <span>Token (optional)</span>
             <input
               type="password"
               value={appSettings.githubToken}
@@ -1129,12 +1129,11 @@ function SettingsView({
             />
           </label>
           <p className="settings-status">
-            The token is only kept in memory for this tab and is never saved. Use a fine-grained token with read-only
-            access to repository metadata. Leave it empty to fetch public repos only.
+            Kept only while this tab is open, never saved. Give it read-only access to repository metadata.
           </p>
           <button className="primary-button" type="button" onClick={syncGitHubRepos}>
             <RefreshCw size={16} />
-            Fetch GitHub Repos
+            Import repos
           </button>
           <p className="settings-status" role="status" aria-live="polite">{githubSyncStatus}</p>
         </div>

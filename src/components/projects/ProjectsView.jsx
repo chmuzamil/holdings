@@ -243,9 +243,9 @@ export function ProjectsView({
         <EmptyState
           variant="projects"
           title="No projects yet"
-          text="Create your first project to connect domains, repos, servers, and subscriptions."
+          text="Add a project, then link the domains, servers and services it uses."
           action={() => openCreate('projects')}
-          actionLabel="Add Project"
+          actionLabel="Add project"
         />
       )}
 

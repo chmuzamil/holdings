@@ -87,7 +87,7 @@ export function ReposView({
       <div className="repo-toolbar">
         <button className="command-action-btn" type="button" onClick={refreshStats} disabled={statsLoading}>
           <RefreshCw size={15} className={statsLoading ? 'spin' : ''} />
-          {statsLoading ? 'Refreshing...' : 'Refresh Stats'}
+          {statsLoading ? 'Updating…' : 'Update from GitHub'}
         </button>
         {lastSynced && <span className="inline-status">Last synced {new Date(lastSynced).toLocaleString()}</span>}
         <span className="inline-status" role="status" aria-live="polite">{statsStatus}</span>
@@ -130,7 +130,7 @@ export function ReposView({
           <span>Category</span>
           <span>Status</span>
           <span>Language</span>
-          <span>Last Push</span>
+          <span>Last change</span>
           <span>Actions</span>
         </div>
         {visibleRecords.length ? visibleRecords.map((record) => (
@@ -144,10 +144,10 @@ export function ReposView({
         )) : (
           <EmptyState
             variant="repos"
-            title="No repositories yet"
-            text="Track GitHub repos and sync live stats from the drawer."
+            title="No repos yet"
+            text="Add a repo, or import yours from GitHub in Settings."
             action={() => openCreate('repos')}
-            actionLabel="Add Repository"
+            actionLabel="Add repo"
           />
         )}
       </div>
