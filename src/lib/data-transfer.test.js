@@ -8,6 +8,7 @@ const records = {
   projects: [],
   accounts: [],
   subscriptions: [],
+  keys: [],
 }
 
 describe('buildExport', () => {

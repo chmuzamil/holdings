@@ -1,10 +1,12 @@
 import {
   Activity,
   AlertTriangle,
+  CalendarClock,
   Clock,
   FolderGit2,
   GitBranch,
   Globe2,
+  KeyRound,
   Layers,
   LayoutDashboard,
   Lightbulb,
@@ -30,6 +32,11 @@ export const PAGE_META = {
     title: 'Attention',
     tagline: 'Renewals coming up and things to tidy.',
     icon: AlertTriangle,
+  },
+  expiring: {
+    title: 'Expiring',
+    tagline: 'Everything that renews, expires or needs rotating, soonest first.',
+    icon: CalendarClock,
   },
   timeline: {
     title: 'Timeline',
@@ -65,6 +72,11 @@ export const PAGE_META = {
     title: 'Repos',
     tagline: 'Your code, and which project it belongs to.',
     icon: FolderGit2,
+  },
+  keys: {
+    title: 'Keys & cards',
+    tagline: 'What expires and what to rotate. Never the secrets themselves.',
+    icon: KeyRound,
   },
   subscriptions: {
     title: 'Subscriptions',
