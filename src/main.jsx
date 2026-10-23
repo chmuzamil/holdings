@@ -8,9 +8,13 @@ import './index.css'
 import './App.css'
 import './polish.css'
 import App from './App.jsx'
+import { ServerGate } from './components/server/ServerGate'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    {/* The demo never talks to a server. */}
+    <ServerGate skip={import.meta.env.VITE_DEMO === 'true'}>
+      {(server) => <App server={server} />}
+    </ServerGate>
   </StrictMode>,
 )

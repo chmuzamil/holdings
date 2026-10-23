@@ -359,7 +359,7 @@ h2 {
   pointer-events: none;
 }
 
-input:not([type='checkbox']):not([type='radio']),
+input:where(:not([type='checkbox']):not([type='radio'])),
 select,
 textarea {
   width: 100%;
