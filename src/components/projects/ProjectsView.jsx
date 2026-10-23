@@ -11,6 +11,7 @@ import { getProjectConnectionHealth } from '../../lib/health-score'
 import {
   computeProjectMonthlyCostUsd,
   computeProjectStats,
+  getCostSummary,
   normalizeProjectRecord,
   projectStatuses,
   projectStatusVariant,
@@ -105,6 +106,8 @@ export function ProjectsView({
   const projects = useMemo(() => records.projects || [], [records.projects])
   const normalized = useMemo(() => projects.map(normalizeProjectRecord), [projects])
   const stats = useMemo(() => computeProjectStats(projects, records, toUsd), [projects, records, toUsd])
+  const costSummary = getCostSummary(records, toUsd)
+  const unassignedNames = costSummary.unassigned.filter((line) => line.monthlyUsd > 0).map((line) => line.name)
   const useCards = normalized.length > 0 && normalized.length < 5
 
   const visibleProjects = useMemo(() => {
@@ -123,8 +126,15 @@ export function ProjectsView({
       <div className="projects-summary-bar">
         <Card className="projects-stat-card"><span>Projects</span><strong>{stats.total}</strong></Card>
         <Card className="projects-stat-card">
-          <span>Portfolio burn</span>
+          <span>Across projects</span>
           <strong>{money(fromUsd(stats.monthlyUsd, displayCurrency), displayCurrency)}</strong>
+        </Card>
+        <Card className="projects-stat-card" title={unassignedNames.join(', ')}>
+          <span>Not in any project</span>
+          <strong>{money(fromUsd(costSummary.unassignedMonthlyUsd, displayCurrency), displayCurrency)}</strong>
+          {unassignedNames.length > 0 && (
+            <small>{unassignedNames.slice(0, 3).join(', ')}{unassignedNames.length > 3 ? ` +${unassignedNames.length - 3} more` : ''}</small>
+          )}
         </Card>
       </div>
 

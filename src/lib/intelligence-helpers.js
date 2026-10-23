@@ -3,6 +3,7 @@ import { normalizeDomainRecord } from './domain-helpers'
 import { daysUntilRenewal, isRenewableRecord } from './renewal-helpers'
 import {
   computeProjectMonthlyCostUsd,
+  getCostSummary,
   getProjectCostBreakdown,
   normalizeProjectRecord,
 } from './project-helpers'
@@ -111,11 +112,7 @@ export function searchCommandIndex(index, query, limit = 12) {
 }
 
 export function getTotalMonthlyBurn(records, toUsd) {
-  const domainMonthly = records.domains.reduce((sum, d) => sum + domainMonthlyUsd(d, toUsd), 0)
-  const serverMonthly = records.servers.reduce((sum, s) => sum + toUsd(s), 0)
-  const subMonthly = records.subscriptions.reduce((sum, s) => sum + toUsd(s), 0)
-  const accountMonthly = records.accounts.reduce((sum, a) => sum + toUsd(a), 0)
-  return domainMonthly + serverMonthly + subMonthly + accountMonthly
+  return getCostSummary(records, toUsd).totalMonthlyUsd
 }
 
 export function getFounderInsights(records, toUsd) {
@@ -337,10 +334,5 @@ export function getProjectCostAnalytics(project, records, toUsd) {
     ...row,
     percent: Math.round((row.monthlyUsd / totalUsd) * 100),
   }))
-  const trend = allocation.map((row, i) => ({
-    label: row.label,
-    value: row.monthlyUsd,
-    month: `M${i + 1}`,
-  }))
-  return { breakdown, allocation, trend, totalUsd, annualUsd: totalUsd * 12 }
+  return { breakdown, allocation, totalUsd: breakdown.totalUsd, annualUsd: breakdown.totalUsd * 12 }
 }

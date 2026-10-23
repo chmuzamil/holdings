@@ -1,3 +1,5 @@
+import { fromV1, summarizeCosts } from '@holdings/core'
+
 export const projectStatuses = [
   'Idea',
   'Planning',
@@ -65,30 +67,40 @@ export function projectStatusVariant(status) {
   return 'default'
 }
 
-function domainMonthlyUsd(domain, toUsd) {
-  return toUsd(domain) / 12
+const KIND_LABELS = {
+  domain: 'Domain',
+  server: 'Server',
+  repo: 'Repository',
+  account: 'Account',
+  subscription: 'Subscription',
+}
+
+// One cost summary per records object and cost function, so each change to
+// the data is computed once however many components ask.
+const costCache = new WeakMap()
+
+export function getCostSummary(records, toUsd) {
+  let byCostFn = costCache.get(records)
+  if (!byCostFn) {
+    byCostFn = new WeakMap()
+    costCache.set(records, byCostFn)
+  }
+  let summary = byCostFn.get(toUsd)
+  if (!summary) {
+    summary = summarizeCosts(fromV1(records, { costUsd: (record) => toUsd(record) }))
+    byCostFn.set(toUsd, summary)
+  }
+  return summary
+}
+
+function projectCost(project, records, toUsd) {
+  const known = (records.projects || []).some((item) => item.id === project.id)
+  const source = known ? records : { ...records, projects: [...(records.projects || []), project] }
+  return getCostSummary(source, toUsd).projects.get(project.id)
 }
 
 export function computeProjectMonthlyCostUsd(project, records, toUsd) {
-  const normalized = normalizeProjectRecord(project)
-  let total = 0
-
-  normalized.domainIds.forEach((id) => {
-    const domain = records.domains.find((item) => item.id === id)
-    if (domain) total += domainMonthlyUsd(domain, toUsd)
-  })
-
-  normalized.serverIds.forEach((id) => {
-    const server = records.servers.find((item) => item.id === id)
-    if (server) total += toUsd(server)
-  })
-
-  normalized.subscriptionIds.forEach((id) => {
-    const subscription = records.subscriptions.find((item) => item.id === id)
-    if (subscription) total += toUsd(subscription)
-  })
-
-  return total
+  return projectCost(project, records, toUsd)?.monthlyUsd ?? 0
 }
 
 export function computeProjectStats(projects, records, toUsd) {
@@ -108,42 +120,13 @@ export function computeProjectStats(projects, records, toUsd) {
 }
 
 export function getProjectCostBreakdown(project, records, toUsd) {
-  const normalized = normalizeProjectRecord(project)
-  const rows = []
-
-  normalized.domainIds.forEach((id) => {
-    const domain = records.domains.find((item) => item.id === id)
-    if (domain) {
-      rows.push({
-        label: domain.name,
-        type: 'Domain',
-        monthlyUsd: domainMonthlyUsd(domain, toUsd),
-      })
-    }
-  })
-
-  normalized.serverIds.forEach((id) => {
-    const server = records.servers.find((item) => item.id === id)
-    if (server) {
-      rows.push({
-        label: server.name,
-        type: 'Server',
-        monthlyUsd: toUsd(server),
-      })
-    }
-  })
-
-  normalized.subscriptionIds.forEach((id) => {
-    const subscription = records.subscriptions.find((item) => item.id === id)
-    if (subscription) {
-      rows.push({
-        label: subscription.name,
-        type: 'Subscription',
-        monthlyUsd: toUsd(subscription),
-      })
-    }
-  })
-
-  const totalUsd = rows.reduce((sum, row) => sum + row.monthlyUsd, 0)
-  return { rows, totalUsd }
+  const cost = projectCost(project, records, toUsd)
+  const rows = (cost?.lines ?? []).map((line) => ({
+    label: line.name,
+    type: KIND_LABELS[line.kind] || 'Asset',
+    monthlyUsd: line.monthlyUsd,
+    assetMonthlyUsd: line.assetMonthlyUsd,
+    sharedBy: line.sharedBy,
+  }))
+  return { rows, totalUsd: cost?.monthlyUsd ?? 0 }
 }
