@@ -916,3 +916,13 @@ option {
   color: var(--text-strong);
   font-size: 14px;
 }
+
+.form-error {
+  margin: 0 24px 12px;
+  padding: 10px 12px;
+  border: 1px solid rgb(var(--danger-rgb) / 0.4);
+  border-radius: var(--radius-md);
+  background: rgb(var(--danger-rgb) / 0.1);
+  color: var(--danger-text);
+  font-size: 14px;
+}

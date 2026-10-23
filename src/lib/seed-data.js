@@ -11,6 +11,13 @@ function day(offset, now) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
+// Last day of the month, `months` from now (cards expire at month end).
+function monthEnd(months, now) {
+  const date = new Date(now.getFullYear(), now.getMonth() + months + 1, 0)
+  const pad = (value) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 function stamp(offset, now) {
   return `${day(offset, now)}T09:00:00.000Z`
 }
@@ -45,6 +52,7 @@ export function getSeedRecords(now = new Date()) {
   const servers = [
     {
       id: 'server_main',
+      paidWithId: 'key_business_card',
       name: 'Main VPS',
       provider: 'Hetzner',
       packageName: 'CPX21',
@@ -90,6 +98,7 @@ export function getSeedRecords(now = new Date()) {
   const domains = [
     {
       id: 'domain_shopfront',
+      paidWithId: 'key_business_card',
       name: 'shopfront.example',
       provider: 'Porkbun',
       cost: 11,
@@ -377,6 +386,7 @@ export function getSeedRecords(now = new Date()) {
   const subscriptions = [
     {
       id: 'subscription_postmark',
+      paidWithId: 'key_business_card',
       name: 'Postmark',
       provider: 'Postmark',
       cost: 15,
@@ -389,6 +399,7 @@ export function getSeedRecords(now = new Date()) {
     },
     {
       id: 'subscription_sentry',
+      paidWithId: 'key_business_card',
       name: 'Sentry Team',
       provider: 'Sentry',
       cost: 26,
@@ -401,6 +412,7 @@ export function getSeedRecords(now = new Date()) {
     },
     {
       id: 'subscription_openai',
+      paidWithId: 'key_business_card',
       name: 'OpenAI API',
       provider: 'OpenAI',
       cost: 20,
@@ -425,7 +437,77 @@ export function getSeedRecords(now = new Date()) {
     },
   ]
 
-  return { domains, servers, repos, projects, accounts, subscriptions }
+  // Metadata only: what each key is, where it's kept and when it expires.
+  const keys = [
+    {
+      id: 'key_business_card',
+      name: 'Business Visa',
+      keyType: 'Payment card',
+      provider: 'Example Bank',
+      last4: '4242',
+      keptIn: 'Wallet',
+      renewalDate: '',
+      expiryDate: monthEnd(2, now),
+      status: 'Active',
+      connectedProjectIds: [],
+      notes: 'Pays for the VPS, shopfront.example, Postmark, Sentry and OpenAI.',
+      ...added(-500),
+    },
+    {
+      id: 'key_stripe_live',
+      name: 'Stripe live secret key',
+      keyType: 'API key',
+      provider: 'Stripe',
+      keptIn: '1Password, Ops vault',
+      renewalDate: d(40),
+      expiryDate: '',
+      status: 'Active',
+      connectedProjectIds: ['project_shopfront'],
+      notes: 'Restricted key. Rotate twice a year.',
+      ...added(-400),
+    },
+    {
+      id: 'key_github_deploy',
+      name: 'GitHub deploy token',
+      keyType: 'Access token',
+      provider: 'GitHub',
+      keptIn: 'Server .env on Main VPS',
+      renewalDate: '',
+      expiryDate: d(12),
+      status: 'Active',
+      connectedProjectIds: ['project_newsbite'],
+      notes: 'Fine-grained, read-only on the newsbite repo.',
+      ...added(-80),
+    },
+    {
+      id: 'key_shopfront_tls',
+      name: 'shopfront.example TLS certificate',
+      keyType: 'TLS certificate',
+      provider: "Let's Encrypt",
+      keptIn: 'Main VPS (auto-renewed by Caddy)',
+      renewalDate: '',
+      expiryDate: d(55),
+      status: 'Active',
+      connectedProjectIds: ['project_shopfront'],
+      notes: '',
+      ...added(-60),
+    },
+    {
+      id: 'key_google_oauth',
+      name: 'Google sign-in OAuth app',
+      keyType: 'OAuth app',
+      provider: 'Google Cloud',
+      keptIn: '1Password, Ops vault',
+      renewalDate: '',
+      expiryDate: '',
+      status: 'Active',
+      connectedProjectIds: ['project_shopfront'],
+      notes: 'Client secret was last rotated when the app launched.',
+      ...added(-300),
+    },
+  ]
+
+  return { domains, servers, repos, projects, accounts, subscriptions, keys }
 }
 
 export function isRecordsEmpty(records) {

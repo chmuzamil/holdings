@@ -30,7 +30,8 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 ## What works today
 
 - **Projects as the centre.** Link domains, servers, repos and subscriptions to a project and see what it costs and earns each month. A server shared by two projects is split between them, and anything not in a project is shown separately, so the numbers always add up.
-- **"What breaks if…"**: pick a server, domain or service and see which projects it affects, how much revenue they earn, and what else stops with it (including subdomains that point at it).
+- **"What breaks if…"**: pick a server, domain, service or payment card and see which projects it affects, how much revenue they earn, and what else stops with it (including subdomains that point at it).
+- **Keys & cards, and an expiry radar**: track API keys, tokens, OAuth apps, TLS certificates and cards by name, where they are kept and when they expire or need rotating. Never the secret itself: Holdings refuses to save anything that looks like a real key or card number. Mark which card pays for what, and see everything that renews or expires on one page, soonest first.
 - **Domains** with subdomains attached to servers, notes, renewal dates, and an optional live DNS + registry (RDAP) check: registrar, expiry, nameservers, MX and SPF.
 - **Servers, repos, accounts and subscriptions** with costs, renewal dates and notes.
 - **GitHub import**: fetch your repos by username. An optional token is kept in memory only, never saved.
@@ -90,7 +91,7 @@ npm run api
 | Revenue per project | ✅ (typed in; Stripe etc. planned) | – | – | – | – | – |
 | "What breaks if…" impact view | ✅ | – | – | – | – | – |
 | Handover and sale (due-diligence) packs | planned (v0.2) | – | – | – | – | – |
-| API key and certificate expiry (metadata only) | planned (v0.2) | – | SSL | certs | – | – |
+| API key, certificate and card expiry (metadata only) | ✅ | – | SSL | certs | – | – |
 | Built-in MCP server for AI agents | planned (v0.2) | community | – | community | – | own apps only |
 | Works with no server at all | ✅ | – | – | – | – | – |
 
@@ -100,8 +101,8 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 
 **v0.2: the founder's asset register**
 - ✅ **Project ledger**: monthly cost against revenue for each project, with shared servers split fairly. Read-only Stripe, Lemon Squeezy and Paddle revenue comes with self-hosted mode.
-- ✅ **"What breaks if…"**: pick a domain, server or service and see what it affects and the revenue involved. Cards come with the expiry radar.
-- **Expiry radar**: domains, TLS certificates, API keys, OAuth apps and card expiry dates in one list. Metadata only, never the secret.
+- ✅ **"What breaks if…"**: pick a domain, server, service or card and see what it affects and the revenue involved.
+- ✅ **Expiry radar**: domains, TLS certificates, API keys, tokens, OAuth apps and payment cards in one list, soonest first. Metadata only: Holdings refuses to save anything that looks like a real key or card number.
 - **Exit pack**: a one-click asset register and transfer checklist for selling a project.
 - **Handover pack**: an encrypted "if I'm unavailable" document for someone you trust.
 - **MCP server** (read-only by default), so Claude and other agents can answer questions about your portfolio.

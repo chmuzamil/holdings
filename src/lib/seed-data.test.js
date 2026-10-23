@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getSeedRecords } from './seed-data'
+import { findSecretsInRecord } from './secrets'
 
 const now = new Date('2026-10-07T12:00:00Z')
 const seed = getSeedRecords(now)
@@ -22,9 +23,17 @@ describe('demo data', () => {
     expect(text).not.toMatch(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i)
   })
 
+  it('contains nothing that looks like a real secret or card number', () => {
+    const hits = Object.values(seed).flat().flatMap((item) => findSecretsInRecord(item).map((hit) => `${item.id}.${hit.field}`))
+    expect(hits).toEqual([])
+  })
+
   it('only links to records that exist', () => {
     const ids = new Set(Object.values(seed).flat().map((item) => item.id))
     const linkKeys = /^(domainIds|repoIds|serverIds|subscriptionIds|connected\w+Ids)$/
+    Object.values(seed).flat().forEach((item) => {
+      if (item.paidWithId) expect(ids, `${item.id}.paidWithId`).toContain(item.paidWithId)
+    })
     Object.values(seed).flat().forEach((item) => {
       Object.entries(item).forEach(([key, value]) => {
         if (linkKeys.test(key)) value.forEach((id) => expect(ids, `${item.id}.${key}`).toContain(id))

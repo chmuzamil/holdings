@@ -168,6 +168,7 @@ export function RepoRecordModal({ modal, setModal, saveRecord }) {
             </label>
           </div>
         </div>
+        {modal.error && <p className="form-error" role="alert">{modal.error}</p>}
         <div className="modal-actions">
           <button className="ghost-button" type="button" onClick={() => setModal(null)}>Cancel</button>
           <button className="primary-button" type="submit">
