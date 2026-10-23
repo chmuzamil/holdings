@@ -123,6 +123,55 @@ describe('first run', () => {
   })
 })
 
+describe('secure cookies over plain HTTP', () => {
+  // fetch() always sets Host from the URL, so use node:http to send another one.
+  function setupFrom(host: string, headers: Record<string, string> = {}) {
+    const body = JSON.stringify({ setupCode: SETUP_CODE, password: PASSWORD })
+    return new Promise<{ status: number; body: Record<string, unknown>; headers: Headers }>((resolve, reject) => {
+      const request = http.request(`${base}/api/setup`, {
+        method: 'POST',
+        headers: { Host: host, 'Content-Type': 'application/json', 'X-Requested-With': 'holdings', ...headers },
+      }, (response) => {
+        let text = ''
+        response.on('data', (chunk) => { text += chunk })
+        response.on('end', () => {
+          const cookie = response.headers['set-cookie']?.join(', ')
+          resolve({ status: response.statusCode ?? 0, body: JSON.parse(text), headers: new Headers(cookie ? { 'set-cookie': cookie } : {}) })
+        })
+      })
+      request.on('error', reject)
+      request.end(body)
+    })
+  }
+
+  it('explains instead of failing silently when the cookie would be dropped', async () => {
+    await new Promise((resolve) => server.close(resolve))
+    store.close()
+    await start({ secureCookies: true })
+    const plain = await setupFrom('192.168.1.20:8080')
+    expect(plain.status).toBe(400)
+    expect(plain.body.error).toMatch(/HTTPS/)
+    expect(plain.headers.get('set-cookie')).toBeNull()
+  })
+
+  it('allows localhost, and HTTPS behind a trusted proxy', async () => {
+    await new Promise((resolve) => server.close(resolve))
+    store.close()
+    await start({ secureCookies: true, trustProxy: true })
+    expect((await setupFrom('holdings.example', { 'X-Forwarded-Proto': 'http' })).status).toBe(400)
+    const proxied = await setupFrom('holdings.example', { 'X-Forwarded-Proto': 'https' })
+    expect(proxied.status).toBe(200)
+    expect(proxied.headers.get('set-cookie')).toContain('Secure')
+  })
+
+  it('treats localhost as safe', async () => {
+    await new Promise((resolve) => server.close(resolve))
+    store.close()
+    await start({ secureCookies: true })
+    expect((await setupFrom('localhost:8080')).status).toBe(200)
+  })
+})
+
 describe('signing in', () => {
   it('logs in with the right password only', async () => {
     await signedIn()
