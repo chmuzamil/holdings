@@ -1,6 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useId, useMemo, useState } from 'react'
 import {
   AlertTriangle,
+  CalendarClock,
   ChevronDown,
   Clock,
   Database,
@@ -10,6 +11,7 @@ import {
   GitBranch,
   Globe2,
   LayoutDashboard,
+  KeyRound,
   Layers,
   Lightbulb,
   Plus,
@@ -44,6 +46,7 @@ import { BrandMark } from './components/shared/BrandMark'
 import { isRenewableModule } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
 import { statusTone } from './lib/status'
+import { findSecretsInRecord } from './lib/secrets'
 import { Badge } from './components/ui/Badge'
 import { useDialog } from './components/ui/use-dialog'
 import { buildExport, exportFileName, parseImport } from './lib/data-transfer'
@@ -74,8 +77,11 @@ const InsightsView = named(() => import('./components/command-center/InsightsVie
 const AttentionCenterView = named(() => import('./components/command-center/AttentionCenterView'), 'AttentionCenterView')
 const TimelineView = named(() => import('./components/command-center/TimelineView'), 'TimelineView')
 const ImpactView = named(() => import('./components/command-center/ImpactView'), 'ImpactView')
+const ExpiryView = named(() => import('./components/command-center/ExpiryView'), 'ExpiryView')
 const CommandPalette = named(() => import('./components/command-palette/CommandPalette'), 'CommandPalette')
 
+
+const KEY_TYPES = ['API key', 'Access token', 'OAuth app', 'TLS certificate', 'Payment card', 'Other']
 
 const moduleConfig = {
   domains: {
@@ -89,6 +95,7 @@ const moduleConfig = {
       { key: 'notes', label: 'Notes', type: 'textarea' },
       { key: 'subdomains', label: 'Subdomains', type: 'subdomainList' },
       { key: 'cost', label: 'Yearly cost (USD)', type: 'number' },
+      { key: 'paidWithId', label: 'Paid with', type: 'cardLink' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
       { key: 'expiryDate', label: 'Expiry date', type: 'date' },
       { key: 'status', label: 'Status', type: 'status' },
@@ -120,6 +127,7 @@ const moduleConfig = {
       { key: 'hostedServices', label: 'Hosted services (comma separated)', type: 'text' },
       { key: 'notes', label: 'Notes', type: 'textarea' },
       { key: 'cost', label: 'Monthly cost (USD)', type: 'number' },
+      { key: 'paidWithId', label: 'Paid with', type: 'cardLink' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
       { key: 'expiryDate', label: 'Expiry date', type: 'date' },
       { key: 'status', label: 'Status', type: 'status' },
@@ -141,8 +149,28 @@ const moduleConfig = {
       { key: 'name', label: 'Account', type: 'text' },
       { key: 'provider', label: 'Platform', type: 'text' },
       { key: 'cost', label: 'Monthly cost (USD)', type: 'number' },
+      { key: 'paidWithId', label: 'Paid with', type: 'cardLink' },
       { key: 'renewalDate', label: 'Review date', type: 'date' },
       { key: 'expiryDate', label: 'Attention date', type: 'date' },
+      { key: 'status', label: 'Status', type: 'status' },
+    ],
+  },
+  keys: {
+    title: 'Keys & cards',
+    singular: 'Key or card',
+    icon: KeyRound,
+    empty: 'No keys or cards yet.',
+    note: 'Only what a key is, where it is kept and when it expires. Never the key or card number itself.',
+    fields: [
+      { key: 'name', label: 'Name', type: 'text', placeholder: 'Stripe live key' },
+      { key: 'keyType', label: 'Type', type: 'select', options: KEY_TYPES },
+      { key: 'provider', label: 'Issued by', type: 'text', placeholder: 'Stripe' },
+      { key: 'projectId', label: 'Used by project', type: 'projectLink' },
+      { key: 'keptIn', label: 'Where it is kept', type: 'text', placeholder: '1Password, Ops vault' },
+      { key: 'last4', label: 'Last 4 digits (cards only)', type: 'text', placeholder: '4242', maxLength: 4 },
+      { key: 'renewalDate', label: 'Rotate by', type: 'date' },
+      { key: 'expiryDate', label: 'Expires', type: 'date' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
       { key: 'status', label: 'Status', type: 'status' },
     ],
   },
@@ -155,6 +183,7 @@ const moduleConfig = {
       { key: 'name', label: 'Subscription', type: 'text' },
       { key: 'provider', label: 'Provider', type: 'text' },
       { key: 'cost', label: 'Monthly cost (USD)', type: 'number' },
+      { key: 'paidWithId', label: 'Paid with', type: 'cardLink' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
       { key: 'expiryDate', label: 'Expiry date', type: 'date' },
       { key: 'status', label: 'Status', type: 'status' },
@@ -166,7 +195,7 @@ const statuses = ['Active', 'Expiring Soon', 'Expired', 'Cancelled']
 
 migrateLegacyStorage(window.localStorage)
 
-const recordModules = ['domains', 'servers', 'repos', 'projects', 'accounts', 'subscriptions']
+const recordModules = ['domains', 'servers', 'repos', 'projects', 'accounts', 'subscriptions', 'keys']
 // Demo builds (e.g. the public GitHub Pages site) open with the fictional portfolio.
 const isDemoBuild = import.meta.env.VITE_DEMO === 'true'
 
@@ -199,6 +228,7 @@ const navItems = [
   { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
   { id: 'insights', label: 'Insights', icon: Lightbulb },
   { id: 'attention', label: 'Attention', icon: AlertTriangle },
+  { id: 'expiring', label: 'Expiring', icon: CalendarClock },
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { type: 'divider' },
   { id: 'infrastructure-map', label: 'Map', icon: GitBranch },
@@ -210,6 +240,7 @@ const navItems = [
   { id: 'repos', label: 'Repos', icon: FolderGit2 },
   { id: 'accounts', label: 'Accounts', icon: UserCircle },
   { id: 'subscriptions', label: 'Subscriptions', icon: WalletCards },
+  { id: 'keys', label: 'Keys & cards', icon: KeyRound },
   { type: 'divider' },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
@@ -269,6 +300,11 @@ function loadSavedSettings() {
   } catch {
     return { ...defaultSettings }
   }
+}
+
+// The earlier of "rotate by" and "expires".
+function nextKeyDate(record) {
+  return [record.renewalDate, record.expiryDate].filter(Boolean).sort()[0] || ''
 }
 
 // Costs typed into the form are in USD, so a saved record never keeps an old currency.
@@ -459,6 +495,15 @@ function App() {
 
   function saveRecord(event) {
     event.preventDefault()
+    const secrets = findSecretsInRecord(modal.values)
+    if (secrets.length) {
+      const label = (key) => moduleConfig[modal.moduleKey]?.fields.find((field) => field.key === key)?.label || key
+      setModal((current) => ({
+        ...current,
+        error: `${label(secrets[0].field)} looks like it contains a ${secrets[0].kind}. Holdings only stores where a secret is kept and when it expires, never the secret itself. Remove it and try again.`,
+      }))
+      return
+    }
     const values = modal.moduleKey === 'repos'
       ? normalizeRepoRecord({
           ...modal.values,
@@ -485,6 +530,13 @@ function App() {
           : {
               ...modal.values,
               cost: Number(modal.values.cost || 0),
+              ...(modal.moduleKey === 'keys'
+                ? {
+                    cost: 0,
+                    last4: String(modal.values.last4 || '').replace(/\D/g, '').slice(-4),
+                    connectedProjectIds: modal.values.projectId ? [modal.values.projectId] : [],
+                  }
+                : {}),
               ...(modal.moduleKey === 'domains'
                 ? {
                     subdomains: (modal.values.subdomains || []).filter((sub) => sub.name?.trim()),
@@ -763,6 +815,10 @@ function App() {
           <InfrastructureMapView records={records} setActivePage={setActivePage} />
         )}
 
+        {activePage === 'expiring' && (
+          <ExpiryView flatRecords={flatRecords} prettyDate={prettyDate} setActivePage={setActivePage} />
+        )}
+
         {activePage === 'impact' && (
           <ImpactView
             records={records}
@@ -868,7 +924,7 @@ function App() {
           />
         )}
 
-        {currentConfig && !['domains', 'repos', 'servers', 'projects', 'dashboard', 'settings', 'infrastructure-map', 'impact', 'insights', 'attention', 'timeline'].includes(activePage) && (
+        {currentConfig && !['domains', 'repos', 'servers', 'projects', 'dashboard', 'settings', 'infrastructure-map', 'impact', 'expiring', 'insights', 'attention', 'timeline'].includes(activePage) && (
           <ModuleView
             config={currentConfig}
             moduleKey={activePage}
@@ -930,6 +986,8 @@ function App() {
           modal={modal}
           config={moduleConfig[modal.moduleKey]}
           servers={records.servers}
+          projects={records.projects}
+          cards={records.keys.filter((item) => item.keyType === 'Payment card')}
           setModal={setModal}
           saveRecord={saveRecord}
         />
@@ -1010,9 +1068,9 @@ function ModuleView({
       <div className="records-table">
         <div className="table-head">
           <span>Name</span>
-          <span>Provider</span>
-          <span>Cost</span>
-          <span>Renewal</span>
+          <span>{moduleKey === 'keys' ? 'Type' : 'Provider'}</span>
+          <span>{moduleKey === 'keys' ? 'Kept in' : 'Cost'}</span>
+          <span>{moduleKey === 'keys' ? 'Next date' : 'Renewal'}</span>
           <span>Status</span>
           <span>Actions</span>
         </div>
@@ -1031,6 +1089,18 @@ function ModuleView({
                 )}
               </div>
             </div>
+            {moduleKey === 'keys' ? (
+              <>
+                <span data-label="Type">
+                  {record.keyType || 'Other'}
+                  {record.last4 && <small className="converted-cost">Card ending {record.last4}</small>}
+                  {record.provider && <small className="converted-cost">{record.provider}</small>}
+                </span>
+                <span data-label="Kept in">{record.keptIn || '—'}</span>
+                <span data-label="Next date">{prettyDate(nextKeyDate(record))}</span>
+              </>
+            ) : (
+            <>
             <span data-label={moduleKey === 'servers' ? 'Provider / IP' : 'Provider'}>
               {record.provider}
               {moduleKey === 'servers' && record.ipAddress && (
@@ -1044,6 +1114,8 @@ function ModuleView({
               )}
             </span>
             <span data-label="Renewal">{prettyDate(record.renewalDate)}</span>
+            </>
+            )}
             <Badge variant={statusTone(record.status)} className="record-status">{record.status}</Badge>
             <div className="row-actions">
               <button type="button" title="Edit" aria-label={`Edit ${record.name}`} onClick={() => openEdit(moduleKey, record)}><Edit3 size={16} aria-hidden="true" /></button>
@@ -1303,7 +1375,7 @@ function SubdomainListField({ subdomains, servers, onChange }) {
   )
 }
 
-function RecordModal({ modal, config, servers, setModal, saveRecord }) {
+function RecordModal({ modal, config, servers, projects, cards, setModal, saveRecord }) {
   const titleId = useId()
   const dialogRef = useDialog({ onClose: () => setModal(null), initialFocus: 'input, select, textarea' })
   return (
@@ -1312,7 +1384,7 @@ function RecordModal({ modal, config, servers, setModal, saveRecord }) {
         <div className="modal-heading">
           <div>
             <h2 id={titleId}>{modal.mode === 'create' ? 'Add' : 'Edit'} {config.singular.toLowerCase()}</h2>
-            <p>Costs are in US dollars.</p>
+            <p>{config.note || 'Costs are in US dollars.'}</p>
           </div>
           <button type="button" className="modal-close" aria-label="Close" onClick={() => setModal(null)}><X size={18} aria-hidden="true" /></button>
         </div>
@@ -1343,6 +1415,31 @@ function RecordModal({ modal, config, servers, setModal, saveRecord }) {
                 >
                   {statuses.map((status) => <option key={status}>{status}</option>)}
                 </select>
+              ) : field.type === 'select' ? (
+                <select
+                  value={modal.values[field.key] || field.options[0]}
+                  onChange={(event) => setModal((current) => ({
+                    ...current,
+                    values: { ...current.values, [field.key]: event.target.value },
+                  }))}
+                >
+                  {field.options.map((option) => <option key={option}>{option}</option>)}
+                </select>
+              ) : field.type === 'projectLink' || field.type === 'cardLink' ? (
+                <select
+                  value={modal.values[field.key] || ''}
+                  onChange={(event) => setModal((current) => ({
+                    ...current,
+                    values: { ...current.values, [field.key]: event.target.value },
+                  }))}
+                >
+                  <option value="">{field.type === 'cardLink' ? 'Not recorded' : 'None'}</option>
+                  {(field.type === 'cardLink' ? cards : projects).map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}{item.last4 ? ` (…${item.last4})` : ''}
+                    </option>
+                  ))}
+                </select>
               ) : field.type === 'serverLink' ? (
                 <select
                   value={modal.values[field.key] || ''}
@@ -1371,6 +1468,8 @@ function RecordModal({ modal, config, servers, setModal, saveRecord }) {
               ) : (
                 <input
                   type={field.type}
+                  placeholder={field.placeholder}
+                  maxLength={field.maxLength}
                   min={field.type === 'number' ? '0' : undefined}
                   step={field.type === 'number' ? '1' : undefined}
                   value={modal.values[field.key]}
@@ -1385,6 +1484,7 @@ function RecordModal({ modal, config, servers, setModal, saveRecord }) {
           ))}
         </div>
         </div>
+        {modal.error && <p className="form-error" role="alert">{modal.error}</p>}
         <div className="modal-actions">
           <button className="ghost-button" type="button" onClick={() => setModal(null)}>Cancel</button>
           <button className="primary-button" type="submit">{modal.mode === 'create' ? `Add ${config.singular.toLowerCase()}` : 'Save changes'}</button>

@@ -162,6 +162,7 @@ export function ProjectRecordModal({ modal, setModal, saveRecord, records }) {
           </div>
         </div>
 
+        {modal.error && <p className="form-error" role="alert">{modal.error}</p>}
         <div className="modal-actions">
           <button type="button" className="ghost-button" onClick={() => setModal(null)}>Cancel</button>
           <button type="submit" className="primary-button">

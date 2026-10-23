@@ -1,7 +1,7 @@
 export const EXPORT_FORMAT = 'holdings-export'
 export const EXPORT_VERSION = 1
 
-const MODULE_KEYS = ['domains', 'servers', 'repos', 'projects', 'accounts', 'subscriptions']
+const MODULE_KEYS = ['domains', 'servers', 'repos', 'projects', 'accounts', 'subscriptions', 'keys']
 
 export function buildExport(records, now = new Date()) {
   return {
