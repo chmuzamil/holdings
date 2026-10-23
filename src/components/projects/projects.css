@@ -10,12 +10,6 @@
   max-width: 480px;
 }
 
-.projects-stats {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-}
-
 .projects-stat-card {
   padding: 16px 18px;
 }
@@ -53,13 +47,14 @@
 
 .project-card {
   padding: 18px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
 }
 
 .project-card-head {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
 }
@@ -73,19 +68,6 @@
 .project-card-title small {
   color: var(--text-muted);
   font-size: 12px;
-}
-
-.project-card-health {
-  display: grid;
-  gap: 8px;
-}
-
-.project-card-health-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: var(--text-muted);
 }
 
 .project-card-assets {
@@ -106,6 +88,7 @@
 }
 
 .project-card-footer {
+  margin-top: auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -234,9 +217,6 @@
 }
 
 @media (max-width: 1080px) {
-  .projects-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
   .project-table-head {
     display: none;
@@ -280,4 +260,10 @@
 
 .project-money small.money-loss {
   color: #fca5a5;
+}
+
+.project-card-gaps {
+  margin: 0;
+  color: #fcd34d;
+  font-size: 12px;
 }

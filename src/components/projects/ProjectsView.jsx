@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { ChevronDown, Edit3, Eye, Globe2, Search, Server, Trash2, FolderGit2 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
-import { Avatar } from '../ui/Avatar'
 import { DropdownMenu } from '../ui/DropdownMenu'
 import { EmptyState } from '../EmptyState'
 import { ProjectDetailsDrawer } from './ProjectDetailsDrawer'
@@ -62,7 +61,6 @@ function ProjectCard({
   return (
     <Card className="project-card">
       <div className="project-card-head">
-        <Avatar name={project.name} size="md" />
         <div className="project-card-title">
           <strong>{project.name}</strong>
           <small>{project.category} · {project.status}</small>

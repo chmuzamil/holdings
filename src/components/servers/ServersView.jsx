@@ -5,7 +5,6 @@ import { DropdownMenu } from '../ui/DropdownMenu'
 import { EmptyState } from '../EmptyState'
 import { ServerDetailsDrawer } from './ServerDetailsDrawer'
 import {
-  countHostedServices,
   formatServerSpecsLine,
   normalizeServerRecord,
 } from '../../lib/server-helpers'
@@ -63,33 +62,27 @@ export function ServersView({
       <div className="server-table">
         <div className="server-table-head">
           <span>Server</span>
-          <span>Provider</span>
-          <span>IP Address</span>
           <span>Specs</span>
           <span>Location</span>
-          <span>Monthly Cost</span>
-          <span>Renewal</span>
+          <span className="numeric">Per month</span>
+          <span>Renews</span>
           <span>Status</span>
-          <span>Hosted</span>
-          <span>Actions</span>
+          <span className="sr-only">Actions</span>
         </div>
         {visibleServers.length ? visibleServers.map((server) => (
           <article className={`server-table-row ${isAttention(server) ? 'attention' : ''}`.trim()} key={server.id}>
             <div className="project-main">
               <strong>{server.name}</strong>
-              <small>{server.packageName || server.provider}</small>
+              <small>{[server.provider, server.packageName, server.ipAddress].filter(Boolean).join(' · ') || '—'}</small>
             </div>
-            <div className="project-asset-cell">{server.provider || '—'}</div>
-            <div className="project-asset-cell">{server.ipAddress || '—'}</div>
-            <div className="server-specs">{formatServerSpecsLine(server)}</div>
-            <div className="project-asset-cell">{server.location || '—'}</div>
-            <div className="project-cost">{money(fromUsd(toUsd(server), displayCurrency), displayCurrency)}</div>
-            <div className="project-asset-cell">{prettyDate(server.renewalDate)}</div>
-            <div><Badge variant={server.status === 'Active' ? 'success' : 'warning'}>{server.status}</Badge></div>
-            <div className="server-hosted-count">{countHostedServices(server)}</div>
+            <div className="server-specs" data-label="Specs">{formatServerSpecsLine(server) || '—'}</div>
+            <div className="project-asset-cell" data-label="Location">{server.location || '—'}</div>
+            <div className="project-cost numeric" data-label="Per month">{money(fromUsd(toUsd(server), displayCurrency), displayCurrency)}</div>
+            <div className="project-asset-cell" data-label="Renews">{prettyDate(server.renewalDate)}</div>
+            <div data-label="Status"><Badge variant={server.status === 'Active' ? 'success' : 'warning'}>{server.status}</Badge></div>
             <div className="repo-actions">
               <button className="ui-btn ui-btn-primary" type="button" onClick={() => setSelectedServer(server)}>
-                <Eye size={15} /> View
+                <Eye size={15} aria-hidden="true" /> Details
               </button>
               <DropdownMenu items={[
                 { label: 'Edit', icon: <Edit3 size={14} />, onClick: () => openEdit('servers', server) },
