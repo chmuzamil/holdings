@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import qrcode from 'qrcode-generator'
 import { LogOut, ShieldCheck } from 'lucide-react'
 import { api } from '../../lib/server-api'
+import { AccessTokens } from './AccessTokens'
 import { StripeSettings } from './StripeSettings'
 
 /** Renders a QR code as SVG squares (no innerHTML). */
@@ -81,6 +82,7 @@ export function AccountSettings({ server, stripe, ratesPerUsd }) {
       <TwoStepSettings server={server} enabled={totpEnabled} />
       <PasswordSettings totpEnabled={totpEnabled} />
       <StripeSettings stripe={stripe} ratesPerUsd={ratesPerUsd} />
+      <AccessTokens />
     </>
   )
 }

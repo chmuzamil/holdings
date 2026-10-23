@@ -129,6 +129,28 @@
   font-variant-numeric: tabular-nums;
 }
 
+.token-created {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid rgb(var(--warning-rgb) / 0.4);
+  border-radius: var(--radius-md);
+  background: rgb(var(--warning-rgb) / 0.06);
+}
+
+.token-created p {
+  margin: 0 0 8px;
+}
+
+.token-command {
+  display: block;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-strong);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .qr-code {
   width: 200px;
   height: 200px;
