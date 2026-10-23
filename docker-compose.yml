@@ -1,0 +1,20 @@
+# docker compose up -d, then read the setup code with: docker compose logs holdings
+# See docs/self-hosting.md for HTTPS and the other settings.
+services:
+  holdings:
+    build: .
+    restart: unless-stopped
+    ports:
+      # Only reachable from this machine. Put a reverse proxy with HTTPS in
+      # front, or change to "8080:8080" on a trusted network.
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - holdings-data:/data
+    environment:
+      # Behind nginx, Caddy or Traefik on the same machine:
+      HOLDINGS_TRUST_PROXY: "false"
+      # Only for plain HTTP on a trusted home network:
+      # HOLDINGS_SECURE_COOKIES: "false"
+
+volumes:
+  holdings-data:

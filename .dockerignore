@@ -1,0 +1,16 @@
+.git
+.github
+.claude
+.serena
+.code-review-graph
+node_modules
+**/node_modules
+dist
+**/dist
+data
+*.log
+.env
+.env.*
+docs/screenshots
+holdings-*.png
+holdings-export-*.json

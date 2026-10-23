@@ -95,6 +95,26 @@ export function createApp(options: AppOptions) {
     return `${SESSION_COOKIE}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secureCookies ? '; Secure' : ''}`
   }
 
+  /**
+   * Browsers drop Secure cookies on plain HTTP (except localhost), so the
+   * login would silently fail. Say what to change instead.
+   */
+  function checkCookieWillStick(request: IncomingMessage) {
+    if (!secureCookies) return
+    const https = Boolean((request.socket as { encrypted?: boolean }).encrypted)
+      || (trustProxy && String(request.headers['x-forwarded-proto'] || '').split(',')[0]?.trim() === 'https')
+    let hostname = ''
+    try {
+      hostname = new URL(`http://${request.headers.host}`).hostname
+    } catch {
+      hostname = ''
+    }
+    const local = ['localhost', '127.0.0.1', '[::1]'].includes(hostname) || hostname.endsWith('.localhost')
+    if (!https && !local) {
+      throw new HttpError(400, 'Your browser won’t keep the login over plain HTTP. Open Holdings over HTTPS (behind a proxy, also set HOLDINGS_TRUST_PROXY=true), or set HOLDINGS_SECURE_COOKIES=false if this is a trusted home network.')
+    }
+  }
+
   function requireSession(context: Context): string {
     if (!context.sessionHash) throw new HttpError(401, 'Sign in first.')
     return context.sessionHash
@@ -149,7 +169,8 @@ export function createApp(options: AppOptions) {
       return { setupNeeded: false, authenticated: true, totpEnabled: Boolean(owner.totpSealed) }
     },
 
-    'POST /api/setup': async ({ body, ip, response }) => {
+    'POST /api/setup': async ({ body, ip, request, response }) => {
+      checkCookieWillStick(request)
       checkNotLocked(ip)
       const input = await body()
       if (store.getOwner()) throw new HttpError(409, 'A login already exists. Sign in instead.')
@@ -163,7 +184,8 @@ export function createApp(options: AppOptions) {
       return { authenticated: true, totpEnabled: false }
     },
 
-    'POST /api/login': async ({ body, ip, response }) => {
+    'POST /api/login': async ({ body, ip, request, response }) => {
+      checkCookieWillStick(request)
       checkNotLocked(ip)
       const input = await body()
       const owner = requireOwner()
