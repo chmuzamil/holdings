@@ -30,11 +30,11 @@ export function DomainHealthDetail({ health }) {
       <div className="ui-kv-row"><span className="ui-kv-label">Nameservers</span><span className="ui-kv-value">{healthLabel(health.nameservers)}</span></div>
       <div className="ui-kv-row"><span className="ui-kv-label">Email</span><span className="ui-kv-value">{healthLabel(health.email)}</span></div>
       <div className="ui-kv-row"><span className="ui-kv-label">A Record</span><span className="ui-kv-value">{health.aRecord || '—'}</span></div>
-      <div className="ui-kv-row"><span className="ui-kv-label">Nameserver List</span><span className="ui-kv-value">{(health.nameserverList || []).join(', ') || '—'}</span></div>
+      <div className="ui-kv-row"><span className="ui-kv-label">Nameservers</span><span className="ui-kv-value">{(health.nameserverList || []).join(', ') || '—'}</span></div>
       <div className="ui-kv-row"><span className="ui-kv-label">SPF record</span><span className="ui-kv-value">{health.lastChecked ? (health.hasSpf ? 'Found' : 'Not found') : '—'}</span></div>
       <div className="ui-kv-row"><span className="ui-kv-label">MX Records</span><span className="ui-kv-value">{(health.mxRecords || []).join(', ') || '—'}</span></div>
       <div className="ui-kv-row"><span className="ui-kv-label">Website URL</span><span className="ui-kv-value">{health.websiteUrl || '—'}</span></div>
-      <div className="ui-kv-row"><span className="ui-kv-label">Last Checked</span><span className="ui-kv-value">{health.lastChecked || 'Never'}</span></div>
+      <div className="ui-kv-row"><span className="ui-kv-label">Last checked</span><span className="ui-kv-value">{health.lastChecked || 'Never'}</span></div>
     </div>
   )
 }

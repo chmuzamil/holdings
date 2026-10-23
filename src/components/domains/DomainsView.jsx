@@ -83,9 +83,9 @@ export function DomainsView({
           <EmptyState
             variant="domains"
             title="No domains yet"
-            text="Track registrars, renewals, and health checks in one place."
+            text="Add a domain to track when it renews and what it costs."
             action={() => openCreate('domains')}
-            actionLabel="Add Domain"
+            actionLabel="Add domain"
           />
         )}
       </div>

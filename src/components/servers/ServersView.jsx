@@ -94,9 +94,9 @@ export function ServersView({
           <EmptyState
             variant="default"
             title="No servers yet"
-            text="Add your first VPS to track specs, hosted services, and costs."
+            text="Add a server to track what it costs and what runs on it."
             action={() => openCreate('servers')}
-            actionLabel="Add Server"
+            actionLabel="Add server"
           />
         )}
       </div>
