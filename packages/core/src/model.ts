@@ -90,6 +90,11 @@ export interface Link {
   from: string
   to: string
   relation: Relation
+  /**
+   * Set when only part of "from" depends on "to": a subdomain (e.g. "staging")
+   * pointing at a server. Losing "to" breaks that subdomain, not the whole domain.
+   */
+  subdomain?: string
 }
 
 export interface HoldingsData {

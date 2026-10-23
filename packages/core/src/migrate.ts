@@ -108,7 +108,8 @@ export function fromV1(records: V1Records, options: MigrateOptions = {}): Holdin
         const subdomains = Array.isArray(record.subdomains) ? record.subdomains : []
         for (const sub of subdomains) {
           const serverId = text((sub as Record<string, unknown>)?.serverId)
-          if (serverId) links.push({ from: id, to: serverId, relation: 'points_to' })
+          const name = text((sub as Record<string, unknown>)?.name)
+          if (serverId) links.push({ from: id, to: serverId, relation: 'points_to', ...(name ? { subdomain: name } : {}) })
         }
       }
       if (moduleKey === 'repos') {
@@ -154,7 +155,7 @@ export function fromV1(records: V1Records, options: MigrateOptions = {}): Holdin
 
   const seenLinks = new Set<string>()
   const uniqueLinks = links.filter((link) => {
-    const key = `${link.from}\u0000${link.to}\u0000${link.relation}`
+    const key = `${link.from}\u0000${link.to}\u0000${link.relation}\u0000${link.subdomain ?? ''}`
     if (seenLinks.has(key) || link.from === link.to || !assetIds.has(link.from) || !assetIds.has(link.to)) return false
     seenLinks.add(key)
     return true
