@@ -17,73 +17,70 @@ import {
 export const PAGE_META = {
   dashboard: {
     title: 'Overview',
-    tagline: 'Everything that needs your attention today.',
+    tagline: 'What you pay, and what needs you soon.',
     icon: LayoutDashboard,
   },
   insights: {
     title: 'Insights',
-    tagline: 'Spending trends and infrastructure analytics.',
+    tagline: 'Where your money goes, and when.',
     icon: Lightbulb,
   },
   attention: {
-    title: 'Attention Center',
-    tagline: 'Issues requiring action.',
+    title: 'Attention',
+    tagline: 'Renewals coming up and things to tidy.',
     icon: AlertTriangle,
   },
   timeline: {
     title: 'Timeline',
-    tagline: 'Chronological history of your infrastructure.',
+    tagline: 'What you added, and when.',
     icon: Clock,
   },
   'infrastructure-map': {
-    title: 'Infrastructure Map',
-    tagline: 'Relationships between projects, domains, servers, and repositories.',
+    title: 'Map',
+    tagline: 'What each project runs on.',
     icon: GitBranch,
   },
   projects: {
     title: 'Projects',
-    tagline: 'Everything you are building.',
+    tagline: 'What each project costs and earns.',
     icon: Layers,
   },
   domains: {
     title: 'Domains',
-    tagline: 'Managed domains and renewals.',
+    tagline: 'Your domains and when they renew.',
     icon: Globe2,
   },
   servers: {
     title: 'Servers',
-    tagline: 'Infrastructure and hosting assets.',
+    tagline: 'Where your apps run.',
     icon: Server,
   },
   repos: {
-    title: 'Repositories',
-    tagline: 'GitHub repositories and activity.',
+    title: 'Repos',
+    tagline: 'Your code, and which project it belongs to.',
     icon: FolderGit2,
   },
   subscriptions: {
     title: 'Subscriptions',
-    tagline: 'Recurring services and SaaS costs.',
+    tagline: 'Services you pay for.',
     icon: WalletCards,
   },
   accounts: {
     title: 'Accounts',
-    tagline: 'Online accounts and platform access.',
+    tagline: 'Accounts your projects depend on.',
     icon: UserCircle,
   },
   settings: {
     title: 'Settings',
-    tagline: 'GitHub sync, storage, and preferences.',
+    tagline: 'Backups, currency and GitHub.',
     icon: Settings,
   },
 }
 
-/** @deprecated use PAGE_META */
-export const intelligencePages = PAGE_META
-
 export function getPageMeta(activePage) {
   return PAGE_META[activePage] || {
     title: 'Holdings',
-    tagline: 'Your personal command center.',
+    tagline: '',
     icon: Activity,
   }
 }

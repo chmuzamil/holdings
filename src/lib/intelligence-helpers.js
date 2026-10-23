@@ -112,12 +112,12 @@ export function searchCommandIndex(index, query, limit = 12) {
     .slice(0, limit)
 }
 
-export function getTotalMonthlyBurn(records, toUsd) {
+export function getTotalMonthlyCost(records, toUsd) {
   return getCostSummary(records, toUsd).totalMonthlyUsd
 }
 
 export function getFounderInsights(records, toUsd) {
-  const monthlyUsd = getTotalMonthlyBurn(records, toUsd)
+  const monthlyUsd = getTotalMonthlyCost(records, toUsd)
   const allAssets = [
     ...records.domains.map((d) => ({ ...d, moduleKey: 'domains', monthlyUsd: domainMonthlyUsd(d, toUsd) })),
     ...records.servers.map((s) => ({ ...s, moduleKey: 'servers', monthlyUsd: toUsd(s) })),

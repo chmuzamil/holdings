@@ -71,7 +71,7 @@ function OverviewTab({ record, records, servers, money, prettyDate, toUsd, fromU
       </div>
 
       <div className="domain-drawer-section">
-        <h4>Connected Assets</h4>
+        <h4>Connected items</h4>
         <div className="ui-kv-grid">
           <div className="ui-kv-row">
             <span className="ui-kv-label">Project</span>

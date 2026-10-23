@@ -2,12 +2,12 @@ import { Card } from '../ui/Card'
 
 export function RepoStats({ stats }) {
   const items = [
-    { label: 'Total Repositories', value: stats.total },
-    { label: 'Active Repositories', value: stats.active },
-    { label: 'Stale Repositories', value: stats.stale },
+    { label: 'Repos', value: stats.total },
+    { label: 'Active', value: stats.active },
+    { label: 'No changes in 6 months', value: stats.stale },
     { label: 'Public', value: stats.public },
     { label: 'Private', value: stats.private },
-    { label: 'Total Stars', value: stats.stars },
+    { label: 'Stars', value: stats.stars },
   ]
 
   return (
