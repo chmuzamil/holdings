@@ -3,11 +3,10 @@ import { ChevronDown, Edit3, Eye, Globe2, Search, Server, Trash2, FolderGit2 } f
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
 import { Avatar } from '../ui/Avatar'
-import { Progress } from '../ui/Progress'
 import { DropdownMenu } from '../ui/DropdownMenu'
 import { EmptyState } from '../EmptyState'
 import { ProjectDetailsDrawer } from './ProjectDetailsDrawer'
-import { getProjectConnectionHealth } from '../../lib/health-score'
+import { getProjectGaps } from '../../lib/health-score'
 import {
   computeProjectMonthlyCostUsd,
   computeProjectStats,
@@ -53,7 +52,7 @@ function ProjectCard({
   onDelete,
 }) {
   const assets = resolveProjectAssets(project, records)
-  const health = getProjectConnectionHealth(project)
+  const gaps = getProjectGaps(normalizeProjectRecord(project))
   const connections = [
     assets.domains[0] && { icon: Globe2, label: assets.domains[0].name },
     assets.repos[0] && { icon: FolderGit2, label: assets.repos[0].name },
@@ -71,13 +70,9 @@ function ProjectCard({
         <Badge variant={projectStatusVariant(project.status)}>{project.status}</Badge>
       </div>
 
-      <div className="project-card-health">
-        <div className="project-card-health-meta">
-          <span>Health {health.score}</span>
-          <Badge variant={health.score >= 75 ? 'success' : health.score >= 50 ? 'warning' : 'outline'}>{health.label}</Badge>
-        </div>
-        <Progress value={health.score} color={health.score >= 75 ? '#34d399' : health.score >= 50 ? '#fbbf24' : '#f87171'} />
-      </div>
+      {gaps.length > 0 && (
+        <p className="project-card-gaps">{gaps.map((gap) => gap.label).join(' · ')}</p>
+      )}
 
       <div className="project-card-assets">
         {connections.length ? connections.map((item) => {
@@ -207,14 +202,14 @@ export function ProjectsView({
             <div className="project-table-head">
               <span>Project</span>
               <span>Status</span>
-              <span>Health</span>
+              <span>Missing</span>
               <span>Connected</span>
               <span>Money</span>
               <span>Actions</span>
             </div>
             {visibleProjects.map((project) => {
               const assets = resolveProjectAssets(project, records)
-              const health = getProjectConnectionHealth(project)
+              const gaps = getProjectGaps(normalizeProjectRecord(project))
               const connected = [
                 assets.domains[0]?.name,
                 assets.repos[0]?.name,
@@ -227,7 +222,7 @@ export function ProjectsView({
                     <small>{project.category}</small>
                   </div>
                   <div><Badge variant={projectStatusVariant(project.status)}>{project.status}</Badge></div>
-                  <div><Badge variant={health.score >= 75 ? 'success' : health.score >= 50 ? 'warning' : 'outline'}>{health.score}</Badge></div>
+                  <div className="project-asset-cell">{gaps.length ? gaps.map((gap) => gap.label).join(' · ') : 'Nothing missing'}</div>
                   <div className="project-asset-cell">{connected}</div>
                   <div className="project-cost">
                     <ProjectMoney project={project} records={records} toUsd={toUsd} money={money} fromUsd={fromUsd} displayCurrency={displayCurrency} />

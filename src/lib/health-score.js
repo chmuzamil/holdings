@@ -1,137 +1,30 @@
-import { normalizeDomainRecord } from './domain-helpers'
-import { normalizeProjectRecord } from './project-helpers'
-import { normalizeRepoRecord } from './repo-helpers'
-import { normalizeServerRecord } from './server-helpers'
-import { daysUntilRenewal, isRenewableRecord } from './renewal-helpers'
+// Plain, checkable facts instead of made-up scores.
 
-export const HEALTH_FACTORS = [
-  { id: 'renewals', label: 'Renewals on track', weight: 'Critical −8 · Warning −4' },
-  { id: 'links', label: 'Projects linked to assets', weight: 'Info −2 each' },
-  { id: 'repos', label: 'Repository activity', weight: 'Stale repo −4' },
-  { id: 'domains', label: 'Domain DNS checks', weight: 'Never checked −4' },
-]
-
-export function getDomainHealthScore(health) {
-  if (!health?.lastChecked) return { score: null, label: 'Not checked' }
-  const map = { healthy: 100, warning: 65, missing: 25, unknown: 50 }
-  // "none" (e.g. no email set up on purpose) doesn't count for or against.
-  const statuses = ['dns', 'nameservers', 'email'].map((key) => health[key]).filter((status) => status !== 'none')
-  const avg = statuses.reduce((sum, status) => sum + (map[status] ?? 50), 0) / statuses.length
-  const score = Math.round(avg)
-  const label = score >= 85 ? 'Healthy' : score >= 60 ? 'Fair' : 'At risk'
-  return { score, label }
-}
-
-export function getHealthScoreBreakdown(records, flatRecords) {
-  const factors = []
-  let score = 100
-
-  flatRecords.filter(isRenewableRecord).forEach((record) => {
-    const days = daysUntilRenewal(record)
-    if (record.status === 'Expired' || (days !== null && days < 0)) {
-      score -= 8
-      factors.push({ type: 'critical', text: `${record.name} is overdue` })
-    } else if (days !== null && days <= 7) {
-      score -= 8
-      factors.push({ type: 'critical', text: `${record.name} renews in ${days} days` })
-    } else if (days !== null && days <= 30) {
-      score -= 4
-      factors.push({ type: 'warning', text: `${record.name} renews in ${days} days` })
-    }
-  })
-
-  records.repos.forEach((repo) => {
-    const r = normalizeRepoRecord(repo)
-    if (r.githubHealth === 'Stale') {
-      score -= 4
-      factors.push({ type: 'warning', text: `${r.name} has no recent pushes` })
-    }
-  })
-
-  ;(records.projects || []).forEach((project) => {
-    const p = normalizeProjectRecord(project)
-    if (!p.domainIds.length) {
-      score -= 2
-      factors.push({ type: 'info', text: `${p.name} has no linked domain` })
-    }
-    if (!p.repoIds.length) {
-      score -= 4
-      factors.push({ type: 'warning', text: `${p.name} has no linked repository` })
-    }
-  })
-
-  records.domains.forEach((domain) => {
-    const d = normalizeDomainRecord(domain)
-    if (!d.health?.lastChecked) {
-      score -= 4
-      factors.push({ type: 'warning', text: `${domain.name} has never had a DNS check` })
-    }
-  })
-
-  records.servers.forEach((server) => {
-    const s = normalizeServerRecord(server)
-    const linked = s.connectedProjectIds?.length
-      || (records.projects || []).some((p) => normalizeProjectRecord(p).serverIds.includes(server.id))
-    if (!linked) {
-      score -= 2
-      factors.push({ type: 'info', text: `${s.name} not linked to a project` })
-    }
-  })
-
-  score = Math.max(0, Math.min(100, score))
-  const label = score >= 90 ? 'Excellent' : score >= 75 ? 'Good' : score >= 50 ? 'Fair' : 'Needs attention'
-
-  return { score, label, factors: factors.slice(0, 6) }
-}
-
-export function getHealthRecommendations(health) {
-  if (!health) return []
-  const recs = []
-
-  ;(health.factors || []).forEach((factor) => {
-    if (factor.type === 'critical') {
-      recs.push({ priority: 'high', text: `Urgent: ${factor.text}`, action: 'Resolve before it impacts uptime or billing.' })
-    } else if (factor.type === 'warning') {
-      recs.push({ priority: 'medium', text: factor.text, action: 'Schedule this in your next ops block.' })
-    } else {
-      recs.push({ priority: 'low', text: factor.text, action: 'Link missing assets to improve portfolio coverage.' })
-    }
-  })
-
-  if (!recs.length && health.score >= 85) {
-    recs.push({
-      priority: 'low',
-      text: 'Infrastructure looks stable.',
-      action: 'Run domain health checks monthly and keep repos linked to projects.',
-    })
-  }
-
-  return recs.slice(0, 6)
-}
-
-export function getProjectConnectionHealth(project) {
-  const normalized = normalizeProjectRecord(project)
-  let score = 100
+// What a project is missing. Servers aren't listed: many projects (static
+// sites, libraries) don't need one.
+export function getProjectGaps(project) {
   const gaps = []
+  if (!project.domainIds?.length) {
+    gaps.push({ key: 'no-domain', label: 'No domain linked', action: 'Link its domain so renewals show up here.' })
+  }
+  if (!project.repoIds?.length) {
+    gaps.push({ key: 'no-repo', label: 'No repo linked', action: 'Link its code repository.' })
+  }
+  return gaps
+}
 
-  if (!normalized.domainIds.length) {
-    score -= 15
-    gaps.push('No domain linked')
+// Summary of the last DNS check for a domain, for a single badge.
+// `show` is false when everything is fine, so a healthy domain stays quiet.
+export function getDomainCheck(health) {
+  if (!health?.lastChecked) {
+    return { show: true, label: 'DNS not checked yet', variant: 'outline' }
   }
-  if (!normalized.repoIds.length) {
-    score -= 25
-    gaps.push('No repository linked')
+  const statuses = ['dns', 'nameservers', 'email'].map((key) => health[key])
+  if (statuses.includes('missing')) {
+    return { show: true, label: 'DNS problem', variant: 'danger' }
   }
-  if (!normalized.serverIds.length) {
-    score -= 10
-    gaps.push('No server linked')
+  if (statuses.includes('warning')) {
+    return { show: true, label: 'DNS needs a look', variant: 'warning' }
   }
-  if (normalized.status === 'Archived') {
-    score -= 20
-    gaps.push('Project archived')
-  }
-
-  score = Math.max(0, Math.min(100, score))
-  const label = score >= 80 ? 'Healthy' : score >= 55 ? 'Fair' : 'Needs work'
-  return { score, label, gaps }
+  return { show: false, label: 'DNS OK', variant: 'success' }
 }

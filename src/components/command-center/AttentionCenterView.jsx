@@ -1,13 +1,12 @@
 import { Card } from '../ui/Card'
-import { Badge } from '../ui/Badge'
 import { EmptyState } from '../EmptyState'
-import { getAttentionItems, priorityVariant } from '../../lib/intelligence-helpers'
+import { getAttentionItems } from '../../lib/intelligence-helpers'
 import './command-center.css'
 
 const PRIORITY_LABELS = {
-  critical: 'Critical',
-  warning: 'Warning',
-  info: 'Info',
+  critical: 'Do now',
+  warning: 'Plan for',
+  info: 'Tidy up',
 }
 
 export function AttentionCenterView({ records, flatRecords, setActivePage }) {
@@ -21,9 +20,9 @@ export function AttentionCenterView({ records, flatRecords, setActivePage }) {
   return (
     <section className="page-content cc-page attention-page">
       <div className="cc-grid-3">
-        <Card className="cc-stat-card"><span>Critical</span><strong>{groups.critical.length}</strong></Card>
-        <Card className="cc-stat-card"><span>Warning</span><strong>{groups.warning.length}</strong></Card>
-        <Card className="cc-stat-card"><span>Info</span><strong>{groups.info.length}</strong></Card>
+        <Card className="cc-stat-card"><span>Do now</span><strong>{groups.critical.length}</strong><small>Overdue or due within a week</small></Card>
+        <Card className="cc-stat-card"><span>Plan for</span><strong>{groups.warning.length}</strong><small>Due within a month</small></Card>
+        <Card className="cc-stat-card"><span>Tidy up</span><strong>{groups.info.length}</strong><small>Missing links and unchecked domains</small></Card>
       </div>
 
       {['critical', 'warning', 'info'].map((priority) => {
@@ -40,12 +39,11 @@ export function AttentionCenterView({ records, flatRecords, setActivePage }) {
                   className="attention-item"
                   onClick={() => setActivePage(item.moduleKey)}
                 >
-                  <Badge variant={priorityVariant(item.priority)}>{PRIORITY_LABELS[item.priority]}</Badge>
                   <div>
-                    <strong>{item.label}</strong>
-                    <small>{item.detail}</small>
+                    <strong>{item.detail}: {item.label.charAt(0).toLowerCase() + item.label.slice(1)}</strong>
+                    <small>{item.action}</small>
                   </div>
-                  <span className="muted-xs">Open →</span>
+                  <span className="muted-xs" aria-hidden="true">Open →</span>
                 </button>
               ))}
             </div>
@@ -54,7 +52,7 @@ export function AttentionCenterView({ records, flatRecords, setActivePage }) {
       })}
 
       {!items.length && (
-        <EmptyState variant="calm" title="All clear" text="No renewals, gaps, or stale repos need attention right now." />
+        <EmptyState variant="calm" title="All clear" text="Nothing is due soon and nothing is missing." />
       )}
     </section>
   )
