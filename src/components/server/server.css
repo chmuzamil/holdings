@@ -1,0 +1,142 @@
+.auth-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: var(--space-4) 16px;
+  background: var(--bg);
+}
+
+.auth-card {
+  display: grid;
+  gap: var(--space-3);
+  width: min(100%, 400px);
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.auth-card h1 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.auth-intro,
+.auth-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-body);
+}
+
+.auth-hint {
+  font-size: 13px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-form label span {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-form input {
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.16);
+  padding: 0 11px;
+}
+
+.auth-form .primary-button {
+  justify-content: center;
+}
+
+.auth-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgb(var(--danger-rgb) / 0.4);
+  border-radius: var(--radius-md);
+  background: rgb(var(--danger-rgb) / 0.1);
+  color: var(--danger-text);
+  font-size: 14px;
+}
+
+.account-form {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.account-form button {
+  justify-self: start;
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: var(--space-3);
+}
+
+.totp-setup {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.totp-setup p {
+  margin: 0 0 8px;
+}
+
+.qr-code {
+  width: 200px;
+  height: 200px;
+  border-radius: var(--radius-md);
+}
+
+.totp-secret {
+  display: block;
+  margin-bottom: var(--space-3);
+  color: var(--text-strong);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.sync-status[data-tone='warning'] {
+  color: var(--warning-text);
+}
+
+.sync-status[data-tone='danger'] {
+  color: var(--danger-text);
+}
+
+@media (max-width: 640px) {
+  .auth-card {
+    padding: var(--space-4);
+  }
+
+  .totp-setup {
+    grid-template-columns: 1fr;
+  }
+}
