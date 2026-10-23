@@ -77,6 +77,7 @@ function AssetsTab({ project, records }) {
 
 function CostsTab({ project, records, toUsd, money, fromUsd, displayCurrency }) {
   const analytics = getProjectCostAnalytics(project, records, toUsd)
+  const show = (usd) => money(fromUsd(usd, displayCurrency), displayCurrency)
   return (
     <>
       <div className="project-asset-list">
@@ -85,18 +86,21 @@ function CostsTab({ project, records, toUsd, money, fromUsd, displayCurrency }) 
           <div className="project-asset-item" key={`${row.type}-${row.label}`}>
             <div>
               <strong>{row.label}</strong>
-              <small>{row.type}</small>
+              <small>
+                {row.type}
+                {row.sharedBy > 1 && ` · shared by ${row.sharedBy} projects, ${show(row.assetMonthlyUsd)}/mo in total`}
+              </small>
             </div>
-            <span>{money(fromUsd(row.monthlyUsd, displayCurrency), displayCurrency)}/mo</span>
+            <span>{show(row.monthlyUsd)}/mo</span>
           </div>
         ))}
         <div className="project-cost-total">
           <span>Total monthly</span>
-          <strong>{money(fromUsd(analytics.totalUsd, displayCurrency), displayCurrency)}</strong>
+          <strong>{show(analytics.totalUsd)}</strong>
         </div>
         <div className="project-cost-total" style={{ borderTop: 0, paddingTop: 0 }}>
           <span>Annual cost</span>
-          <strong>{money(fromUsd(analytics.annualUsd, displayCurrency), displayCurrency)}</strong>
+          <strong>{show(analytics.annualUsd)}</strong>
         </div>
       </div>
 
@@ -111,20 +115,6 @@ function CostsTab({ project, records, toUsd, money, fromUsd, displayCurrency }) 
             <Progress value={row.percent} />
           </div>
         ))}
-      </div>
-
-      <div style={{ marginTop: 20 }}>
-        <h4 style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-muted)' }}>Cost Trend</h4>
-        <div className="annual-chart">
-          {analytics.trend.map((point, i) => (
-            <div
-              key={point.label}
-              className="annual-chart-segment"
-              style={{ flexGrow: point.value || 1, background: `hsl(${200 + i * 30}, 70%, 60%)` }}
-              title={`${point.label}: ${money(fromUsd(point.value, displayCurrency), displayCurrency)}`}
-            />
-          ))}
-        </div>
       </div>
     </>
   )

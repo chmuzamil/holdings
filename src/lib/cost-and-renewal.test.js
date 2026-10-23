@@ -44,12 +44,20 @@ describe('computeProjectMonthlyCostUsd', () => {
   }
 
   it('adds monthly server and subscription costs and spreads yearly domain cost over 12 months', () => {
-    const project = { name: 'Shopfront', domainIds: ['d1'], serverIds: ['s1'], subscriptionIds: ['sub1'] }
+    const project = { id: 'p1', name: 'Shopfront', domainIds: ['d1'], serverIds: ['s1'], subscriptionIds: ['sub1'] }
     expect(computeProjectMonthlyCostUsd(project, records, toUsd)).toBe(2 + 10 + 5)
   })
 
   it('ignores links to records that no longer exist', () => {
-    const project = { name: 'Ghost', domainIds: ['gone'], serverIds: [], subscriptionIds: [] }
+    const project = { id: 'p2', name: 'Ghost', domainIds: ['gone'], serverIds: [], subscriptionIds: [] }
     expect(computeProjectMonthlyCostUsd(project, records, toUsd)).toBe(0)
+  })
+
+  it('splits a server shared by two projects instead of counting it in full twice', () => {
+    const shop = { id: 'shop', name: 'Shop', serverIds: ['s1'] }
+    const news = { id: 'news', name: 'News', serverIds: ['s1'] }
+    const withProjects = { ...records, projects: [shop, news] }
+    expect(computeProjectMonthlyCostUsd(shop, withProjects, toUsd)).toBe(5)
+    expect(computeProjectMonthlyCostUsd(news, withProjects, toUsd)).toBe(5)
   })
 })
