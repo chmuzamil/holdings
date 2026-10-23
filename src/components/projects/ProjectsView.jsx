@@ -12,6 +12,8 @@ import {
   computeProjectMonthlyCostUsd,
   computeProjectStats,
   getCostSummary,
+  getLedger,
+  getLedgerRow,
   normalizeProjectRecord,
   projectStatuses,
   projectStatusVariant,
@@ -19,6 +21,25 @@ import {
 import { resolveProjectAssets } from '../../lib/asset-helpers'
 import './projects.css'
 import '../ui/ui.css'
+
+// Cost next to revenue for one project. Revenue that isn't tracked is shown as
+// such, never as zero.
+function ProjectMoney({ project, records, toUsd, money, fromUsd, displayCurrency }) {
+  const row = getLedgerRow(project, records, toUsd)
+  const show = (usd) => money(fromUsd(usd, displayCurrency), displayCurrency)
+  return (
+    <div className="project-money">
+      <strong>{show(row?.costMonthlyUsd ?? 0)}/mo</strong>
+      {row?.revenueMonthlyUsd == null ? (
+        <small>Revenue not tracked</small>
+      ) : (
+        <small className={row.profitMonthlyUsd < 0 ? 'money-loss' : 'money-gain'}>
+          Earns {show(row.revenueMonthlyUsd)} · {show(Math.abs(row.profitMonthlyUsd))} {row.profitMonthlyUsd < 0 ? 'loss' : 'profit'}
+        </small>
+      )}
+    </div>
+  )
+}
 
 function ProjectCard({
   project,
@@ -32,7 +53,6 @@ function ProjectCard({
   onDelete,
 }) {
   const assets = resolveProjectAssets(project, records)
-  const monthlyUsd = computeProjectMonthlyCostUsd(project, records, toUsd)
   const health = getProjectConnectionHealth(project)
   const connections = [
     assets.domains[0] && { icon: Globe2, label: assets.domains[0].name },
@@ -74,7 +94,7 @@ function ProjectCard({
       </div>
 
       <div className="project-card-footer">
-        <strong>{money(fromUsd(monthlyUsd, displayCurrency), displayCurrency)}/mo</strong>
+        <ProjectMoney project={project} records={records} toUsd={toUsd} money={money} fromUsd={fromUsd} displayCurrency={displayCurrency} />
         <div className="repo-actions">
           <button className="ui-btn ui-btn-primary" type="button" onClick={() => onView(project)}>
             <Eye size={15} /> View
@@ -107,6 +127,8 @@ export function ProjectsView({
   const normalized = useMemo(() => projects.map(normalizeProjectRecord), [projects])
   const stats = useMemo(() => computeProjectStats(projects, records, toUsd), [projects, records, toUsd])
   const costSummary = getCostSummary(records, toUsd)
+  const ledger = getLedger(records, toUsd)
+  const show = (usd) => money(fromUsd(usd, displayCurrency), displayCurrency)
   const unassignedNames = costSummary.unassigned.filter((line) => line.monthlyUsd > 0).map((line) => line.name)
   const useCards = normalized.length > 0 && normalized.length < 5
 
@@ -124,14 +146,24 @@ export function ProjectsView({
   return (
     <section className="page-content projects-view">
       <div className="projects-summary-bar">
-        <Card className="projects-stat-card"><span>Projects</span><strong>{stats.total}</strong></Card>
         <Card className="projects-stat-card">
-          <span>Across projects</span>
-          <strong>{money(fromUsd(stats.monthlyUsd, displayCurrency), displayCurrency)}</strong>
+          <span>Monthly revenue</span>
+          <strong>{show(ledger.revenueMonthlyUsd)}</strong>
+          <small>{ledger.projectsWithRevenue} of {stats.total} projects tracked</small>
+        </Card>
+        <Card className="projects-stat-card">
+          <span>Monthly costs</span>
+          <strong>{show(ledger.costMonthlyUsd)}</strong>
+          <small>{show(stats.monthlyUsd)} in projects</small>
+        </Card>
+        <Card className="projects-stat-card">
+          <span>Monthly profit</span>
+          <strong className={ledger.profitMonthlyUsd < 0 ? 'money-loss' : 'money-gain'}>{show(ledger.profitMonthlyUsd)}</strong>
+          <small>Revenue minus every cost</small>
         </Card>
         <Card className="projects-stat-card" title={unassignedNames.join(', ')}>
           <span>Not in any project</span>
-          <strong>{money(fromUsd(costSummary.unassignedMonthlyUsd, displayCurrency), displayCurrency)}</strong>
+          <strong>{show(costSummary.unassignedMonthlyUsd)}</strong>
           {unassignedNames.length > 0 && (
             <small>{unassignedNames.slice(0, 3).join(', ')}{unassignedNames.length > 3 ? ` +${unassignedNames.length - 3} more` : ''}</small>
           )}
@@ -177,12 +209,11 @@ export function ProjectsView({
               <span>Status</span>
               <span>Health</span>
               <span>Connected</span>
-              <span>Monthly Cost</span>
+              <span>Money</span>
               <span>Actions</span>
             </div>
             {visibleProjects.map((project) => {
               const assets = resolveProjectAssets(project, records)
-              const monthlyUsd = computeProjectMonthlyCostUsd(project, records, toUsd)
               const health = getProjectConnectionHealth(project)
               const connected = [
                 assets.domains[0]?.name,
@@ -198,7 +229,9 @@ export function ProjectsView({
                   <div><Badge variant={projectStatusVariant(project.status)}>{project.status}</Badge></div>
                   <div><Badge variant={health.score >= 75 ? 'success' : health.score >= 50 ? 'warning' : 'outline'}>{health.score}</Badge></div>
                   <div className="project-asset-cell">{connected}</div>
-                  <div className="project-cost">{money(fromUsd(monthlyUsd, displayCurrency), displayCurrency)}</div>
+                  <div className="project-cost">
+                    <ProjectMoney project={project} records={records} toUsd={toUsd} money={money} fromUsd={fromUsd} displayCurrency={displayCurrency} />
+                  </div>
                   <div className="repo-actions">
                     <button className="ui-btn ui-btn-primary" type="button" onClick={() => setSelectedProject(project)}>
                       <Eye size={15} /> View
