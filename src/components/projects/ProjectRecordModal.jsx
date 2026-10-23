@@ -7,6 +7,8 @@ import {
   projectPriorities,
   projectStatuses,
 } from '../../lib/project-helpers'
+import { formatMoney } from '../../lib/currency'
+import { productMonthlyUsd, projectStripeRevenueUsd } from '../../lib/stripe-revenue'
 
 function AssetCheckboxList({ items, selectedIds, onToggle, emptyText }) {
   if (!items.length) {
@@ -29,8 +31,10 @@ function AssetCheckboxList({ items, selectedIds, onToggle, emptyText }) {
   )
 }
 
-export function ProjectRecordModal({ modal, setModal, saveRecord, records }) {
+export function ProjectRecordModal({ modal, setModal, saveRecord, records, stripeProducts = null, ratesPerUsd = {} }) {
   const values = modal.values || emptyProjectRecord
+  const linkedToStripe = Boolean(stripeProducts && values.stripeProductIds?.length)
+  const stripeRevenueUsd = linkedToStripe ? projectStripeRevenueUsd(values, { products: stripeProducts }, ratesPerUsd) : null
 
   function updateField(key, value) {
     setModal((current) => ({
@@ -114,11 +118,28 @@ export function ProjectRecordModal({ modal, setModal, saveRecord, records }) {
                 min="0"
                 step="0.01"
                 inputMode="decimal"
-                value={values.monthlyRevenueUsd ?? ''}
+                value={linkedToStripe ? (stripeRevenueUsd ?? values.monthlyRevenueUsd ?? '') : (values.monthlyRevenueUsd ?? '')}
                 onChange={(e) => updateField('monthlyRevenueUsd', e.target.value)}
                 placeholder="Leave empty if you don't track it"
+                disabled={linkedToStripe}
+                aria-describedby={linkedToStripe ? 'revenue-from-stripe' : undefined}
               />
+              {linkedToStripe && <small id="revenue-from-stripe">Filled in from Stripe.</small>}
             </label>
+            {stripeProducts && (
+              <fieldset className="field-group full-width form-fieldset">
+                <legend>Stripe products</legend>
+                <AssetCheckboxList
+                  items={stripeProducts.map((product) => {
+                    const usd = productMonthlyUsd(product, ratesPerUsd)
+                    return { id: product.id, name: usd === null ? product.name : `${product.name} (${formatMoney(usd)}/mo)` }
+                  })}
+                  selectedIds={values.stripeProductIds || []}
+                  onToggle={(id) => toggleId('stripeProductIds', id)}
+                  emptyText="No products in Stripe yet."
+                />
+              </fieldset>
+            )}
             <fieldset className="field-group full-width form-fieldset">
               <legend>Domains</legend>
               <AssetCheckboxList

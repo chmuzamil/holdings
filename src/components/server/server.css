@@ -99,6 +99,36 @@
   margin: 0 0 8px;
 }
 
+.stripe-products {
+  display: grid;
+  gap: 6px;
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stripe-products li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--fill-subtle);
+}
+
+.stripe-products li > span:first-child {
+  color: var(--text-strong);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.stripe-products-amount {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .qr-code {
   width: 200px;
   height: 200px;
