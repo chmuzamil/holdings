@@ -1,52 +1,25 @@
-import { useEffect, useRef, useState } from 'react'
 import { MoreHorizontal } from 'lucide-react'
+import { useMenu } from './use-menu'
 
-export function DropdownMenu({ items }) {
-  const [open, setOpen] = useState(false)
-  const rootRef = useRef(null)
-
-  useEffect(() => {
-    if (!open) return undefined
-
-    function handlePointer(event) {
-      if (!rootRef.current?.contains(event.target)) {
-        setOpen(false)
-      }
-    }
-
-    function handleEscape(event) {
-      if (event.key === 'Escape') setOpen(false)
-    }
-
-    document.addEventListener('mousedown', handlePointer)
-    document.addEventListener('keydown', handleEscape)
-    return () => {
-      document.removeEventListener('mousedown', handlePointer)
-      document.removeEventListener('keydown', handleEscape)
-    }
-  }, [open])
+export function DropdownMenu({ items, label = 'More actions' }) {
+  const { open, closeAndRefocus, rootRef, menuRef, triggerProps } = useMenu()
 
   return (
     <div className="ui-dropdown" ref={rootRef}>
-      <button
-        className="ui-btn ui-btn-icon ui-btn-ghost"
-        type="button"
-        aria-label="More actions"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <MoreHorizontal size={16} />
+      <button className="ui-btn ui-btn-icon ui-btn-ghost" type="button" aria-label={label} {...triggerProps}>
+        <MoreHorizontal size={16} aria-hidden="true" />
       </button>
       {open && (
-        <div className="ui-dropdown-menu" role="menu">
+        <div className="ui-dropdown-menu" role="menu" ref={menuRef}>
           {items.map((item) => (
             <button
               key={item.label}
               type="button"
               role="menuitem"
+              tabIndex={-1}
               className={`ui-dropdown-item ${item.danger ? 'ui-dropdown-item-danger' : ''}`.trim()}
               onClick={() => {
-                setOpen(false)
+                closeAndRefocus()
                 item.onClick?.()
               }}
             >

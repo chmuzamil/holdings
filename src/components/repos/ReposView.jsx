@@ -90,13 +90,13 @@ export function ReposView({
           {statsLoading ? 'Refreshing...' : 'Refresh Stats'}
         </button>
         {lastSynced && <span className="inline-status">Last synced {new Date(lastSynced).toLocaleString()}</span>}
-        {statsStatus && <span className="inline-status">{statsStatus}</span>}
+        <span className="inline-status" role="status" aria-live="polite">{statsStatus}</span>
         <label className="search-box">
           <Search size={17} />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search repositories"
+            placeholder="Search repositories" aria-label="Search repositories" type="search"
           />
         </label>
         <label className="select-box">
@@ -108,14 +108,14 @@ export function ReposView({
           <ChevronDown size={16} />
         </label>
         <label className="select-box">
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <select aria-label="Filter by status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option>All</option>
             {repoDevStatuses.map((status) => <option key={status}>{status}</option>)}
           </select>
           <ChevronDown size={16} />
         </label>
         <label className="select-box">
-          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+          <select aria-label="Sort by" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
             <option value="updatedAt">Last updated</option>
             <option value="stars">Stars</option>
             <option value="name">Name</option>

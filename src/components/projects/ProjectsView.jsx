@@ -168,10 +168,10 @@ export function ProjectsView({
       <div className="toolbar">
         <label className="search-box">
           <Search size={17} />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search projects" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search projects" aria-label="Search projects" type="search" />
         </label>
         <label className="select-box">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select aria-label="Filter by status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option>All</option>
             {projectStatuses.map((status) => <option key={status}>{status}</option>)}
           </select>
