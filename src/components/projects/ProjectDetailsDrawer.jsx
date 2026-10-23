@@ -46,6 +46,7 @@ function OverviewTab({ project, money, fromUsd, displayCurrency, monthlyUsd }) {
           {normalized.monthlyRevenueUsd === null
             ? 'Not tracked'
             : money(fromUsd(normalized.monthlyRevenueUsd, displayCurrency), displayCurrency)}
+          {normalized.stripeProductIds?.length > 0 && normalized.revenueSyncedAt && ' (from Stripe)'}
         </span>
       </div>
       {normalized.monthlyRevenueUsd !== null && (

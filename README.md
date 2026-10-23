@@ -90,7 +90,8 @@ Open http://localhost:8080, enter the setup code and pick a password. You can ad
 - Clearing site data deletes it, so use **Settings → Export JSON** for backups.
 - The app only contacts other services when you ask it to:
   - `api.github.com`, when you fetch or refresh GitHub repos
-  - `open.er-api.com`, once a day, if you picked a second currency
+  - `open.er-api.com`, once a day, if you picked a second currency or Stripe reports revenue in a currency other than USD
+  - `api.stripe.com`, from your server only, if you connect Stripe (read-only key)
   - your own server (or `npm run api`), when you run a DNS check. It queries DNS, IANA's registry directory and the domain's public registry (RDAP).
 - No analytics, no telemetry, no third-party scripts, fonts or icons.
 
@@ -115,7 +116,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 ## Roadmap
 
 **v0.2: the founder's asset register**
-- ✅ **Project ledger**: monthly cost against revenue for each project, with shared servers split fairly. Read-only Stripe, Lemon Squeezy and Paddle revenue comes with self-hosted mode.
+- ✅ **Project ledger**: monthly cost against revenue for each project, with shared servers split fairly. With the self-hosted server, revenue can come straight from Stripe (read-only). Lemon Squeezy and Paddle are next.
 - ✅ **"What breaks if…"**: pick a domain, server, service or card and see what it affects and the revenue involved.
 - ✅ **Expiry radar**: domains, TLS certificates, API keys, tokens, OAuth apps and payment cards in one list, soonest first. Metadata only: Holdings refuses to save anything that looks like a real key or card number.
 - ✅ **Exit pack**: a one-click asset register and transfer checklist for selling a project (Markdown, JSON or print).

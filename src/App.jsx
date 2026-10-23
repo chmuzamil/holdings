@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle,
   CalendarClock,
@@ -45,6 +45,8 @@ import { DashboardView } from './components/dashboard/DashboardView'
 import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
 import { BrandMark } from './components/shared/BrandMark'
 import { SyncStatus, SyncProblem } from './components/server/SyncStatus'
+import { useStripe } from './components/server/use-stripe'
+import { applyStripeRevenue, missingRates } from './lib/stripe-revenue'
 import { isRenewableModule } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
 import { statusTone } from './lib/status'
@@ -403,6 +405,29 @@ function App({ server = null }) {
   const fromUsd = useCallback((value, currency) => convertFromUsd(value, currency, rates) ?? value, [rates])
   const money = formatMoney
   const unconverted = useMemo(() => unconvertedRecords(records), [records])
+
+  // Stripe revenue (self-hosted server only) fills in linked projects' revenue.
+  const ratesRef = useRef(rates)
+  useEffect(() => {
+    ratesRef.current = rates
+  }, [rates])
+  const applyStripe = useCallback((revenue) => {
+    if (!revenue) return
+    const write = (ratesPerUsd) => setRecords((current) => {
+      const projects = applyStripeRevenue(current.projects, revenue, ratesPerUsd)
+      return projects === current.projects ? current : { ...current, projects }
+    })
+    write(ratesRef.current)
+    if (!missingRates(revenue, ratesRef.current).length) return
+    // Stripe reported a currency we have no rate for yet.
+    fetchLatestRates()
+      .then((ratesPerUsd) => {
+        setAppSettings((current) => ({ ...current, ratesPerUsd, ratesFetchedAt: new Date().toISOString() }))
+        write(ratesPerUsd)
+      })
+      .catch(() => {})
+  }, [])
+  const stripe = useStripe(server, applyStripe)
 
   // Fetch the second currency's rate when it is chosen, and refresh it daily.
   const ratesStale = ratesAreStale(appSettings.ratesFetchedAt)
@@ -980,6 +1005,7 @@ function App({ server = null }) {
             importRecords={importRecords}
             transferStatus={transferStatus}
             server={server}
+            stripe={stripe}
           />
         )}
         </Suspense>
@@ -999,8 +1025,13 @@ function App({ server = null }) {
         <ProjectRecordModal
           modal={modal}
           setModal={setModal}
-          saveRecord={saveRecord}
+          saveRecord={(event) => {
+            saveRecord(event)
+            applyStripe(stripe.revenue)
+          }}
           records={records}
+          stripeProducts={stripe.revenue?.products ?? null}
+          ratesPerUsd={rates}
         />
       )}
 
@@ -1170,6 +1201,7 @@ function SettingsView({
   deleteAllData,
   ratesStatus,
   server,
+  stripe,
 }) {
   function updateSetting(key, value) {
     setAppSettings((current) => ({ ...current, [key]: value }))
@@ -1179,7 +1211,7 @@ function SettingsView({
     <section className="page-content settings-grid">
       {server && (
         <Suspense fallback={null}>
-          <AccountSettings server={server} />
+          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} />
         </Suspense>
       )}
 
