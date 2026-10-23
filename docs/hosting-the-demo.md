@@ -11,6 +11,14 @@ npm run build:demo
 
 Upload the contents of `dist/` to your server, for example to `/srv/holdings-demo`.
 
+Or build and publish in one step over SSH:
+
+```bash
+scripts/deploy-demo.sh <ssh-host> /srv/holdings-demo
+```
+
+Each deploy goes into `/srv/holdings-demo/releases/<timestamp>`, and `/srv/holdings-demo/current` is switched to it in one step, so visitors never see a half-uploaded site. The three newest releases are kept. With the script, point your web server at `/srv/holdings-demo/current` instead of `/srv/holdings-demo` in the examples below.
+
 The build assumes it is served from the root of a domain or subdomain (for example `demo.yourdomain.com`). To serve it from a sub-path, build with `npx vite build --mode demo --base=/holdings/`.
 
 ## Recommended headers
