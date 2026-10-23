@@ -52,6 +52,8 @@ import { CommandPalette } from './components/command-palette/CommandPalette'
 import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
 import { isRenewableModule } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
+import { statusTone } from './lib/status'
+import { Badge } from './components/ui/Badge'
 import { useDialog } from './components/ui/use-dialog'
 import { buildExport, exportFileName, parseImport } from './lib/data-transfer'
 import { RECORDS_KEY, SETTINGS_KEY, migrateLegacyStorage } from './lib/storage'
@@ -1008,7 +1010,7 @@ function ModuleView({
               )}
             </span>
             <span data-label="Renewal">{prettyDate(record.renewalDate)}</span>
-            <StatusBadge status={record.status} />
+            <Badge variant={statusTone(record.status)} className="record-status">{record.status}</Badge>
             <div className="row-actions">
               <button type="button" title="Edit" aria-label={`Edit ${record.name}`} onClick={() => openEdit(moduleKey, record)}><Edit3 size={16} aria-hidden="true" /></button>
               <button type="button" title="Delete" aria-label={`Delete ${record.name}`} onClick={() => setDeleteTarget({ ...record, moduleKey })}><Trash2 size={16} aria-hidden="true" /></button>
@@ -1381,14 +1383,6 @@ function ConfirmDelete({ target, setDeleteTarget, deleteRecord }) {
       </div>
     </div>
   )
-}
-
-function StatusBadge({ status }) {
-  return <span className={`status-badge ${statusClass(status)}`}>{status}</span>
-}
-
-function statusClass(status) {
-  return status.toLowerCase().replaceAll(' ', '-')
 }
 
 export default App

@@ -125,7 +125,7 @@ export function ReposView({
       </div>
 
       <div className="repo-table">
-        <div className="repo-table-head polish">
+        <div className="repo-table-head compact">
           <span>Repository</span>
           <span>Category</span>
           <span>Status</span>

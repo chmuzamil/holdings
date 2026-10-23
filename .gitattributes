@@ -1,0 +1,7 @@
+# Store text with LF line endings, whatever editor or OS wrote it.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

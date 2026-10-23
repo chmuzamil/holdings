@@ -5,9 +5,9 @@
 
 .server-table {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--fill-subtle);
 }
 
 .server-table-head,
@@ -21,7 +21,7 @@
 
 .server-table-head {
   border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--fill-subtle);
   color: var(--text-muted);
   font-size: 11px;
   font-weight: 700;
@@ -30,11 +30,11 @@
 }
 
 .server-table-row {
-  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .server-table-row:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--fill-subtle);
 }
 
 .server-specs {
@@ -60,8 +60,8 @@
 .server-spec-card {
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  background: var(--fill-subtle);
 }
 
 .server-spec-card span {
@@ -88,8 +88,8 @@
 .hosted-service-chip {
   padding: 6px 10px;
   border: 1px solid var(--border);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-pill);
+  background: var(--fill);
   color: var(--text);
   font-size: 12px;
 }

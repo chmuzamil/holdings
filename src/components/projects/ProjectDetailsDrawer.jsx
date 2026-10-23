@@ -100,7 +100,7 @@ function CostsTab({ project, records, toUsd, money, fromUsd, displayCurrency }) 
   return (
     <>
       <div className="project-asset-list">
-        <h4 style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-muted)' }}>Cost Breakdown</h4>
+        <h4 className="drawer-section-title">Cost breakdown</h4>
         {analytics.breakdown.rows.map((row) => (
           <div className="project-asset-item" key={`${row.type}-${row.label}`}>
             <div>
@@ -117,16 +117,16 @@ function CostsTab({ project, records, toUsd, money, fromUsd, displayCurrency }) 
           <span>Total monthly</span>
           <strong>{show(analytics.totalUsd)}</strong>
         </div>
-        <div className="project-cost-total" style={{ borderTop: 0, paddingTop: 0 }}>
+        <div className="project-cost-total project-cost-total-plain">
           <span>Annual cost</span>
           <strong>{show(analytics.annualUsd)}</strong>
         </div>
       </div>
 
-      <div style={{ marginTop: 20 }}>
-        <h4 style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text-muted)' }}>Cost Allocation</h4>
+      <div className="drawer-section">
+        <h4 className="drawer-section-title">Share of cost</h4>
         {analytics.allocation.map((row) => (
-          <div className="cost-allocation-row" key={row.label} style={{ marginBottom: 10 }}>
+          <div className="cost-allocation-row" key={row.label}>
             <div className="cost-allocation-meta">
               <span>{row.label}</span>
               <span>{percentLabel(row.share)}</span>
