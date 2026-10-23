@@ -17,10 +17,8 @@
 .projects-stat-card span {
   display: block;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .projects-stat-card strong {
@@ -114,10 +112,8 @@
   border-bottom: 1px solid var(--border);
   background: var(--fill-subtle);
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .project-table-row {

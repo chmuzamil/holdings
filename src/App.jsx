@@ -50,6 +50,7 @@ import { AttentionCenterView } from './components/command-center/AttentionCenter
 import { TimelineView } from './components/command-center/TimelineView'
 import { CommandPalette } from './components/command-palette/CommandPalette'
 import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
+import { BrandMark } from './components/shared/BrandMark'
 import { isRenewableModule } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
 import { statusTone } from './lib/status'
@@ -633,11 +634,8 @@ function App() {
       <a className="skip-link" href="#main-content">Skip to content</a>
       <aside className="sidebar">
         <button className="brand" type="button" onClick={() => setActivePage('dashboard')}>
-          <span className="brand-mark">H</span>
-          <span>
-            <strong>Holdings</strong>
-            <small>Everything your projects run on</small>
-          </span>
+          <BrandMark />
+          <strong>Holdings</strong>
         </button>
 
         <nav className="nav nav-flat" aria-label="Main">
