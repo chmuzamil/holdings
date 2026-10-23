@@ -69,10 +69,20 @@ export function unconvertedRecords(records) {
 
 export function formatMoney(value, currency = 'USD') {
   if (value === null || value === undefined || Number.isNaN(value)) return '—'
+  // Cents only where they matter: small amounts that aren't whole (a shared
+  // $9 server is $4.50 per project, not $5). Large totals stay whole.
+  const hasCents = Math.abs(value) < 1000 && Math.round(Math.abs(value) * 100) % 100 !== 0
+  const digits = hasCents ? 2 : 0
   try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 0 }).format(value)
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    }).format(value)
   } catch {
-    return `${Math.round(value)} ${currency}`
+    return `${value.toFixed(digits)} ${currency}`
   }
 }
 
