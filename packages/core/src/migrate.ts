@@ -14,7 +14,7 @@ import {
 /** A record as stored by Holdings 0.1 (one list per module). */
 export type V1Record = Record<string, unknown> & { id?: unknown }
 
-export type V1ModuleKey = 'domains' | 'servers' | 'repos' | 'projects' | 'accounts' | 'subscriptions'
+export type V1ModuleKey = 'domains' | 'servers' | 'repos' | 'projects' | 'accounts' | 'subscriptions' | 'keys'
 
 export type V1Records = Partial<Record<V1ModuleKey, V1Record[]>>
 
@@ -29,6 +29,13 @@ const ASSET_MODULES: Record<Exclude<V1ModuleKey, 'projects'>, { kind: AssetKind;
   repos: { kind: 'repo', billing: 'free' },
   accounts: { kind: 'account', billing: 'monthly' },
   subscriptions: { kind: 'subscription', billing: 'monthly' },
+  // Keys, tokens, certificates and cards: metadata only, no cost of their own.
+  keys: { kind: 'credential', billing: 'free' },
+}
+
+const KEY_KINDS: Record<string, AssetKind> = {
+  'payment card': 'card',
+  'tls certificate': 'certificate',
 }
 
 // Fields that map onto Asset/Project properties or are rebuilt as
@@ -38,7 +45,7 @@ const COMMON_FIELDS = new Set([
   'addedAt', 'editedAt', 'health', 'moduleKey',
   'connectedProjectIds', 'connectedServerIds', 'connectedRepoIds', 'connectedDomainIds',
   'domainIds', 'repoIds', 'serverIds', 'subscriptionIds',
-  'slug', 'description', 'liveUrl', 'monthlyRevenueUsd',
+  'slug', 'description', 'liveUrl', 'monthlyRevenueUsd', 'paidWithId',
 ])
 
 const STATUS: Record<string, AssetStatus> = {
@@ -88,7 +95,7 @@ export function fromV1(records: V1Records, options: MigrateOptions = {}): Holdin
       if (!id) continue
       assets.push({
         id,
-        kind,
+        kind: moduleKey === 'keys' ? KEY_KINDS[text(record.keyType).toLowerCase()] ?? 'credential' : kind,
         name: text(record.name),
         provider: text(record.provider),
         costUsd: Math.max(0, costUsd(record, moduleKey)),
@@ -102,6 +109,9 @@ export function fromV1(records: V1Records, options: MigrateOptions = {}): Holdin
         editedAt: text(record.editedAt),
       })
       for (const projectId of ids(record.connectedProjectIds)) membership.push([projectId, id])
+
+      const paidWith = text(record.paidWithId)
+      if (paidWith) links.push({ from: id, to: paidWith, relation: 'paid_with' })
 
       if (moduleKey === 'domains') {
         for (const serverId of ids(record.connectedServerIds)) links.push({ from: id, to: serverId, relation: 'points_to' })
