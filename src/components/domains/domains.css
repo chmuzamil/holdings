@@ -9,7 +9,6 @@
 }
 
 .domain-card {
-  height: 148px;
   padding: 16px 18px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -29,7 +28,6 @@
   grid-template-columns: minmax(0, 1.6fr) 0.9fr 0.9fr 0.8fr auto;
   gap: 16px;
   align-items: center;
-  height: 100%;
 }
 
 .domain-card-info {
@@ -37,34 +35,6 @@
   align-items: flex-start;
   gap: 12px;
   min-width: 0;
-  height: 100%;
-}
-
-.domain-avatar .domain-avatar-fallback {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-}
-
-.domain-avatar {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-strong);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.domain-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .domain-card-copy {
@@ -111,14 +81,12 @@
 }
 
 .domain-connected-assets {
-  display: grid;
-  gap: 2px;
-  margin-top: 8px;
-}
-
-.domain-connected-assets small {
+  margin: 0;
+  overflow: hidden;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .domain-card-description {
@@ -264,11 +232,6 @@
 }
 
 @media (max-width: 1080px) {
-  .domain-card {
-    height: auto;
-    min-height: 148px;
-  }
-
   .domain-card-grid {
     grid-template-columns: 1fr auto;
     grid-template-areas:
@@ -289,17 +252,32 @@
 }
 
 @media (max-width: 640px) {
-  .domain-card-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      'info'
-      'meta'
-      'renewal'
-      'stats'
-      'actions';
+  .domain-card {
+    padding: 14px;
   }
 
-  .domain-card-actions {
-    justify-content: flex-end;
+  .domain-card-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'info info'
+      'meta renewal'
+      'stats stats'
+      'actions actions';
+    row-gap: 12px;
+  }
+
+  .domain-card-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+  }
+
+  .domain-stat {
+    justify-content: flex-start;
+  }
+
+  .domain-card-actions .ui-btn-primary {
+    flex: 1;
+    justify-content: center;
   }
 }

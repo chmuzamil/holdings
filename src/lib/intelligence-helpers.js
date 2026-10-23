@@ -235,34 +235,6 @@ export function getInfrastructureGraph(records) {
   })
 }
 
-export function getDashboardWidgets(records, flatRecords, toUsd) {
-  const insights = getFounderInsights(records, toUsd)
-
-  const nextRenewal = flatRecords
-    .filter(isRenewableRecord)
-    .map((r) => ({ ...r, days: daysUntilRenewal(r) }))
-    .filter((r) => r.days !== null && r.days >= 0)
-    .sort((a, b) => a.days - b.days)[0] || null
-
-  const latestRepo = [...records.repos]
-    .map(normalizeRepoRecord)
-    .sort((a, b) => new Date(`${b.lastCommitAt || b.updatedAt || '1970'}T00:00:00`)
-      - new Date(`${a.lastCommitAt || a.updatedAt || '1970'}T00:00:00`))[0] || null
-
-  const latestDomain = records.domains[records.domains.length - 1] || null
-  const latestServer = records.servers[records.servers.length - 1] || null
-
-  return {
-    nextRenewal,
-    mostExpensiveProject: insights.mostExpensiveProject,
-    mostConnectedProject: insights.mostConnectedProject,
-    latestRepo,
-    latestDomain,
-    latestServer,
-    infrastructurePreview: getInfrastructureGraph(records).slice(0, 3),
-  }
-}
-
 export function getProjectCostAnalytics(project, records, toUsd) {
   const breakdown = getProjectCostBreakdown(project, records, toUsd)
   const shares = percentShares(breakdown.rows.map((row) => row.monthlyUsd))
