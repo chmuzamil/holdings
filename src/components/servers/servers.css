@@ -23,10 +23,8 @@
   border-bottom: 1px solid var(--border);
   background: var(--fill-subtle);
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .server-table-row {
@@ -67,9 +65,7 @@
 .server-spec-card span {
   display: block;
   color: var(--text-muted);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 12px;
 }
 
 .server-spec-card strong {
