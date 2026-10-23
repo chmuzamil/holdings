@@ -27,13 +27,14 @@ Solo founders and indie hackers with **several projects**, who want to answer qu
 
 If you want a homelab start page, [Homepage](https://github.com/gethomepage/homepage) or [Homarr](https://github.com/homarr-labs/homarr) are better fits. If you want uptime monitoring, use [Uptime Kuma](https://github.com/louislam/uptime-kuma) or [Gatus](https://github.com/TwiN/gatus).
 
-## What works today (v0.1)
+## What works today
 
-- **Projects as the centre.** Link domains, servers, repos and subscriptions to a project and see its monthly cost.
+- **Projects as the centre.** Link domains, servers, repos and subscriptions to a project and see what it costs and earns each month. A server shared by two projects is split between them, and anything not in a project is shown separately, so the numbers always add up.
+- **"What breaks if…"**: pick a server, domain or service and see which projects it affects, how much revenue they earn, and what else stops with it (including subdomains that point at it).
 - **Domains** with subdomains attached to servers, notes, renewal dates, and an optional live DNS + registry (RDAP) check: registrar, expiry, nameservers, MX and SPF.
 - **Servers, repos, accounts and subscriptions** with costs, renewal dates and notes.
 - **GitHub import**: fetch your repos by username. An optional token is kept in memory only, never saved.
-- **Attention list and health score**: overdue and upcoming renewals, stale repos, domains never checked, unlinked assets.
+- **Attention list**: what is overdue or due soon, and what to tidy up, each with the next step to take.
 - **Timeline** built only from real dates: when you added things, when repos were created, when domains were registered.
 - **Costs in USD**, with an optional second display currency. Its rate is fetched daily from [ExchangeRate-API](https://www.exchangerate-api.com).
 - **Command palette** (Ctrl/Cmd + K) to jump to anything.
@@ -86,8 +87,8 @@ npm run api
 | Renewal and expiry tracking | ✅ | ✅ | ✅ | domain expiry | – | – |
 | Live DNS / registry check | ✅ | – | ✅ | – | – | – |
 | Uptime monitoring | – | – | – | ✅ | status widgets | app health checks |
-| Revenue per project | planned (v0.2) | – | – | – | – | – |
-| "What breaks if…" impact view | planned (v0.2) | – | – | – | – | – |
+| Revenue per project | ✅ (typed in; Stripe etc. planned) | – | – | – | – | – |
+| "What breaks if…" impact view | ✅ | – | – | – | – | – |
 | Handover and sale (due-diligence) packs | planned (v0.2) | – | – | – | – | – |
 | API key and certificate expiry (metadata only) | planned (v0.2) | – | SSL | certs | – | – |
 | Built-in MCP server for AI agents | planned (v0.2) | community | – | community | – | own apps only |
@@ -98,8 +99,8 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 ## Roadmap
 
 **v0.2: the founder's asset register**
-- **Project ledger**: monthly cost against revenue for each project (read-only Stripe, Lemon Squeezy, Paddle), with shared servers split fairly between projects.
-- **"What breaks if…"**: pick a domain, server or card and see everything that depends on it, and the revenue at risk.
+- ✅ **Project ledger**: monthly cost against revenue for each project, with shared servers split fairly. Read-only Stripe, Lemon Squeezy and Paddle revenue comes with self-hosted mode.
+- ✅ **"What breaks if…"**: pick a domain, server or service and see what it affects and the revenue involved. Cards come with the expiry radar.
 - **Expiry radar**: domains, TLS certificates, API keys, OAuth apps and card expiry dates in one list. Metadata only, never the secret.
 - **Exit pack**: a one-click asset register and transfer checklist for selling a project.
 - **Handover pack**: an encrypted "if I'm unavailable" document for someone you trust.

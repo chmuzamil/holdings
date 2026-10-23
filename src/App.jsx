@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Trash2,
   Upload,
+  Unplug,
   UserCircle,
   WalletCards,
   X,
@@ -72,6 +73,7 @@ const InfrastructureMapView = named(() => import('./components/command-center/In
 const InsightsView = named(() => import('./components/command-center/InsightsView'), 'InsightsView')
 const AttentionCenterView = named(() => import('./components/command-center/AttentionCenterView'), 'AttentionCenterView')
 const TimelineView = named(() => import('./components/command-center/TimelineView'), 'TimelineView')
+const ImpactView = named(() => import('./components/command-center/ImpactView'), 'ImpactView')
 const CommandPalette = named(() => import('./components/command-palette/CommandPalette'), 'CommandPalette')
 
 
@@ -200,6 +202,7 @@ const navItems = [
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { type: 'divider' },
   { id: 'infrastructure-map', label: 'Map', icon: GitBranch },
+  { id: 'impact', label: 'What if', icon: Unplug },
   { type: 'divider' },
   { id: 'projects', label: 'Projects', icon: Layers },
   { id: 'domains', label: 'Domains', icon: Globe2 },
@@ -345,6 +348,7 @@ function App() {
   const [modal, setModal] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [commandOpen, setCommandOpen] = useState(false)
+  const [impactAssetId, setImpactAssetId] = useState('')
 
   // All amounts are stored in USD. The second currency is for display only and
   // can be shown once its rate has been fetched.
@@ -571,6 +575,11 @@ function App() {
     setTransferStatus('All records deleted.')
   }
 
+  function showImpact(record) {
+    setImpactAssetId(record.id)
+    setActivePage('impact')
+  }
+
   function exportRecords() {
     const blob = new Blob([JSON.stringify(buildExport(records), null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -754,6 +763,19 @@ function App() {
           <InfrastructureMapView records={records} setActivePage={setActivePage} />
         )}
 
+        {activePage === 'impact' && (
+          <ImpactView
+            records={records}
+            toUsd={toUsd}
+            money={money}
+            fromUsd={fromUsd}
+            displayCurrency={displayCurrency}
+            selectedId={impactAssetId}
+            onSelect={setImpactAssetId}
+            setActivePage={setActivePage}
+          />
+        )}
+
         {activePage === 'insights' && (
           <InsightsView
             records={records}
@@ -792,6 +814,7 @@ function App() {
 
         {activePage === 'domains' && (
           <DomainsView
+            onWhatIf={showImpact}
             records={visibleRecords}
             allRecords={records}
             servers={records.servers}
@@ -819,6 +842,7 @@ function App() {
 
         {activePage === 'servers' && (
           <ServersView
+            onWhatIf={showImpact}
             records={records}
             displayCurrency={displayCurrency}
             money={money}
@@ -844,7 +868,7 @@ function App() {
           />
         )}
 
-        {currentConfig && !['domains', 'repos', 'servers', 'projects', 'dashboard', 'settings', 'infrastructure-map', 'insights', 'attention', 'timeline'].includes(activePage) && (
+        {currentConfig && !['domains', 'repos', 'servers', 'projects', 'dashboard', 'settings', 'infrastructure-map', 'impact', 'insights', 'attention', 'timeline'].includes(activePage) && (
           <ModuleView
             config={currentConfig}
             moduleKey={activePage}

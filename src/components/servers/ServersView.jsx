@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown, Edit3, Eye, Search, Trash2 } from 'lucide-react'
+import { ChevronDown, Edit3, Eye, Search, Trash2, Unplug } from 'lucide-react'
 import { Badge } from '../ui/Badge'
 import { DropdownMenu } from '../ui/DropdownMenu'
 import { EmptyState } from '../EmptyState'
@@ -12,6 +12,7 @@ import './servers.css'
 import '../ui/ui.css'
 
 export function ServersView({
+  onWhatIf,
   records,
   displayCurrency,
   money,
@@ -85,6 +86,7 @@ export function ServersView({
                 <Eye size={15} aria-hidden="true" /> Details
               </button>
               <DropdownMenu items={[
+                { label: 'What breaks if it stops?', icon: <Unplug size={14} />, onClick: () => onWhatIf?.(server) },
                 { label: 'Edit', icon: <Edit3 size={14} />, onClick: () => openEdit('servers', server) },
                 { label: 'Delete', icon: <Trash2 size={14} />, danger: true, onClick: () => setDeleteTarget({ ...server, moduleKey: 'servers' }) },
               ]} />

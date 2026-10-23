@@ -1,4 +1,4 @@
-import { buildLedger, fromV1, summarizeCosts } from '@holdings/core'
+import { buildLedger, fromV1, impactOf, rankByImpact, summarizeCosts } from '@holdings/core'
 
 export const projectStatuses = [
   'Idea',
@@ -98,7 +98,7 @@ function getPortfolio(records, toUsd) {
   if (!portfolio) {
     const data = fromV1(records, { costUsd: (record) => toUsd(record) })
     const costs = summarizeCosts(data)
-    portfolio = { costs, ledger: buildLedger(data, costs) }
+    portfolio = { data, costs, ledger: buildLedger(data, costs), ranked: null }
     byCostFn.set(toUsd, portfolio)
   }
   return portfolio
@@ -110,6 +110,22 @@ export function getCostSummary(records, toUsd) {
 
 export function getLedger(records, toUsd) {
   return getPortfolio(records, toUsd).ledger
+}
+
+// What stops if one item stops. See @holdings/core impactOf.
+export function getImpact(records, toUsd, assetId) {
+  return assetId ? impactOf(getPortfolio(records, toUsd).data, assetId) : null
+}
+
+// Items ranked by how much would stop with them (computed once per data change).
+export function getRiskiestItems(records, toUsd) {
+  const portfolio = getPortfolio(records, toUsd)
+  if (!portfolio.ranked) portfolio.ranked = rankByImpact(portfolio.data)
+  return portfolio.ranked
+}
+
+export function getAllAssets(records, toUsd) {
+  return getPortfolio(records, toUsd).data.assets
 }
 
 export function getLedgerRow(project, records, toUsd) {
