@@ -14,6 +14,7 @@ import {
   KeyRound,
   Layers,
   Lightbulb,
+  PackageCheck,
   Plus,
   Search,
   Server,
@@ -78,6 +79,7 @@ const AttentionCenterView = named(() => import('./components/command-center/Atte
 const TimelineView = named(() => import('./components/command-center/TimelineView'), 'TimelineView')
 const ImpactView = named(() => import('./components/command-center/ImpactView'), 'ImpactView')
 const ExpiryView = named(() => import('./components/command-center/ExpiryView'), 'ExpiryView')
+const PacksView = named(() => import('./components/command-center/PacksView'), 'PacksView')
 const CommandPalette = named(() => import('./components/command-palette/CommandPalette'), 'CommandPalette')
 
 
@@ -233,6 +235,7 @@ const navItems = [
   { type: 'divider' },
   { id: 'infrastructure-map', label: 'Map', icon: GitBranch },
   { id: 'impact', label: 'What if', icon: Unplug },
+  { id: 'packs', label: 'Handover & exit', icon: PackageCheck },
   { type: 'divider' },
   { id: 'projects', label: 'Projects', icon: Layers },
   { id: 'domains', label: 'Domains', icon: Globe2 },
@@ -815,6 +818,15 @@ function App() {
           <InfrastructureMapView records={records} setActivePage={setActivePage} />
         )}
 
+        {activePage === 'packs' && (
+          <PacksView
+            records={records}
+            toUsd={toUsd}
+            handover={{ owner: '', recipient: '', message: '', ...appSettings.handover }}
+            setHandover={(handover) => setAppSettings((current) => ({ ...current, handover }))}
+          />
+        )}
+
         {activePage === 'expiring' && (
           <ExpiryView flatRecords={flatRecords} prettyDate={prettyDate} setActivePage={setActivePage} />
         )}
@@ -924,7 +936,7 @@ function App() {
           />
         )}
 
-        {currentConfig && !['domains', 'repos', 'servers', 'projects', 'dashboard', 'settings', 'infrastructure-map', 'impact', 'expiring', 'insights', 'attention', 'timeline'].includes(activePage) && (
+        {currentConfig && !['domains', 'repos', 'servers', 'projects', 'dashboard', 'settings', 'infrastructure-map', 'impact', 'packs', 'expiring', 'insights', 'attention', 'timeline'].includes(activePage) && (
           <ModuleView
             config={currentConfig}
             moduleKey={activePage}
