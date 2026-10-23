@@ -8,9 +8,48 @@ Holdings works without a server: everything stays in your browser. The optional 
 
 It is one Node.js process with one SQLite file. Nothing is sent to anyone else.
 
-> Docker setup is coming next. Until then, run it with Node.js 22.13 or newer.
+## With Docker
 
-## Run it
+```bash
+git clone https://github.com/chmuzamil/holdings.git
+cd holdings
+docker compose up -d
+docker compose logs holdings
+```
+
+The image is built from this repo on your machine. Data is kept in the `holdings-data` volume, so updating is:
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+By default the port is only open to the machine itself (`127.0.0.1:8080`). Put a reverse proxy with HTTPS in front, for example Caddy:
+
+```
+holdings.example.com {
+	reverse_proxy 127.0.0.1:8080
+}
+```
+
+and set `HOLDINGS_TRUST_PROXY: "true"` in `docker-compose.yml`. On a trusted home network without HTTPS, change the port to `"8080:8080"` and set `HOLDINGS_SECURE_COOKIES: "false"`. If you forget, the login screen tells you which one to change.
+
+**Backups:** the volume holds `holdings.db` and `secret.key`. Copy both, for example:
+
+```bash
+docker compose exec holdings node -e "new (require('node:sqlite').DatabaseSync)('/data/holdings.db').exec(\"VACUUM INTO '/data/backup.db'\")"
+docker compose cp holdings:/data/backup.db ./holdings-backup.db
+docker compose cp holdings:/data/secret.key ./holdings-secret.key
+docker compose exec holdings rm /data/backup.db
+```
+
+Keep `holdings-secret.key` as safe as the database: together they unlock the two-step login secret.
+
+**Export** from Settings works too, and gives you a plain JSON file.
+
+## Without Docker
+
+You need Node.js 22.13 or newer.
 
 ```bash
 npm ci
@@ -52,9 +91,14 @@ After signing in, turn on two-step login in Settings. Scan the QR code with any 
 
 ## Locked out?
 
-If you lose your password or your authenticator, stop the server and run:
+If you lose your password or your authenticator, run:
 
 ```bash
+# Docker
+docker compose run --rm holdings node server.js --reset-login
+docker compose restart holdings
+
+# Without Docker: stop the server first
 npm run server -- --reset-login
 ```
 
