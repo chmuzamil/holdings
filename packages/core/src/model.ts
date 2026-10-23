@@ -61,6 +61,8 @@ export interface Project {
   description: string
   liveUrl: string
   notes: string
+  /** Monthly revenue in USD, or null when it isn't tracked (not the same as earning nothing). */
+  monthlyRevenueUsd: number | null
   /** Kind-specific fields carried over from earlier versions (priority, category, …). */
   details: Record<string, unknown>
   addedAt: string
