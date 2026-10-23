@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useId, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   ChevronDown,
@@ -25,12 +25,6 @@ import {
   X,
 } from 'lucide-react'
 import './App.css'
-import { DomainsView } from './components/domains/DomainsView'
-import { ReposView } from './components/repos/ReposView'
-import { RepoRecordModal } from './components/repos/RepoRecordModal'
-import { ProjectsView } from './components/projects/ProjectsView'
-import { ProjectRecordModal } from './components/projects/ProjectRecordModal'
-import { ServersView } from './components/servers/ServersView'
 import { EmptyState } from './components/EmptyState'
 import { normalizeDomainRecord, normalizeSubdomains } from './lib/domain-helpers'
 import {
@@ -44,11 +38,6 @@ import { emptyProjectRecord, normalizeProjectRecord } from './lib/project-helper
 import { emptyServerRecord, normalizeServerRecord } from './lib/server-helpers'
 import { getSeedRecords, isRecordsEmpty } from './lib/seed-data'
 import { DashboardView } from './components/dashboard/DashboardView'
-import { InfrastructureMapView } from './components/command-center/InfrastructureMapView'
-import { InsightsView } from './components/command-center/InsightsView'
-import { AttentionCenterView } from './components/command-center/AttentionCenterView'
-import { TimelineView } from './components/command-center/TimelineView'
-import { CommandPalette } from './components/command-palette/CommandPalette'
 import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
 import { BrandMark } from './components/shared/BrandMark'
 import { isRenewableModule } from './lib/renewal-helpers'
@@ -71,6 +60,20 @@ import {
   ratesAreStale,
   unconvertedRecords,
 } from './lib/currency'
+// Pages other than the Overview load on first visit, keeping the first download small.
+const named = (load, name) => lazy(() => load().then((module) => ({ default: module[name] })))
+const DomainsView = named(() => import('./components/domains/DomainsView'), 'DomainsView')
+const ReposView = named(() => import('./components/repos/ReposView'), 'ReposView')
+const RepoRecordModal = named(() => import('./components/repos/RepoRecordModal'), 'RepoRecordModal')
+const ProjectsView = named(() => import('./components/projects/ProjectsView'), 'ProjectsView')
+const ProjectRecordModal = named(() => import('./components/projects/ProjectRecordModal'), 'ProjectRecordModal')
+const ServersView = named(() => import('./components/servers/ServersView'), 'ServersView')
+const InfrastructureMapView = named(() => import('./components/command-center/InfrastructureMapView'), 'InfrastructureMapView')
+const InsightsView = named(() => import('./components/command-center/InsightsView'), 'InsightsView')
+const AttentionCenterView = named(() => import('./components/command-center/AttentionCenterView'), 'AttentionCenterView')
+const TimelineView = named(() => import('./components/command-center/TimelineView'), 'TimelineView')
+const CommandPalette = named(() => import('./components/command-palette/CommandPalette'), 'CommandPalette')
+
 
 const moduleConfig = {
   domains: {
@@ -676,6 +679,7 @@ function App() {
       </aside>
 
       <main className="main" id="main-content" tabIndex={-1}>
+        <Suspense fallback={<p className="page-content page-loading" role="status">Loading…</p>}>
         <header className="topbar page-header">
           <div className="page-header-copy">
             <h1 className="page-title">{pageMeta.title}</h1>
@@ -705,6 +709,10 @@ function App() {
             <p className="demo-banner" role="note">
               This is a demo with made-up data. Anything you change stays in your browser only.{' '}
               <button type="button" className="link-button" onClick={loadDemoData}>Reset the demo</button>
+              {' · '}
+              <a className="link-button" href="https://github.com/chmuzamil/holdings" target="_blank" rel="noopener">
+                Free and open source: get it on GitHub
+              </a>
             </p>
           </div>
         )}
@@ -871,7 +879,10 @@ function App() {
             transferStatus={transferStatus}
           />
         )}
+        </Suspense>
       </main>
+
+      <Suspense fallback={null}>
 
       {modal?.moduleKey === 'repos' && (
         <RepoRecordModal
@@ -917,6 +928,7 @@ function App() {
         />
       )}
 
+      </Suspense>
     </div>
   )
 }
