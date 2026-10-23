@@ -1,7 +1,10 @@
 // Fictional demo portfolio. Everything here is made up: domains use the
 // reserved .example TLD (RFC 2606), IPs come from TEST-NET ranges (RFC 5737),
-// and the GitHub owner is a placeholder. Dates are relative to today so the
-// demo never goes stale.
+// and repos link to the hosted demo. Dates are relative to today so the demo
+// never goes stale.
+
+export const DEMO_HOST = 'holdings.chaudhery.com'
+const DEMO_REPOS_URL = `https://${DEMO_HOST}/#repos`
 
 // Local calendar date (not UTC), so "in 9 days" means the same in every time zone.
 function day(offset, now) {
@@ -205,12 +208,13 @@ export function getSeedRecords(now = new Date()) {
     },
   ]
 
+  // Demo repos link back to the demo itself, not to a GitHub account someone else could own.
   const repo = (id, name, fields) => ({
     id,
     name,
-    owner: 'holdings-demo',
-    url: `https://github.com/holdings-demo/${fields.slug}`,
-    githubUrl: `https://github.com/holdings-demo/${fields.slug}`,
+    owner: DEMO_HOST,
+    url: DEMO_REPOS_URL,
+    githubUrl: DEMO_REPOS_URL,
     visibility: 'Private',
     githubHealth: 'Maintained',
     stars: 0,
@@ -361,7 +365,7 @@ export function getSeedRecords(now = new Date()) {
   const accounts = [
     {
       id: 'account_github',
-      name: 'GitHub (holdings-demo)',
+      name: `GitHub (${DEMO_HOST})`,
       provider: 'GitHub',
       cost: 4,
       renewalDate: d(15),

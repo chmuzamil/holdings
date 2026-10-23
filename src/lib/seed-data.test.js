@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getSeedRecords } from './seed-data'
+import { DEMO_HOST, getSeedRecords } from './seed-data'
 import { findSecretsInRecord } from './secrets'
 
 const now = new Date('2026-10-07T12:00:00Z')
@@ -7,10 +7,19 @@ const seed = getSeedRecords(now)
 const text = JSON.stringify(seed)
 
 describe('demo data', () => {
-  it('only uses reserved .example domains', () => {
+  it('only uses reserved .example domains, plus the hosted demo itself', () => {
     const hosts = text.match(/\b(?:[a-z0-9-]+\.)+[a-z]{2,}\b/gi) || []
-    const real = hosts.filter((host) => !/\.example$/i.test(host) && !/^github\.com$/i.test(host))
+    const real = hosts.filter((host) => !/\.example$/i.test(host) && host !== DEMO_HOST)
     expect(real).toEqual([])
+  })
+
+  it('links nowhere outside the demo', () => {
+    const urls = text.match(/https?:\/\/[^"\s]+/g) || []
+    expect(urls.length).toBeGreaterThan(0)
+    urls.forEach((url) => {
+      const { hostname } = new URL(url)
+      expect(hostname === DEMO_HOST || hostname.endsWith('.example')).toBe(true)
+    })
   })
 
   it('only uses TEST-NET IP addresses', () => {
