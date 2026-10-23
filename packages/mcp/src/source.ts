@@ -14,6 +14,10 @@ export function parseHoldings(text: string): HoldingsData {
   } catch {
     throw new Error('The file is not valid JSON.')
   }
+  return toHoldings(parsed)
+}
+
+function toHoldings(parsed: unknown): HoldingsData {
   const value = parsed as { format?: unknown; records?: unknown; version?: unknown }
   if (value && value.version === DATA_VERSION && Array.isArray((value as HoldingsData).assets)) return value as HoldingsData
   const records = value?.format === EXPORT_FORMAT ? value.records : parsed
@@ -34,6 +38,49 @@ export function fileSource(path: string) {
     if (cached && cached.mtimeMs === info.mtimeMs && cached.size === info.size) return cached.data
     const data = parseHoldings(await readFile(path, 'utf8'))
     cached = { mtimeMs: info.mtimeMs, size: info.size, data }
+    return data
+  }
+}
+
+const SERVER_CACHE_MS = 30_000
+
+/** Returns an error message, or '' if the URL is fine to send a token to. */
+export function checkServerUrl(value: string): string {
+  let url: URL
+  try {
+    url = new URL(value)
+  } catch {
+    return `"${value}" is not a URL. Use the address you open Holdings at, like https://holdings.example.com.`
+  }
+  const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
+  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && local)) {
+    return 'Use an https:// address, so the access token isn’t sent in the clear.'
+  }
+  return ''
+}
+
+/**
+ * Reads live data from a self-hosted Holdings server with a read-only access
+ * token (Settings → Access tokens). Cached briefly so a burst of tool calls
+ * makes one request.
+ */
+export function serverSource(baseUrl: string, token: string, fetchImpl: typeof fetch = fetch, now = () => Date.now()) {
+  const endpoint = new URL('/api/data', baseUrl).toString()
+  let cached: { at: number; data: HoldingsData } | null = null
+  return async function load(): Promise<HoldingsData> {
+    if (cached && now() - cached.at < SERVER_CACHE_MS) return cached.data
+    let response: Response
+    try {
+      response = await fetchImpl(endpoint, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15_000) })
+    } catch {
+      throw new Error(`Can't reach ${baseUrl}. Is the server running?`)
+    }
+    if (response.status === 401) throw new Error('The server didn’t accept the access token. Create a new one in Settings → Access tokens.')
+    if (!response.ok) throw new Error(`The server answered ${response.status}.`)
+    const body = (await response.json()) as { data?: { records?: unknown } | null }
+    if (!body.data?.records) throw new Error('Nothing is saved on the server yet.')
+    const data = toHoldings(body.data.records)
+    cached = { at: now(), data }
     return data
   }
 }
