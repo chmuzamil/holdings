@@ -130,7 +130,8 @@ describe('signing in', () => {
     expect((await browser.call('GET', '/api/data')).status).toBe(200)
   })
 
-  it('locks an address out after 10 wrong passwords', async () => {
+  // Twelve deliberately slow password checks: allow for slower machines.
+  it('locks an address out after 10 wrong passwords', { timeout: 30_000 }, async () => {
     await signedIn()
     const browser = client()
     for (let attempt = 0; attempt < 10; attempt += 1) {
