@@ -38,6 +38,7 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Attention list**: what is overdue or due soon, and what to tidy up, each with the next step to take.
 - **Timeline** built only from real dates: when you added things, when repos were created, when domains were registered.
 - **Costs in USD**, with an optional second display currency. Its rate is fetched daily from [ExchangeRate-API](https://www.exchangerate-api.com).
+- **Handover and exit packs**: a locked "if I'm unavailable" file for someone you trust (opens offline in any browser with a passphrase, never contains passwords or keys), and an asset register with a transfer checklist for selling a project.
 - **Command palette** (Ctrl/Cmd + K) to jump to anything.
 - **Export and import** everything as JSON.
 - **Demo mode** with a made-up portfolio, to look around before adding your own data.
@@ -90,7 +91,7 @@ npm run api
 | Uptime monitoring | – | – | – | ✅ | status widgets | app health checks |
 | Revenue per project | ✅ (typed in; Stripe etc. planned) | – | – | – | – | – |
 | "What breaks if…" impact view | ✅ | – | – | – | – | – |
-| Handover and sale (due-diligence) packs | planned (v0.2) | – | – | – | – | – |
+| Handover and sale (due-diligence) packs | ✅ | – | – | – | – | – |
 | API key, certificate and card expiry (metadata only) | ✅ | – | SSL | certs | – | – |
 | Built-in MCP server for AI agents | planned (v0.2) | community | – | community | – | own apps only |
 | Works with no server at all | ✅ | – | – | – | – | – |
@@ -103,8 +104,8 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **Project ledger**: monthly cost against revenue for each project, with shared servers split fairly. Read-only Stripe, Lemon Squeezy and Paddle revenue comes with self-hosted mode.
 - ✅ **"What breaks if…"**: pick a domain, server, service or card and see what it affects and the revenue involved.
 - ✅ **Expiry radar**: domains, TLS certificates, API keys, tokens, OAuth apps and payment cards in one list, soonest first. Metadata only: Holdings refuses to save anything that looks like a real key or card number.
-- **Exit pack**: a one-click asset register and transfer checklist for selling a project.
-- **Handover pack**: an encrypted "if I'm unavailable" document for someone you trust.
+- ✅ **Exit pack**: a one-click asset register and transfer checklist for selling a project (Markdown, JSON or print).
+- ✅ **Handover pack**: a passphrase-locked file for someone you trust, readable offline in any browser (AES-256-GCM, PBKDF2 with 600,000 iterations).
 - **MCP server** (read-only by default), so Claude and other agents can answer questions about your portfolio.
 - **Self-hosted mode**: one Docker container (Node + SQLite) with login, scheduled checks and notifications.
 

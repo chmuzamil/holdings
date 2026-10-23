@@ -10,6 +10,7 @@ import {
   Layers,
   LayoutDashboard,
   Lightbulb,
+  PackageCheck,
   Server,
   Settings,
   Unplug,
@@ -52,6 +53,11 @@ export const PAGE_META = {
     title: 'What breaks if…',
     tagline: 'Pick something that could stop and see what it affects.',
     icon: Unplug,
+  },
+  packs: {
+    title: 'Handover & exit',
+    tagline: 'Hand your projects to someone you trust, or to a buyer.',
+    icon: PackageCheck,
   },
   projects: {
     title: 'Projects',
