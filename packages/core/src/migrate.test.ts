@@ -9,9 +9,14 @@ const v1: V1Records = {
     subdomains: [{ id: 's', name: 'app', serverId: 'srv' }, { id: 't', name: 'old', serverId: 'gone' }],
     connectedProjectIds: ['shop'], connectedServerIds: ['srv'], lookup: { checkedAt: 'x' }, health: { dns: 'healthy' },
   }],
-  servers: [{ id: 'srv', name: 'Main VPS', provider: 'Hetzner', cost: 9, ipAddress: '203.0.113.10', status: 'Active' }],
+  servers: [{ id: 'srv', name: 'Main VPS', provider: 'Hetzner', cost: 9, ipAddress: '203.0.113.10', status: 'Active', paidWithId: 'card' }],
   repos: [{ id: 'r1', name: 'Shopfront', url: 'https://github.com/x/y', connectedServerIds: ['srv'], connectedProjectIds: ['shop'] }],
   accounts: [{ id: 'acc', name: 'Stripe', cost: 0, status: 'Active' }],
+  keys: [
+    { id: 'card', name: 'Business Visa', keyType: 'Payment card', last4: '4242', expiryDate: '2027-03-31' },
+    { id: 'tls', name: 'shop TLS', keyType: 'TLS certificate' },
+    { id: 'gh', name: 'Deploy token', keyType: 'Access token', connectedProjectIds: ['shop'] },
+  ],
   subscriptions: [
     { id: 'sub1', name: 'Postmark', cost: 15, status: 'Active', connectedProjectIds: ['shop'] },
     { id: 'sub2', name: 'Figma', cost: 15, status: 'Cancelled' },
@@ -34,6 +39,9 @@ describe('fromV1', () => {
       ['acc', 'account', 'monthly'],
       ['sub1', 'subscription', 'monthly'],
       ['sub2', 'subscription', 'monthly'],
+      ['card', 'card', 'free'],
+      ['tls', 'certificate', 'free'],
+      ['gh', 'credential', 'free'],
     ])
   })
 
@@ -47,6 +55,7 @@ describe('fromV1', () => {
     expect(byId.d1?.details).not.toHaveProperty('health')
     expect(byId.d1?.details).not.toHaveProperty('connectedProjectIds')
     expect(byId.srv?.details).toEqual({ ipAddress: '203.0.113.10' })
+    expect(byId.card?.details).toMatchObject({ keyType: 'Payment card', last4: '4242' })
     expect(byId.sub2?.status).toBe('cancelled')
   })
 
@@ -55,6 +64,7 @@ describe('fromV1', () => {
       { projectId: 'shop', assetId: 'd1' },
       { projectId: 'shop', assetId: 'r1' },
       { projectId: 'shop', assetId: 'sub1' },
+      { projectId: 'shop', assetId: 'gh' },
       { projectId: 'shop', assetId: 'srv' },
       { projectId: 'news', assetId: 'srv' },
     ])
@@ -64,6 +74,7 @@ describe('fromV1', () => {
     expect(data.links).toEqual([
       { from: 'd1', to: 'srv', relation: 'points_to' },
       { from: 'd1', to: 'srv', relation: 'points_to', subdomain: 'app' },
+      { from: 'srv', to: 'card', relation: 'paid_with' },
       { from: 'r1', to: 'srv', relation: 'deploys_to' },
     ])
   })
