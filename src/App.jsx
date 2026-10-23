@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   ChevronDown,
@@ -52,6 +52,7 @@ import { CommandPalette } from './components/command-palette/CommandPalette'
 import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
 import { isRenewableModule, isRenewableRecord } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
+import { useDialog } from './components/ui/use-dialog'
 import { buildExport, exportFileName, parseImport } from './lib/data-transfer'
 import { RECORDS_KEY, SETTINGS_KEY, migrateLegacyStorage } from './lib/storage'
 import {
@@ -641,6 +642,7 @@ function App() {
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <aside className="sidebar">
         <button className="brand" type="button" onClick={() => setActivePage('dashboard')}>
           <span className="brand-mark">H</span>
@@ -650,29 +652,34 @@ function App() {
           </span>
         </button>
 
-        <nav className="nav nav-flat">
+        <nav className="nav nav-flat" aria-label="Main">
           {navItems.map((item, index) => {
             if (item.type === 'divider') {
-              return <div key={`divider-${index}`} className="nav-divider" />
+              return <div key={`divider-${index}`} className="nav-divider" aria-hidden="true" />
             }
             const Icon = item.icon
             return (
-              <button
+              <a
                 key={item.id}
-                className={activePage === item.id ? 'active' : ''}
-                type="button"
-                onClick={() => setActivePage(item.id)}
+                href={item.id === 'dashboard' ? '#' : `#${item.id}`}
+                className="nav-link"
+                aria-current={activePage === item.id ? 'page' : undefined}
+                onClick={(event) => {
+                  if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return
+                  event.preventDefault()
+                  setActivePage(item.id)
+                }}
               >
-                <Icon size={17} />
+                <Icon size={17} aria-hidden="true" />
                 <span>{item.label}</span>
-              </button>
+              </a>
             )
           })}
         </nav>
 
         <button type="button" className="command-palette-trigger" onClick={() => setCommandOpen(true)}>
-          <Search size={15} />
-          <span>Search...</span>
+          <Search size={15} aria-hidden="true" />
+          <span>Search…</span>
           <kbd>Ctrl K</kbd>
         </button>
 
@@ -682,17 +689,13 @@ function App() {
         </div>
       </aside>
 
-      <main className="main">
+      <main className="main" id="main-content" tabIndex={-1}>
         <header className="topbar page-header">
           <div className="page-header-copy">
             <h1 className="page-title">{pageMeta.title}</h1>
             <p className="page-description">{pageMeta.tagline}</p>
           </div>
           <div className="topbar-actions">
-            <button type="button" className="command-action-btn" onClick={() => setCommandOpen(true)}>
-              <Search size={15} />
-              Search
-            </button>
             {secondCurrency && (
               <label className="currency-switch">
                 <span>Currency</span>
@@ -960,17 +963,24 @@ function ModuleView({
       <div className="toolbar">
         <label className="search-box">
           <Search size={17} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${config.title.toLowerCase()}`} />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={`Search ${config.title.toLowerCase()}`}
+            aria-label={`Search ${config.title.toLowerCase()}`}
+            autoComplete="off"
+          />
         </label>
         <label className="select-box">
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <select aria-label="Filter by status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option>All</option>
             {statuses.map((status) => <option key={status}>{status}</option>)}
           </select>
           <ChevronDown size={16} />
         </label>
         <label className="select-box">
-          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+          <select aria-label="Sort by" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
             <option value="renewalDate">Renewal date</option>
             <option value="expiryDate">Expiry date</option>
             <option value="cost">Cost</option>
@@ -1018,8 +1028,8 @@ function ModuleView({
             <span data-label="Renewal">{prettyDate(record.renewalDate)}</span>
             <StatusBadge status={record.status} />
             <div className="row-actions">
-              <button type="button" title="Edit" onClick={() => openEdit(moduleKey, record)}><Edit3 size={16} /></button>
-              <button type="button" title="Delete" onClick={() => setDeleteTarget({ ...record, moduleKey })}><Trash2 size={16} /></button>
+              <button type="button" title="Edit" aria-label={`Edit ${record.name}`} onClick={() => openEdit(moduleKey, record)}><Edit3 size={16} aria-hidden="true" /></button>
+              <button type="button" title="Delete" aria-label={`Delete ${record.name}`} onClick={() => setDeleteTarget({ ...record, moduleKey })}><Trash2 size={16} aria-hidden="true" /></button>
             </div>
           </article>
         )) : (
@@ -1083,7 +1093,7 @@ function SettingsView({
             <Trash2 size={16} />
             Delete all data
           </button>
-          {transferStatus && <p className="settings-status">{transferStatus}</p>}
+          <p className="settings-status" role="status" aria-live="polite">{transferStatus}</p>
         </div>
       </div>
 
@@ -1144,7 +1154,7 @@ function SettingsView({
             <RefreshCw size={16} />
             Fetch GitHub Repos
           </button>
-          {githubSyncStatus && <p className="settings-status">{githubSyncStatus}</p>}
+          <p className="settings-status" role="status" aria-live="polite">{githubSyncStatus}</p>
         </div>
       </div>
     </section>
@@ -1184,7 +1194,7 @@ function CurrencySettings({ appSettings, updateSetting, ratesStatus }) {
           itself is sent, none of your data.{' '}
           <a href={RATES_ATTRIBUTION_URL} target="_blank" rel="noreferrer">Rates By Exchange Rate API</a>
         </p>
-        {ratesStatus && <p className="settings-status">{ratesStatus}</p>}
+        <p className="settings-status" role="status" aria-live="polite">{ratesStatus}</p>
       </div>
     </div>
   )
@@ -1243,8 +1253,10 @@ function SubdomainListField({ subdomains, servers, onChange }) {
             value={sub.name}
             onChange={(event) => updateSubdomain(sub.id, { name: event.target.value })}
             placeholder="www"
+            aria-label="Subdomain name"
           />
           <select
+            aria-label="Server it points to"
             value={sub.serverId || ''}
             onChange={(event) => updateSubdomain(sub.id, { serverId: event.target.value })}
           >
@@ -1259,9 +1271,10 @@ function SubdomainListField({ subdomains, servers, onChange }) {
             value={sub.notes}
             onChange={(event) => updateSubdomain(sub.id, { notes: event.target.value })}
             placeholder="Notes for this subdomain"
+            aria-label="Subdomain notes"
           />
-          <button type="button" title="Remove subdomain" onClick={() => removeSubdomain(sub.id)}>
-            <X size={16} />
+          <button type="button" title="Remove subdomain" aria-label={`Remove subdomain ${sub.name || ''}`.trim()} onClick={() => removeSubdomain(sub.id)}>
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
       ))}
@@ -1274,31 +1287,36 @@ function SubdomainListField({ subdomains, servers, onChange }) {
 }
 
 function RecordModal({ modal, config, servers, setModal, saveRecord }) {
+  const titleId = useId()
+  const dialogRef = useDialog({ onClose: () => setModal(null), initialFocus: 'input, select, textarea' })
   return (
     <div className="modal-backdrop" role="presentation">
-      <form className="modal" onSubmit={saveRecord}>
+      <form className="modal" onSubmit={saveRecord} ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="modal-heading">
           <div>
-            <h2>{modal.mode === 'create' ? 'Add' : 'Edit'} {config.singular}</h2>
-            <p>Keep ownership, cost, renewal, and status details together.</p>
+            <h2 id={titleId}>{modal.mode === 'create' ? 'Add' : 'Edit'} {config.singular.toLowerCase()}</h2>
+            <p>Costs are in US dollars.</p>
           </div>
-          <button type="button" onClick={() => setModal(null)}><X size={18} /></button>
+          <button type="button" className="modal-close" aria-label="Close" onClick={() => setModal(null)}><X size={18} aria-hidden="true" /></button>
         </div>
         <div className="modal-body">
         <div className="form-grid">
-          {config.fields.map((field) => (
-            <label key={field.key} className={field.type === 'subdomainList' ? 'full-span' : undefined}>
+          {config.fields.map((field) => field.type === 'subdomainList' ? (
+            <fieldset key={field.key} className="full-span form-fieldset">
+              <legend>{field.label}</legend>
+              <SubdomainListField
+                subdomains={modal.values.subdomains || []}
+                servers={servers}
+                onChange={(subdomains) => setModal((current) => ({
+                  ...current,
+                  values: { ...current.values, subdomains },
+                }))}
+              />
+            </fieldset>
+          ) : (
+            <label key={field.key}>
               <span>{field.label}</span>
-              {field.type === 'subdomainList' ? (
-                <SubdomainListField
-                  subdomains={modal.values.subdomains || []}
-                  servers={servers}
-                  onChange={(subdomains) => setModal((current) => ({
-                    ...current,
-                    values: { ...current.values, subdomains },
-                  }))}
-                />
-              ) : field.type === 'status' ? (
+              {field.type === 'status' ? (
                 <select
                   value={modal.values[field.key]}
                   onChange={(event) => setModal((current) => ({
@@ -1352,7 +1370,7 @@ function RecordModal({ modal, config, servers, setModal, saveRecord }) {
         </div>
         <div className="modal-actions">
           <button className="ghost-button" type="button" onClick={() => setModal(null)}>Cancel</button>
-          <button className="primary-button" type="submit">Save record</button>
+          <button className="primary-button" type="submit">{modal.mode === 'create' ? `Add ${config.singular.toLowerCase()}` : 'Save changes'}</button>
         </div>
       </form>
     </div>
@@ -1360,19 +1378,23 @@ function RecordModal({ modal, config, servers, setModal, saveRecord }) {
 }
 
 function ConfirmDelete({ target, setDeleteTarget, deleteRecord }) {
+  const titleId = useId()
+  const close = () => setDeleteTarget(null)
+  const dialogRef = useDialog({ onClose: close, initialFocus: '[data-autofocus]' })
+  const kind = (moduleConfig[target.moduleKey]?.singular || 'item').toLowerCase()
   return (
     <div className="modal-backdrop" role="presentation">
-      <div className="modal compact">
+      <div className="modal compact" ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="modal-heading">
           <div>
-            <h2>Delete record?</h2>
-            <p>{target.name} will be deleted.</p>
+            <h2 id={titleId}>Delete {target.name}?</h2>
+            <p>This removes it from Holdings, including its links to projects. You can&apos;t undo this.</p>
           </div>
-          <button type="button" onClick={() => setDeleteTarget(null)}><X size={18} /></button>
+          <button type="button" className="modal-close" aria-label="Close" onClick={close}><X size={18} aria-hidden="true" /></button>
         </div>
         <div className="modal-actions">
-          <button className="ghost-button" type="button" onClick={() => setDeleteTarget(null)}>Cancel</button>
-          <button className="danger-button" type="button" onClick={deleteRecord}>Delete</button>
+          <button className="ghost-button" type="button" onClick={close} data-autofocus>Keep it</button>
+          <button className="danger-button" type="button" onClick={deleteRecord}>Delete {kind}</button>
         </div>
       </div>
     </div>

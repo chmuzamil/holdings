@@ -72,16 +72,16 @@ h1 {
   background: var(--border-subtle);
 }
 
-.nav-flat button {
+.nav-flat .nav-link {
   height: 36px;
   font-size: 13px;
 }
 
-.nav-flat button:hover {
+.nav-flat .nav-link:hover {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.nav-flat button.active {
+.nav-flat .nav-link[aria-current="page"] {
   background: rgba(255, 255, 255, 0.06);
   border-color: var(--border-subtle);
 }

@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { useId, useState } from 'react'
+import { X } from 'lucide-react'
+import { useDialog } from '../ui/use-dialog'
 import {
   emptyRepoRecord,
   repoDevStatuses,
@@ -63,24 +64,27 @@ export function RepoRecordModal({ modal, setModal, saveRecord }) {
     }))
   }
 
+  const titleId = useId()
+  const dialogRef = useDialog({ onClose: () => setModal(null), initialFocus: 'input' })
+
   return (
     <div className="modal-backdrop" role="presentation">
-      <form className="modal" onSubmit={saveRecord}>
+      <form className="modal" onSubmit={saveRecord} ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="modal-heading">
           <div>
-            <h2>{modal.mode === 'create' ? 'Add' : 'Edit'} Repository</h2>
-            <p>Track repositories, project status, tech stack, and connected assets.</p>
+            <h2 id={titleId}>{modal.mode === 'create' ? 'Add repo' : 'Edit repo'}</h2>
+            <p>Track a repo and what it&apos;s connected to.</p>
           </div>
-          <button type="button" onClick={() => setModal(null)}><X size={18} /></button>
+          <button type="button" className="modal-close" aria-label="Close" onClick={() => setModal(null)}><X size={18} aria-hidden="true" /></button>
         </div>
         <div className="modal-body">
           <div className="repo-form-grid">
             <label>
-              <span>Project name</span>
-              <input value={values.name} onChange={(e) => update('name', e.target.value)} placeholder="My Project" required />
+              <span>Repo name</span>
+              <input value={values.name} onChange={(e) => update('name', e.target.value)} placeholder="my-app" required />
             </label>
             <label>
-              <span>GitHub slug</span>
+              <span>Name on GitHub</span>
               <input value={values.githubName} onChange={(e) => update('githubName', e.target.value)} placeholder="my-project" />
             </label>
             <label>
@@ -167,8 +171,7 @@ export function RepoRecordModal({ modal, setModal, saveRecord }) {
         <div className="modal-actions">
           <button className="ghost-button" type="button" onClick={() => setModal(null)}>Cancel</button>
           <button className="primary-button" type="submit">
-            <Plus size={16} />
-            Save repository
+            {modal.mode === 'create' ? 'Add repo' : 'Save changes'}
           </button>
         </div>
       </form>

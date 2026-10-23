@@ -24,7 +24,7 @@
 }
 
 .brand,
-.nav button,
+.nav .nav-link,
 .metric-card,
 .renewal-item,
 .hero-actions button,
@@ -77,7 +77,7 @@
   gap: 5px;
 }
 
-.nav button {
+.nav .nav-link {
   height: 40px;
   display: flex;
   align-items: center;
@@ -90,8 +90,8 @@
   text-align: left;
 }
 
-.nav button:hover,
-.nav button.active {
+.nav .nav-link:hover,
+.nav .nav-link[aria-current="page"] {
   color: var(--text-strong);
   border-color: var(--border);
   background: rgba(255, 255, 255, 0.055);
@@ -520,7 +520,6 @@ textarea {
   width: 100%;
   box-sizing: border-box;
   border: 0;
-  outline: 0;
   color: var(--text-strong);
   background: transparent;
   font: inherit;
