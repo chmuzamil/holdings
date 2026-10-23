@@ -158,11 +158,6 @@ export function getFounderInsights(records, toUsd) {
   }
 }
 
-function priorityVariant(priority) {
-  if (priority === 'critical') return 'danger'
-  if (priority === 'warning') return 'warning'
-  return 'outline'
-}
 
 export function getAttentionItems(records, flatRecords) {
   const items = []
@@ -216,7 +211,6 @@ export function getAttentionItems(records, flatRecords) {
   return items.sort((a, b) => order[a.priority] - order[b.priority])
 }
 
-export { priorityVariant }
 
 export function getInfrastructureGraph(records) {
   return (records.projects || []).map((project) => {

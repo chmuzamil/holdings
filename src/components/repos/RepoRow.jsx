@@ -14,7 +14,7 @@ export function RepoRow({ record, onView, onEdit, onDelete }) {
   const portfolioName = getPortfolioName(repo)
 
   return (
-    <article className={`repo-table-row polish ${repo.archived ? 'archived' : ''}`.trim()}>
+    <article className={`repo-table-row compact ${repo.archived ? 'archived' : ''}`.trim()}>
       <div className="repo-main">
         <Avatar name={portfolioName} size="sm" />
         <div className="repo-copy">

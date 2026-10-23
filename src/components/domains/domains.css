@@ -14,13 +14,13 @@
 }
 
 .domain-card:hover {
-  border-color: rgba(148, 163, 184, 0.28);
+  border-color: var(--border-strong);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
 }
 
 .domain-card.attention {
-  border-color: rgba(245, 158, 11, 0.28);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), var(--surface));
+  border-color: rgb(var(--warning-rgb) / 0.28);
+  background: linear-gradient(135deg, rgb(var(--warning-rgb) / 0.06), var(--surface));
 }
 
 .domain-card-grid {
@@ -164,8 +164,8 @@
   gap: 12px;
   padding: 14px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  background: var(--fill-subtle);
 }
 
 .domain-drawer-hero > :last-child {
@@ -208,8 +208,8 @@
   gap: 3px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+  background: var(--fill-subtle);
 }
 
 .domain-subdomain-item strong {
@@ -225,7 +225,7 @@
 .domain-empty-panel {
   padding: 24px 16px;
   border: 1px dashed var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--text-muted);
   font-size: 13px;
   text-align: center;
@@ -276,7 +276,7 @@
     justify-content: flex-start;
   }
 
-  .domain-card-actions .ui-btn-primary {
+  .domain-card-actions .ui-btn-secondary {
     flex: 1;
     justify-content: center;
   }

@@ -45,10 +45,10 @@ function TagInput({ tags, onChange, placeholder }) {
 
 function BadgeChip({ label, onRemove }) {
   return (
-    <span className="repo-tech-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <span className="repo-tech-chip inline-cluster">
       {label}
-      <button type="button" onClick={onRemove} style={{ border: 0, background: 'transparent', color: 'inherit', cursor: 'pointer', padding: 0 }}>
-        <X size={12} />
+      <button type="button" className="chip-remove" aria-label={`Remove ${label}`} onClick={onRemove}>
+        <X size={12} aria-hidden="true" />
       </button>
     </span>
   )
@@ -131,9 +131,9 @@ export function RepoRecordModal({ modal, setModal, saveRecord }) {
             </label>
             <label className="full-span">
               <span>Project tags</span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div className="chip-row">
                 {repoProjectTags.map((tag) => (
-                  <label key={tag} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                  <label key={tag} className="inline-cluster chip-label">
                     <input
                       type="checkbox"
                       checked={(values.projectTags || []).includes(tag)}
