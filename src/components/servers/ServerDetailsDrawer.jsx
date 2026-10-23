@@ -40,7 +40,7 @@ function SpecsTab({ server }) {
         <div className="server-spec-card"><span>OS</span><strong>{normalized.os || '—'}</strong></div>
         <div className="server-spec-card"><span>Location</span><strong>{normalized.location || '—'}</strong></div>
       </div>
-      <p className="settings-status" style={{ marginTop: 14 }}>{specs.join(' · ')}</p>
+      <p className="settings-status drawer-section">{specs.join(' · ')}</p>
     </>
   )
 }
@@ -50,7 +50,7 @@ function HostedServicesTab({ server, records }) {
   const connections = resolveServerConnections(server, records)
   return (
     <>
-      <div className="hosted-services-list" style={{ marginBottom: 16 }}>
+      <div className="hosted-services-list drawer-block">
         {normalized.hostedServices.map((service) => (
           <span className="hosted-service-chip" key={service}>{service}</span>
         ))}

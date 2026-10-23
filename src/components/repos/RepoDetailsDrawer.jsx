@@ -42,7 +42,7 @@ function OverviewTab({ repo, records }) {
           <span className="ui-kv-label">Language</span>
           <span className="ui-kv-value">
             {repo.language ? (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span className="inline-cluster">
                 <span
                   className="repo-language-dot"
                   style={{ background: getLanguageColor(repo.language) }}
@@ -68,7 +68,7 @@ function OverviewTab({ repo, records }) {
           <span className="ui-kv-label">GitHub Health</span>
           <span className="ui-kv-value">
             <Badge variant={githubHealthVariant(repo.githubHealth)}>{repo.githubHealth}</Badge>
-            {repo.statsUnavailable && <small style={{ marginLeft: 8 }}>Stats unavailable</small>}
+            {repo.statsUnavailable && <small className="inline-note">Stats unavailable</small>}
           </span>
         </div>
         <div className="ui-kv-row">
@@ -188,8 +188,8 @@ function NotesTab({ repo }) {
   }
 
   return (
-    <div className="ui-card" style={{ padding: '14px' }}>
-      <p style={{ margin: 0, color: 'var(--text)', lineHeight: 1.55, fontSize: '13px' }}>
+    <div className="ui-card ui-card-compact">
+      <p className="drawer-note">
         {repo.notes}
       </p>
     </div>

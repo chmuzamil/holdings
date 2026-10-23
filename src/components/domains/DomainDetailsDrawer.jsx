@@ -10,13 +10,7 @@ import {
 } from '../../lib/domain-helpers'
 import { resolveDomainConnections } from '../../lib/asset-helpers'
 import { DomainHealthChips, DomainHealthDetail } from './DomainHealthChips'
-
-function statusVariant(status) {
-  if (status === 'Active') return 'success'
-  if (status === 'Expiring Soon') return 'warning'
-  if (status === 'Expired') return 'expired'
-  return 'outline'
-}
+import { statusTone } from '../../lib/status'
 
 function OverviewTab({ record, records, servers, money, prettyDate, toUsd, fromUsd, displayCurrency }) {
   const subdomains = normalizeSubdomains(record).filter((sub) => sub.name?.trim())
@@ -34,7 +28,7 @@ function OverviewTab({ record, records, servers, money, prettyDate, toUsd, fromU
           <h3>{record.name}</h3>
           <p>{record.provider || 'Unknown registrar'}</p>
         </div>
-        <Badge variant={statusVariant(record.status)}>{record.status}</Badge>
+        <Badge variant={statusTone(record.status)}>{record.status}</Badge>
       </div>
 
       <div className="domain-drawer-section">
@@ -129,7 +123,7 @@ function DnsTab({ lookup }) {
   }
 
   return (
-    <div className="ui-card" style={{ padding: 0, overflow: 'hidden' }}>
+    <div className="ui-card ui-card-flush">
       <table className="ui-data-table">
         <thead>
           <tr>
@@ -213,8 +207,8 @@ function NotesTab({ record }) {
   }
 
   return (
-    <div className="ui-card" style={{ padding: '14px' }}>
-      <p style={{ margin: 0, color: 'var(--text)', lineHeight: 1.55, fontSize: '13px' }}>
+    <div className="ui-card ui-card-compact">
+      <p className="drawer-note">
         {record.notes}
       </p>
     </div>
@@ -225,10 +219,10 @@ function HealthTab({ record, onCheckHealth }) {
   return (
     <>
       <DomainHealthChips health={record.health} />
-      <div style={{ marginTop: 16 }}>
+      <div className="drawer-section">
         <DomainHealthDetail health={record.health} />
       </div>
-      <button className="ui-btn ui-btn-primary" type="button" style={{ marginTop: 16 }} onClick={() => onCheckHealth?.(record)}>
+      <button className="ui-btn ui-btn-secondary drawer-section" type="button" onClick={() => onCheckHealth?.(record)}>
         Run DNS check
       </button>
     </>

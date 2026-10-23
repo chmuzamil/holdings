@@ -40,7 +40,7 @@
 .repo-table {
   overflow: hidden;
   border: 1px solid var(--border-subtle, var(--border));
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--surface);
 }
 
@@ -68,7 +68,7 @@
   height: auto;
   padding-top: 14px;
   padding-bottom: 14px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  border-bottom: 1px solid var(--border-subtle);
   transition: background 0.15s ease;
 }
 
@@ -77,7 +77,7 @@
 }
 
 .repo-table-row:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--fill-subtle);
 }
 
 .repo-table-row.archived {
@@ -108,8 +108,8 @@
   place-items: center;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-md);
+  background: var(--fill);
   color: var(--text-strong);
   font-size: 12px;
   font-weight: 700;
@@ -174,8 +174,8 @@
   gap: 12px;
   padding: 14px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  background: var(--fill-subtle);
 }
 
 .repo-drawer-hero h3 {
@@ -203,8 +203,8 @@
 .repo-metric-card {
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+  background: var(--fill-subtle);
 }
 
 .repo-metric-card span {
@@ -229,9 +229,9 @@
 
 .repo-tech-chip {
   padding: 4px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--fill);
   color: var(--text);
   font-size: 11px;
   font-weight: 600;
@@ -249,15 +249,15 @@
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+  background: var(--fill-subtle);
   color: var(--text);
   font-size: 13px;
   text-decoration: none;
 }
 
 .repo-link-item:hover {
-  border-color: rgba(125, 211, 252, 0.28);
+  border-color: rgb(var(--accent-rgb) / 0.28);
   color: var(--text-strong);
 }
 
@@ -287,7 +287,7 @@
 .repo-form-grid textarea {
   height: 42px;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   background: rgba(0, 0, 0, 0.16);
   padding: 0 11px;
 }
@@ -314,7 +314,7 @@
 .repo-empty-panel {
   padding: 24px 16px;
   border: 1px dashed var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--text-muted);
   font-size: 13px;
   text-align: center;
@@ -327,7 +327,7 @@
   min-height: 42px;
   padding: 8px;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   background: rgba(0, 0, 0, 0.16);
 }
 
@@ -357,7 +357,7 @@
   }
 
   .repo-table-row,
-  .repo-table-row.polish {
+  .repo-table-row.compact {
     grid-template-columns: 1fr;
     height: auto;
     gap: 10px;

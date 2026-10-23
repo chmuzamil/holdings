@@ -14,7 +14,7 @@
 .command-palette {
   width: min(640px, 100%);
   border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(15, 23, 42, 0.98));
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
   overflow: hidden;
@@ -36,8 +36,8 @@
 .command-kbd {
   padding: 3px 7px;
   border: 1px solid var(--border);
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  background: var(--fill);
   color: var(--text-muted);
   font-size: 11px;
 }
@@ -94,7 +94,7 @@
 .command-palette-footer kbd {
   padding: 2px 5px;
   border: 1px solid var(--border);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  background: var(--fill);
   font-size: 10px;
 }

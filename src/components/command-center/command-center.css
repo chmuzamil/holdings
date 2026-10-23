@@ -30,7 +30,7 @@
 
 .cc-stat-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(148, 163, 184, 0.24);
+  border-color: var(--border-strong);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
@@ -71,16 +71,16 @@
   align-items: center;
   padding: 12px 14px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  background: var(--fill-subtle);
   text-align: left;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .attention-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(148, 163, 184, 0.24);
+  background: var(--fill);
+  border-color: var(--border-strong);
 }
 
 .attention-item strong {
@@ -118,9 +118,9 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border-left: 2px solid rgba(125, 211, 252, 0.4);
+  border-left: 2px solid rgb(var(--accent-rgb) / 0.4);
   border-radius: 0 8px 8px 0;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--fill-subtle);
 }
 
 .timeline-event span {
@@ -174,7 +174,7 @@
   width: 100%;
   min-height: 2px;
   border-radius: 4px 4px 0 0;
-  background: rgba(125, 211, 252, 0.45);
+  background: rgb(var(--accent-rgb) / 0.45);
 }
 
 .forecast-bar.has-renewals {
