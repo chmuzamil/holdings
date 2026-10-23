@@ -79,6 +79,10 @@ docker compose logs holdings   # shows a one-time setup code
 
 Open http://localhost:8080, enter the setup code and pick a password. You can add two-step login with an authenticator app in Settings. Everything lives in one SQLite file in a Docker volume. [docs/self-hosting.md](docs/self-hosting.md) covers HTTPS, settings, backups and what to do if you're locked out.
 
+### Ask an AI agent
+
+`npm run build:mcp` builds a small read-only MCP server. Point it at a JSON export and Claude, Cursor or any MCP client can answer questions about your portfolio: what renews soon, which project loses money, what breaks if a server dies. Setup for each client is in [docs/mcp.md](docs/mcp.md).
+
 ### Hosting it as static files
 
 `npm run build` produces static files in `dist/` that any web server can serve. `npm run build:demo` builds the public demo version, and `scripts/deploy-demo.sh <ssh-host>` builds and publishes it to a server over SSH. [docs/hosting-the-demo.md](docs/hosting-the-demo.md) has ready-to-use Caddy and nginx configs with a tested Content-Security-Policy.
@@ -108,7 +112,7 @@ Open http://localhost:8080, enter the setup code and pick a password. You can ad
 | "What breaks if…" impact view | ✅ | – | – | – | – | – |
 | Handover and sale (due-diligence) packs | ✅ | – | – | – | – | – |
 | API key, certificate and card expiry (metadata only) | ✅ | – | SSL | certs | – | – |
-| Built-in MCP server for AI agents | planned (v0.2) | community | – | community | – | own apps only |
+| Built-in MCP server for AI agents | ✅ read-only | community | – | community | – | own apps only |
 | Works with no server at all | ✅ | – | – | – | – | – |
 
 These tools are great at what they do, and Holdings doesn't try to replace them. Keep Uptime Kuma for monitoring and Coolify for deploys. Holdings is the register of what you own and what it costs.
@@ -121,7 +125,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **Expiry radar**: domains, TLS certificates, API keys, tokens, OAuth apps and payment cards in one list, soonest first. Metadata only: Holdings refuses to save anything that looks like a real key or card number.
 - ✅ **Exit pack**: a one-click asset register and transfer checklist for selling a project (Markdown, JSON or print).
 - ✅ **Handover pack**: a passphrase-locked file for someone you trust, readable offline in any browser (AES-256-GCM, PBKDF2 with 600,000 iterations).
-- **MCP server** (read-only by default), so Claude and other agents can answer questions about your portfolio.
+- ✅ **MCP server** (read-only), so Claude, Cursor and other agents can answer questions like "what renews this month?" or "what breaks if this server dies?". See [docs/mcp.md](docs/mcp.md). Reading live from the self-hosted server comes next.
 - ✅ **Self-hosted mode**: one Docker container (Node + SQLite) with a login (password plus optional two-step codes) and saving to your server. Scheduled checks and notifications come next.
 
 **v0.3**: dead-man's switch, domain risk score (registrar lock, DNSSEC, SPF/DKIM/DMARC), Uptime Kuma / Gatus status import, subscription clean-up suggestions, registrar and Cloudflare importers.
@@ -138,6 +142,7 @@ npm run lint         # ESLint
 npm run build        # production build
 npm run build:demo   # demo build with made-up data
 npm run build:server # bundle the self-hosted server
+npm run build:mcp    # bundle the read-only MCP server (docs/mcp.md)
 npm run server       # run it (see docs/self-hosting.md)
 ```
 

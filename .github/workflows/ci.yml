@@ -31,6 +31,7 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run build:server
+      - run: npm run build:mcp
 
   docker:
     name: Docker image
