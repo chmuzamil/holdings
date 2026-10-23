@@ -31,3 +31,36 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run build:server
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker build -t holdings:ci .
+      - name: Smoke test
+        run: |
+          set -eu
+          docker volume create holdings-ci
+          start() {
+            docker run -d --name holdings -p 8080:8080 -v holdings-ci:/data holdings:ci
+            for i in $(seq 1 30); do curl -fs localhost:8080/api/healthz >/dev/null && return; sleep 1; done
+            docker logs holdings; exit 1
+          }
+          start
+          test "$(docker exec holdings id -un)" = node
+          curl -fs localhost:8080/ | grep -q '<div id="root">'
+          curl -fs localhost:8080/api/session | grep -q '"setupNeeded":true'
+          code=$(docker logs holdings 2>&1 | grep -oE '[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}' | head -1)
+          h='-H Content-Type:application/json -H X-Requested-With:holdings'
+          curl -fs -c jar $h -d "{\"setupCode\":\"$code\",\"password\":\"ci smoke passphrase\"}" localhost:8080/api/setup
+          curl -fs -b jar $h -X PUT -d '{"version":0,"data":{"records":{"domains":[]}}}' localhost:8080/api/data
+          docker rm -f holdings
+          start
+          curl -fs -b jar localhost:8080/api/data | grep -q '"version":1'
+          for i in $(seq 1 20); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' holdings)" = healthy ] && break
+            [ "$i" = 20 ] && { docker inspect -f '{{json .State.Health}}' holdings; exit 1; }
+            sleep 3
+          done
+          docker images holdings:ci --format 'Image size: {{.Size}}'
