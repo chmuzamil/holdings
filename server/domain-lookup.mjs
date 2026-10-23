@@ -72,6 +72,22 @@ function entityName(entity) {
   return vcard.find(([name]) => name === 'fn')?.[3] || ''
 }
 
+// The parts of a registry (RDAP) answer Holdings uses.
+export function summarizeRdap(rdap) {
+  const registrar = rdap?.entities?.find((entity) => entity.roles?.includes('registrar'))
+  const signed = rdap?.secureDNS?.delegationSigned
+  return {
+    registrar: entityName(registrar),
+    created: firstEvent(rdap, 'registration'),
+    updated: firstEvent(rdap, 'last changed'),
+    expires: firstEvent(rdap, 'expiration'),
+    status: rdap?.status || [],
+    nameservers: rdap?.nameservers?.map((server) => server.ldhName).filter(Boolean) || [],
+    // null when the registry doesn't say.
+    dnssec: typeof signed === 'boolean' ? signed : null,
+  }
+}
+
 async function lookupRdap(domain, fetchImpl) {
   try {
     const base = await getRdapBase(domain, fetchImpl)
@@ -83,17 +99,7 @@ async function lookupRdap(domain, fetchImpl) {
     })
     if (!response.ok) return { error: `The registry answered with status ${response.status}.` }
 
-    const rdap = await response.json()
-    const registrar = rdap.entities?.find((entity) => entity.roles?.includes('registrar'))
-    return {
-      registrar: entityName(registrar),
-      created: firstEvent(rdap, 'registration'),
-      updated: firstEvent(rdap, 'last changed'),
-      expires: firstEvent(rdap, 'expiration'),
-      status: rdap.status || [],
-      nameservers: rdap.nameservers?.map((server) => server.ldhName).filter(Boolean) || [],
-      rdapUrl: response.url,
-    }
+    return { ...summarizeRdap(await response.json()), rdapUrl: response.url }
   } catch {
     return { error: 'The registry could not be reached.' }
   }
@@ -105,14 +111,19 @@ export async function lookupDomain(domain, { fetchImpl = fetch } = {}) {
   const cached = resultCache.get(domain)
   if (cached && Date.now() - cached.at < resultTtlMs) return cached.result
 
-  const dnsResults = await Promise.all(recordTypes.map((type) => resolveType(domain, type)))
+  const [dnsResults, dmarc] = await Promise.all([
+    Promise.all(recordTypes.map((type) => resolveType(domain, type))),
+    // DMARC lives in a TXT record on a fixed name.
+    resolveType(`_dmarc.${domain}`, 'TXT'),
+  ])
+  const entry = (result) => (result.error ? { error: result.error, value: [] } : { value: result.value })
   const result = {
     domain,
     checkedAt: new Date().toISOString(),
-    dns: Object.fromEntries(dnsResults.map((entry) => [
-      entry.type.toLowerCase(),
-      entry.error ? { error: entry.error, value: [] } : { value: entry.value },
-    ])),
+    dns: {
+      ...Object.fromEntries(dnsResults.map((item) => [item.type.toLowerCase(), entry(item)])),
+      dmarc: entry(dmarc),
+    },
     whois: await lookupRdap(domain, fetchImpl),
   }
 
