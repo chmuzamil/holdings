@@ -13,7 +13,7 @@
 .server-table-head,
 .server-table-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1.3fr) 0.8fr 0.9fr 1.1fr 0.7fr 0.8fr 0.8fr 0.7fr 0.6fr 0.7fr;
+  grid-template-columns: minmax(200px, 1.6fr) minmax(160px, 1.4fr) 0.8fr 0.7fr 0.9fr 0.8fr auto;
   gap: 10px;
   align-items: center;
   padding: 12px 16px;
@@ -41,11 +41,6 @@
   color: var(--text);
   font-size: 12px;
   line-height: 1.45;
-}
-
-.server-hosted-count {
-  color: var(--text-strong);
-  font-weight: 700;
 }
 
 .server-drawer-hero {
@@ -99,7 +94,50 @@
   font-size: 12px;
 }
 
+.server-table .numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.server-specs {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
 @media (max-width: 1080px) {
   .server-table-head { display: none; }
-  .server-table-row { grid-template-columns: 1fr; gap: 8px; }
+
+  .server-table-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px 16px;
+  }
+
+  .server-table-row .project-main,
+  .server-table-row .server-specs,
+  .server-table-row .repo-actions {
+    grid-column: 1 / -1;
+  }
+
+  .server-table-row .server-specs {
+    display: block;
+  }
+
+  .server-table-row [data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 400;
+  }
+
+  .server-table .numeric {
+    text-align: left;
+  }
+
+  .server-table-row .repo-actions {
+    justify-content: flex-end;
+  }
 }
