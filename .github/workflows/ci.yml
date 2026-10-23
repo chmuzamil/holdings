@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   check:
-    name: Lint, test, build (Node ${{ matrix.node }})
+    name: Lint, typecheck, test, build (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -27,5 +27,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - run: npm run typecheck
       - run: npm test
       - run: npm run build
