@@ -10,6 +10,7 @@ import {
   Lightbulb,
   Server,
   Settings,
+  Unplug,
   UserCircle,
   WalletCards,
 } from 'lucide-react'
@@ -39,6 +40,11 @@ export const PAGE_META = {
     title: 'Map',
     tagline: 'What each project runs on.',
     icon: GitBranch,
+  },
+  impact: {
+    title: 'What breaks if…',
+    tagline: 'Pick something that could stop and see what it affects.',
+    icon: Unplug,
   },
   projects: {
     title: 'Projects',

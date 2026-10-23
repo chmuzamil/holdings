@@ -7,6 +7,7 @@ import './domains.css'
 import '../ui/ui.css'
 
 export function DomainsView({
+  onWhatIf,
   records,
   allRecords,
   servers,
@@ -76,6 +77,7 @@ export function DomainsView({
             fromUsd={fromUsd}
             onViewDetails={setSelectedDomain}
             onRefresh={refreshDomainLookup}
+            onWhatIf={onWhatIf}
             onEdit={(item) => openEdit('domains', item)}
             onDelete={(item) => setDeleteTarget({ ...item, moduleKey: 'domains' })}
           />

@@ -1,4 +1,4 @@
-import { Edit3, Eye, RefreshCw, Trash2 } from 'lucide-react'
+import { Edit3, Eye, RefreshCw, Trash2, Unplug } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
 import { DropdownMenu } from '../ui/DropdownMenu'
@@ -22,6 +22,7 @@ export function DomainCard({
   fromUsd,
   onViewDetails,
   onRefresh,
+  onWhatIf,
   onEdit,
   onDelete,
 }) {
@@ -95,6 +96,11 @@ export function DomainCard({
           </button>
           <DropdownMenu
             items={[
+              {
+                label: 'What breaks if it lapses?',
+                icon: <Unplug size={14} />,
+                onClick: () => onWhatIf?.(record),
+              },
               {
                 label: 'Refresh DNS',
                 icon: <RefreshCw size={14} />,
