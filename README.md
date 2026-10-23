@@ -6,7 +6,9 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
 ![Status: early](https://img.shields.io/badge/status-early%20(v0.1)-f59e0b)
 
-![Holdings overview with a made-up demo portfolio](docs/screenshots/dashboard.png)
+**[Try the live demo →](https://holdings.chaudhery.com)** It uses made-up data, and anything you change stays in your browser.
+
+[![Holdings overview with a made-up demo portfolio](docs/screenshots/dashboard.png)](https://holdings.chaudhery.com)
 
 If you run a handful of side projects, you probably have 20 domains at three registrars, a couple of VPSes, a pile of SaaS subscriptions and a dozen repos. They're spread across a spreadsheet, your inbox and your memory. Holdings puts them in one register, links each one to the project it belongs to, and tells you what that project costs per month and what renews next.
 
@@ -44,7 +46,7 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 
 ## Quick start
 
-You need Node.js 22 or newer.
+The fastest way to look around is the **[live demo](https://holdings.chaudhery.com)**. To run it yourself, you need Node.js 22 or newer.
 
 ```bash
 git clone https://github.com/chmuzamil/holdings.git
@@ -63,7 +65,7 @@ npm run api
 
 ### Hosting it
 
-`npm run build` produces static files in `dist/` that any web server can serve. `npm run build:demo` builds the public demo version. [docs/hosting-the-demo.md](docs/hosting-the-demo.md) has ready-to-use Caddy and nginx configs with a tested Content-Security-Policy. A one-command Docker setup with a small server is planned for v0.2.
+`npm run build` produces static files in `dist/` that any web server can serve. `npm run build:demo` builds the public demo version, and `scripts/deploy-demo.sh <ssh-host>` builds and publishes it to a server over SSH. [docs/hosting-the-demo.md](docs/hosting-the-demo.md) has ready-to-use Caddy and nginx configs with a tested Content-Security-Policy. A one-command Docker setup with a small server is planned for v0.2.
 
 ## Your data and privacy
 
