@@ -6,6 +6,9 @@ import './command-center.css'
 const KIND_GROUPS = [
   ['server', 'Servers'],
   ['domain', 'Domains'],
+  ['card', 'Payment cards'],
+  ['credential', 'Keys and tokens'],
+  ['certificate', 'Certificates'],
   ['subscription', 'Subscriptions'],
   ['account', 'Accounts'],
   ['repo', 'Repos'],
@@ -24,6 +27,9 @@ const KIND_NOUN = {
   repo: 'repo',
   subscription: 'subscription',
   account: 'account',
+  card: 'card',
+  credential: 'key',
+  certificate: 'certificate',
 }
 
 // "shop.example points to Main VPS" or, for longer chains,

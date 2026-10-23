@@ -2,6 +2,7 @@ import {
   ChevronDown,
   FolderGit2,
   Globe2,
+  KeyRound,
   Layers,
   Plus,
   Server,
@@ -15,6 +16,7 @@ const items = [
   { label: 'Server', moduleKey: 'servers', icon: Server },
   { label: 'Repo', moduleKey: 'repos', icon: FolderGit2 },
   { label: 'Subscription', moduleKey: 'subscriptions', icon: WalletCards },
+  { label: 'Key or card', moduleKey: 'keys', icon: KeyRound },
 ]
 
 export function AddAssetDropdown({ onAdd }) {

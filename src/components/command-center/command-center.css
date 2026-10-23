@@ -319,3 +319,45 @@ button.impact-item:hover strong {
 .impact-ranked .impact-item[aria-current='true'] strong {
   color: var(--accent);
 }
+
+.expiry-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.expiry-filter {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.expiry-filter[aria-pressed='true'] {
+  border-color: rgb(var(--accent-rgb) / 0.5);
+  background: rgb(var(--accent-rgb) / 0.12);
+  color: var(--text-strong);
+}
+
+.expiry-when {
+  display: grid;
+  justify-items: end;
+  text-align: right;
+}
+
+.expiry-when strong {
+  font-size: 14px;
+}
+
+.expiry-overdue .expiry-when strong {
+  color: var(--danger-text);
+}
+
+.expiry-month .expiry-when strong {
+  color: var(--warning-text);
+}
