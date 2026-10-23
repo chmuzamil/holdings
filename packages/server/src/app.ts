@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { hashPassword, hashToken, newToken, sameString, seal, unseal, verifyPassword } from './crypto'
 import type { Store } from './db'
 import { serveStatic } from './static'
+import { checkStripeKey, fetchStripeRevenue, keyHint, StripeError, type FetchLike, type StripeRevenue } from './stripe'
 import { newTotpSecret, otpauthUri, verifyTotp } from './totp'
 // Shared with `npm run api`, which serves lookups when there is no server.
 import { cleanDomain, createRateLimiter, lookupDomain, validateDomain } from '../../../server/domain-lookup.mjs'
@@ -16,6 +17,7 @@ const MAX_DATA_BYTES = 5 * 1024 * 1024
 const MAX_SMALL_BODY_BYTES = 16 * 1024
 const FAILURE_WINDOW_MS = 15 * 60 * 1000
 const FAILURES_PER_IP = 10
+const REVENUE_CACHE_MS = 10 * 60 * 1000
 
 export interface AppOptions {
   store: Store
@@ -31,6 +33,8 @@ export interface AppOptions {
   trustProxy?: boolean
   now?: () => number
   lookup?: (domain: string) => Promise<unknown>
+  /** fetch() used for Stripe; replaced in tests. */
+  stripeFetch?: FetchLike
 }
 
 class HttpError extends Error {
@@ -56,6 +60,19 @@ export function createApp(options: AppOptions) {
   const lookup = options.lookup ?? ((domain: string) => lookupDomain(domain))
   const allowLookup = createRateLimiter({ limit: 30, windowMs: 60_000, now })
   const failures = createFailureCounter(now)
+  let revenueCache: { at: number; revenue: StripeRevenue } | null = null
+
+  async function stripeRevenue(key: string, refresh: boolean) {
+    if (!refresh && revenueCache && now() - revenueCache.at < REVENUE_CACHE_MS) return revenueCache.revenue
+    try {
+      const revenue = await fetchStripeRevenue(key, options.stripeFetch, now())
+      revenueCache = { at: now(), revenue }
+      return revenue
+    } catch (error) {
+      if (error instanceof StripeError) throw new HttpError(error.status, error.message)
+      throw error
+    }
+  }
 
   // --- helpers -------------------------------------------------------------
 
@@ -297,6 +314,40 @@ export function createApp(options: AppOptions) {
     'GET /api/audit': (context) => {
       requireSession(context)
       return { events: store.recentAudit() }
+    },
+
+    'GET /api/integrations/stripe': (context) => {
+      requireSession(context)
+      const stripe = store.getIntegration('stripe')
+      return stripe ? { connected: true, hint: stripe.hint, connectedAt: stripe.connectedAt } : { connected: false }
+    },
+
+    'PUT /api/integrations/stripe': async (context) => {
+      requireSession(context)
+      const input = await context.body()
+      const key = typeof input.key === 'string' ? input.key.trim() : ''
+      const invalid = checkStripeKey(key)
+      if (invalid) throw new HttpError(400, invalid)
+      // Check the key can read what we need before keeping it.
+      const revenue = await stripeRevenue(key, true)
+      store.setIntegration('stripe', seal(key, secretKey), keyHint(key))
+      store.audit('stripe_connected', context.ip)
+      return { connected: true, hint: keyHint(key), revenue }
+    },
+
+    'DELETE /api/integrations/stripe': (context) => {
+      requireSession(context)
+      store.deleteIntegration('stripe')
+      revenueCache = null
+      store.audit('stripe_disconnected', context.ip)
+      return { connected: false }
+    },
+
+    'GET /api/revenue/stripe': async (context) => {
+      requireSession(context)
+      const stripe = store.getIntegration('stripe')
+      if (!stripe) throw new HttpError(404, 'Stripe isn’t connected.')
+      return stripeRevenue(unseal(stripe.sealedKey, secretKey), context.url.searchParams.get('refresh') === '1')
     },
 
     'GET /api/domain-lookup': async (context) => {
