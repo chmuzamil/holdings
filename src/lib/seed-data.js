@@ -282,6 +282,7 @@ export function getSeedRecords(now = new Date()) {
   const projects = [
     {
       id: 'project_shopfront',
+      monthlyRevenueUsd: 420,
       name: 'Shopfront',
       slug: 'shopfront',
       description: 'Storefront builder for small shops. The main earner.',
@@ -298,6 +299,7 @@ export function getSeedRecords(now = new Date()) {
     },
     {
       id: 'project_newsbite',
+      monthlyRevenueUsd: 38,
       name: 'NewsBite',
       slug: 'newsbite',
       description: 'Weekly newsletter generator with a small paid tier.',
@@ -314,6 +316,7 @@ export function getSeedRecords(now = new Date()) {
     },
     {
       id: 'project_cityguide',
+      monthlyRevenueUsd: 6,
       name: 'CityGuide',
       slug: 'cityguide',
       description: 'Static city directory. Earns a little from ads.',

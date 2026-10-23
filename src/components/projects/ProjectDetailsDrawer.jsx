@@ -34,9 +34,25 @@ function OverviewTab({ project, money, fromUsd, displayCurrency, monthlyUsd }) {
         </span>
       </div>
       <div className="ui-kv-row">
-        <span className="ui-kv-label">Monthly Cost</span>
+        <span className="ui-kv-label">Monthly cost</span>
         <span className="ui-kv-value">{money(fromUsd(monthlyUsd, displayCurrency), displayCurrency)}</span>
       </div>
+      <div className="ui-kv-row">
+        <span className="ui-kv-label">Monthly revenue</span>
+        <span className="ui-kv-value">
+          {normalized.monthlyRevenueUsd === null
+            ? 'Not tracked'
+            : money(fromUsd(normalized.monthlyRevenueUsd, displayCurrency), displayCurrency)}
+        </span>
+      </div>
+      {normalized.monthlyRevenueUsd !== null && (
+        <div className="ui-kv-row">
+          <span className="ui-kv-label">Monthly profit</span>
+          <span className={`ui-kv-value ${normalized.monthlyRevenueUsd - monthlyUsd < 0 ? 'money-loss' : 'money-gain'}`}>
+            {money(fromUsd(normalized.monthlyRevenueUsd - monthlyUsd, displayCurrency), displayCurrency)}
+          </span>
+        </div>
+      )}
       {normalized.description && (
         <div className="ui-kv-row">
           <span className="ui-kv-label">Description</span>

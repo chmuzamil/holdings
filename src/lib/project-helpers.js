@@ -1,4 +1,4 @@
-import { fromV1, summarizeCosts } from '@holdings/core'
+import { buildLedger, fromV1, summarizeCosts } from '@holdings/core'
 
 export const projectStatuses = [
   'Idea',
@@ -37,6 +37,14 @@ export const emptyProjectRecord = {
   serverIds: [],
   subscriptionIds: [],
   notes: '',
+  monthlyRevenueUsd: null,
+}
+
+// Monthly revenue in USD, or null when it isn't tracked ('' from an empty form field).
+function parseRevenue(value) {
+  if (value === null || value === undefined || value === '') return null
+  const amount = Number(value)
+  return Number.isFinite(amount) && amount >= 0 ? amount : null
 }
 
 function slugify(value) {
@@ -51,6 +59,7 @@ export function normalizeProjectRecord(record) {
   return {
     ...emptyProjectRecord,
     ...record,
+    monthlyRevenueUsd: parseRevenue(record.monthlyRevenueUsd),
     domainIds: Array.isArray(record.domainIds) ? record.domainIds : [],
     repoIds: Array.isArray(record.repoIds) ? record.repoIds : [],
     serverIds: Array.isArray(record.serverIds) ? record.serverIds : [],
@@ -79,18 +88,32 @@ const KIND_LABELS = {
 // the data is computed once however many components ask.
 const costCache = new WeakMap()
 
-export function getCostSummary(records, toUsd) {
+function getPortfolio(records, toUsd) {
   let byCostFn = costCache.get(records)
   if (!byCostFn) {
     byCostFn = new WeakMap()
     costCache.set(records, byCostFn)
   }
-  let summary = byCostFn.get(toUsd)
-  if (!summary) {
-    summary = summarizeCosts(fromV1(records, { costUsd: (record) => toUsd(record) }))
-    byCostFn.set(toUsd, summary)
+  let portfolio = byCostFn.get(toUsd)
+  if (!portfolio) {
+    const data = fromV1(records, { costUsd: (record) => toUsd(record) })
+    const costs = summarizeCosts(data)
+    portfolio = { costs, ledger: buildLedger(data, costs) }
+    byCostFn.set(toUsd, portfolio)
   }
-  return summary
+  return portfolio
+}
+
+export function getCostSummary(records, toUsd) {
+  return getPortfolio(records, toUsd).costs
+}
+
+export function getLedger(records, toUsd) {
+  return getPortfolio(records, toUsd).ledger
+}
+
+export function getLedgerRow(project, records, toUsd) {
+  return getLedger(records, toUsd).rows.find((row) => row.projectId === project.id) ?? null
 }
 
 function projectCost(project, records, toUsd) {
