@@ -15,7 +15,7 @@
   width: min(640px, 100%);
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(15, 23, 42, 0.98));
+  background: var(--surface);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
   overflow: hidden;
 }
@@ -39,7 +39,7 @@
   border-radius: var(--radius-sm);
   background: var(--fill);
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .command-item-copy {
@@ -50,10 +50,8 @@
 
 .command-item-type {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .command-item-copy strong {
@@ -88,7 +86,7 @@
   padding: 10px 16px;
   border-top: 1px solid var(--border);
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .command-palette-footer kbd {
@@ -96,5 +94,5 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--fill);
-  font-size: 10px;
+  font-size: 12px;
 }
