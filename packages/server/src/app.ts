@@ -18,6 +18,8 @@ const MAX_SMALL_BODY_BYTES = 16 * 1024
 const FAILURE_WINDOW_MS = 15 * 60 * 1000
 const FAILURES_PER_IP = 10
 const REVENUE_CACHE_MS = 10 * 60 * 1000
+const TOKEN_PREFIX = 'hld_'
+const MAX_TOKENS = 20
 
 export interface AppOptions {
   store: Store
@@ -137,6 +139,21 @@ export function createApp(options: AppOptions) {
     return context.sessionHash
   }
 
+  /**
+   * Read-only access for agents: a signed-in session, or an access token sent
+   * as "Authorization: Bearer hld_…". Tokens work on GET /api/data only.
+   */
+  function requireReader(context: Context) {
+    if (context.sessionHash) return
+    const header = String(context.request.headers.authorization || '')
+    const token = header.startsWith('Bearer ') ? header.slice(7).trim() : ''
+    if (!token) throw new HttpError(401, 'Sign in first, or send an access token.')
+    checkNotLocked(context.ip)
+    if (!token.startsWith(TOKEN_PREFIX) || !store.useToken(hashToken(token))) {
+      fail(context.ip, 'token_rejected', 'That access token isn’t valid. It may have been deleted.')
+    }
+  }
+
   function requireOwner() {
     const owner = store.getOwner()
     if (!owner) throw new HttpError(409, 'Create your login first.')
@@ -230,7 +247,7 @@ export function createApp(options: AppOptions) {
     },
 
     'GET /api/data': (context) => {
-      requireSession(context)
+      requireReader(context)
       const saved = store.getData()
       if (!saved) return { data: null, version: 0, updatedAt: null }
       return { data: JSON.parse(saved.body), version: saved.version, updatedAt: saved.updatedAt }
@@ -348,6 +365,33 @@ export function createApp(options: AppOptions) {
       const stripe = store.getIntegration('stripe')
       if (!stripe) throw new HttpError(404, 'Stripe isn’t connected.')
       return stripeRevenue(unseal(stripe.sealedKey, secretKey), context.url.searchParams.get('refresh') === '1')
+    },
+
+    'GET /api/tokens': (context) => {
+      requireSession(context)
+      return { tokens: store.listTokens() }
+    },
+
+    'POST /api/tokens': async (context) => {
+      requireSession(context)
+      const input = await context.body()
+      const name = typeof input.name === 'string' ? input.name.trim().slice(0, 60) : ''
+      if (!name) throw new HttpError(400, 'Give the token a name, like the agent or computer that uses it.')
+      if (store.listTokens().length >= MAX_TOKENS) throw new HttpError(409, `You can have up to ${MAX_TOKENS} tokens. Delete one you no longer use.`)
+      const token = TOKEN_PREFIX + newToken()
+      const id = newToken().slice(0, 12)
+      store.addToken(id, name, hashToken(token))
+      store.audit('token_created', context.ip)
+      // The only time the token is shown.
+      return { id, name, token }
+    },
+
+    'DELETE /api/tokens': async (context) => {
+      requireSession(context)
+      const input = await context.body()
+      if (!store.deleteToken(String(input.id ?? ''))) throw new HttpError(404, 'No such token.')
+      store.audit('token_deleted', context.ip)
+      return { ok: true }
     },
 
     'GET /api/domain-lookup': async (context) => {
