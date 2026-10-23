@@ -23,6 +23,13 @@ export interface Integration {
   connectedAt: string
 }
 
+export interface ApiToken {
+  id: string
+  name: string
+  createdAt: string
+  lastUsedAt: string | null
+}
+
 export interface Session {
   tokenHash: string
   expiresAt: number
@@ -55,6 +62,13 @@ const SCHEMA = `
     sealed_key TEXT NOT NULL,
     hint TEXT NOT NULL,
     connected_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS api_tokens (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL,
+    last_used_at TEXT
   );
   CREATE TABLE IF NOT EXISTS audit (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,7 +136,7 @@ export function openStore(path: string) {
 
     /** Removes the login but keeps the saved data (for --reset-login). */
     deleteOwner() {
-      db.exec('DELETE FROM owner; DELETE FROM sessions;')
+      db.exec('DELETE FROM owner; DELETE FROM sessions; DELETE FROM api_tokens;')
     },
 
     addSession(tokenHash: string, now: number, expiresAt: number) {
@@ -185,6 +199,28 @@ export function openStore(path: string) {
 
     deleteIntegration(provider: string) {
       db.prepare('DELETE FROM integrations WHERE provider = ?').run(provider)
+    },
+
+    addToken(id: string, name: string, tokenHash: string) {
+      db.prepare('INSERT INTO api_tokens (id, name, token_hash, created_at) VALUES (?, ?, ?, ?)').run(id, name, tokenHash, new Date().toISOString())
+    },
+
+    listTokens(): ApiToken[] {
+      return db.prepare('SELECT id, name, created_at, last_used_at FROM api_tokens ORDER BY created_at').all().map((row) => ({
+        id: String(row.id),
+        name: String(row.name),
+        createdAt: String(row.created_at),
+        lastUsedAt: row.last_used_at == null ? null : String(row.last_used_at),
+      }))
+    },
+
+    /** Finds a token by its hash and records that it was used. */
+    useToken(tokenHash: string): boolean {
+      return db.prepare('UPDATE api_tokens SET last_used_at = ? WHERE token_hash = ?').run(new Date().toISOString(), tokenHash).changes === 1
+    },
+
+    deleteToken(id: string): boolean {
+      return db.prepare('DELETE FROM api_tokens WHERE id = ?').run(id).changes === 1
     },
 
     audit(event: string, ip: string | null) {

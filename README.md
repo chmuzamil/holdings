@@ -125,7 +125,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **Expiry radar**: domains, TLS certificates, API keys, tokens, OAuth apps and payment cards in one list, soonest first. Metadata only: Holdings refuses to save anything that looks like a real key or card number.
 - ✅ **Exit pack**: a one-click asset register and transfer checklist for selling a project (Markdown, JSON or print).
 - ✅ **Handover pack**: a passphrase-locked file for someone you trust, readable offline in any browser (AES-256-GCM, PBKDF2 with 600,000 iterations).
-- ✅ **MCP server** (read-only), so Claude, Cursor and other agents can answer questions like "what renews this month?" or "what breaks if this server dies?". See [docs/mcp.md](docs/mcp.md). Reading live from the self-hosted server comes next.
+- ✅ **MCP server** (read-only), so Claude, Cursor and other agents can answer questions like "what renews this month?" or "what breaks if this server dies?". It reads a JSON export, or live data from the self-hosted server with a read-only access token. See [docs/mcp.md](docs/mcp.md).
 - ✅ **Self-hosted mode**: one Docker container (Node + SQLite) with a login (password plus optional two-step codes) and saving to your server. Scheduled checks and notifications come next.
 
 **v0.3**: dead-man's switch, domain risk score (registrar lock, DNSSEC, SPF/DKIM/DMARC), Uptime Kuma / Gatus status import, subscription clean-up suggestions, registrar and Cloudflare importers.

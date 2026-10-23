@@ -411,3 +411,66 @@ describe('Stripe revenue', () => {
     expect((await browser.call('GET', '/api/revenue/stripe')).status).toBe(404)
   })
 })
+
+describe('access tokens for agents', () => {
+  async function createToken(browser: ReturnType<typeof client>, name = 'Claude on laptop') {
+    const response = await browser.call('POST', '/api/tokens', { name })
+    expect(response.status).toBe(200)
+    return response.body as { id: string; name: string; token: string }
+  }
+
+  const withToken = (token: string, method = 'GET', path = '/api/data', body?: unknown) => fetch(`${base}${path}`, {
+    method,
+    headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json', 'X-Requested-With': 'holdings' } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+
+  it('reads the data with a token, and shows the token only once', async () => {
+    const owner = await signedIn()
+    await owner.call('PUT', '/api/data', { version: 0, data: { records: { domains: [] } } })
+    const created = await createToken(owner)
+    expect(created.token).toMatch(/^hld_[\w-]{43}$/)
+
+    const read = await withToken(created.token)
+    expect(read.status).toBe(200)
+    expect(((await read.json()) as { data: unknown }).data).toEqual({ records: { domains: [] } })
+
+    const list = await owner.call('GET', '/api/tokens')
+    expect(list.body.tokens).toEqual([expect.objectContaining({ id: created.id, name: 'Claude on laptop', lastUsedAt: expect.any(String) })])
+    expect(JSON.stringify(list.body)).not.toContain(created.token)
+  })
+
+  it('can only read: every change and every other endpoint refuses it', async () => {
+    const owner = await signedIn()
+    const { token } = await createToken(owner)
+    expect((await withToken(token, 'PUT', '/api/data', { version: 0, data: {} })).status).toBe(401)
+    expect((await withToken(token, 'POST', '/api/tokens', { name: 'more' })).status).toBe(401)
+    expect((await withToken(token, 'POST', '/api/password', { currentPassword: 'x', newPassword: 'y' })).status).toBe(401)
+    expect((await withToken(token, 'GET', '/api/tokens')).status).toBe(401)
+    expect((await withToken(token, 'GET', '/api/integrations/stripe')).status).toBe(401)
+    expect((await withToken(token, 'GET', '/api/session')).status).toBe(200)
+  })
+
+  it('stops working when deleted, and wrong tokens count as failed attempts', async () => {
+    const owner = await signedIn()
+    const { id, token } = await createToken(owner)
+    expect((await owner.call('DELETE', '/api/tokens', { id })).status).toBe(200)
+    expect((await withToken(token)).status).toBe(401)
+    for (let attempt = 0; attempt < 9; attempt += 1) await withToken(`hld_guess${attempt}`)
+    expect((await withToken('hld_guess-last')).status).toBe(429)
+  })
+
+  it('needs a name, and is stored only as a hash', async () => {
+    const owner = await signedIn()
+    expect((await owner.call('POST', '/api/tokens', { name: '  ' })).status).toBe(400)
+    const { token } = await createToken(owner)
+    expect(JSON.stringify(store.listTokens())).not.toContain(token)
+  })
+
+  it('is removed with the login by --reset-login', async () => {
+    const owner = await signedIn()
+    const { token } = await createToken(owner)
+    store.deleteOwner()
+    expect((await withToken(token)).status).toBe(401)
+  })
+})

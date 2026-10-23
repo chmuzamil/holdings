@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createMcpServer, PROTOCOL_VERSIONS } from './protocol'
-import { fileSource, parseHoldings } from './source'
+import { checkServerUrl, fileSource, parseHoldings, serverSource } from './source'
 import { createTools } from './tools'
 
 // A tiny portfolio in the app's export format (all made up).
@@ -176,5 +176,40 @@ describe('the export file', () => {
     expect(result.result.content[0].text).toMatch(/Can't find .*Export JSON/)
     expect(() => parseHoldings('{"hello":1}')).toThrow(/No Holdings records/)
     expect(() => parseHoldings('nope')).toThrow(/not valid JSON/)
+  })
+})
+
+describe('reading from a self-hosted server', () => {
+  const answer = (status: number, body: unknown) => async () => new Response(JSON.stringify(body), { status })
+
+  it('sends the token and reads the saved records', async () => {
+    const calls: [string, RequestInit | undefined][] = []
+    const fetchImpl = (async (url: string, init?: RequestInit) => {
+      calls.push([url, init])
+      return new Response(JSON.stringify({ data: { records: EXPORT.records, settings: {} }, version: 3 }), { status: 200 })
+    }) as typeof fetch
+    let clock = 0
+    const load = serverSource('https://holdings.example.com/some/path', 'hld_test', fetchImpl, () => clock)
+    expect((await load()).projects).toHaveLength(2)
+    expect(calls[0]?.[0]).toBe('https://holdings.example.com/api/data')
+    expect((calls[0]?.[1]?.headers as Record<string, string>).Authorization).toBe('Bearer hld_test')
+    await load()
+    expect(calls).toHaveLength(1)
+    clock += 31_000
+    await load()
+    expect(calls).toHaveLength(2)
+  })
+
+  it('explains a rejected token, an empty server and an unreachable one', async () => {
+    await expect(serverSource('https://h.example', 't', answer(401, {}) as typeof fetch)()).rejects.toThrow(/Access tokens/)
+    await expect(serverSource('https://h.example', 't', answer(200, { data: null }) as typeof fetch)()).rejects.toThrow(/Nothing is saved/)
+    await expect(serverSource('https://h.example', 't', (async () => { throw new TypeError('down') }) as typeof fetch)()).rejects.toThrow(/Can't reach/)
+  })
+
+  it('only sends a token over HTTPS, except to this machine', () => {
+    expect(checkServerUrl('https://holdings.example.com')).toBe('')
+    expect(checkServerUrl('http://localhost:8080')).toBe('')
+    expect(checkServerUrl('http://holdings.example.com')).toMatch(/https/)
+    expect(checkServerUrl('holdings.example.com')).toMatch(/not a URL/)
   })
 })

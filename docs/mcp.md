@@ -58,4 +58,25 @@ All amounts are in US dollars, the same numbers the app shows. Holdings stores m
 
 ## With the self-hosted server
 
-Reading live data straight from your self-hosted server, without exporting, is planned next. Until then, export from the server's Settings like above.
+If you run the [self-hosted server](self-hosting.md), the MCP server can read your live data instead of an export:
+
+1. In Holdings, open **Settings → Access tokens for AI agents**, name a token (for example "Claude on my laptop") and create it. Copy it: it is shown only once.
+2. Add the MCP server with `--url` and the token in the `HOLDINGS_TOKEN` environment variable:
+
+   ```bash
+   claude mcp add holdings -e HOLDINGS_TOKEN=hld_… -- node /path/to/holdings/packages/mcp/dist/holdings-mcp.js --url https://holdings.example.com
+   ```
+
+   ```json
+   {
+     "mcpServers": {
+       "holdings": {
+         "command": "node",
+         "args": ["/path/to/holdings/packages/mcp/dist/holdings-mcp.js", "--url", "https://holdings.example.com"],
+         "env": { "HOLDINGS_TOKEN": "hld_…" }
+       }
+     }
+   }
+   ```
+
+A token can only read your data: it can't save changes, see or change your login, or touch Stripe. Settings shows when each token was last used, and deleting one cuts access straight away. The token is only ever sent over HTTPS (or to `localhost`), and only its hash is stored on the server. It goes in an environment variable rather than on the command line, because other programs on your computer can see command lines.
