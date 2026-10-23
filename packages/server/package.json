@@ -1,0 +1,7 @@
+{
+  "name": "@holdings/server",
+  "private": true,
+  "version": "0.2.0-dev",
+  "description": "Optional self-hosted server for Holdings: login with password and TOTP, saved data, domain lookups.",
+  "type": "module"
+}
