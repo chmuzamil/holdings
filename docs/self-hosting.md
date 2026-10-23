@@ -85,6 +85,16 @@ All settings are environment variables.
 
 Put it behind HTTPS (for example nginx or Caddy) before using it over the internet.
 
+## Revenue from Stripe
+
+The server can read each product's monthly recurring revenue from Stripe, so your projects show real numbers. It is read-only: Holdings only accepts a restricted key, never a secret key.
+
+1. In Stripe, open **Developers → API keys → Create restricted key**.
+2. Give it **Read** access to **Subscriptions** and **Products**. Leave everything else at None.
+3. Paste the key (it starts with `rk_live_`) in Holdings under **Settings → Revenue from Stripe**.
+
+What it counts: active subscriptions, turned into a monthly amount (a yearly plan counts a twelfth each month), before discounts and tax. One-off payments, and metered or tiered prices, aren't included. The key is encrypted on your server and is never sent back to the browser. Only your server talks to `api.stripe.com`, and at most once every 10 minutes unless you press refresh.
+
 ## Two-step login
 
 After signing in, turn on two-step login in Settings. Scan the QR code with any authenticator app (1Password, Bitwarden, Google Authenticator, Aegis, and others), then enter a code to confirm.
