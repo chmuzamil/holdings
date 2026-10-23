@@ -124,6 +124,10 @@ export function getRiskiestItems(records, toUsd) {
   return portfolio.ranked
 }
 
+export function getHoldingsData(records, toUsd) {
+  return getPortfolio(records, toUsd).data
+}
+
 export function getAllAssets(records, toUsd) {
   return getPortfolio(records, toUsd).data.assets
 }

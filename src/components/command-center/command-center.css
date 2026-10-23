@@ -361,3 +361,83 @@ button.impact-item:hover strong {
 .expiry-month .expiry-when strong {
   color: var(--warning-text);
 }
+
+.pack-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 20px;
+  margin: 16px 0;
+}
+
+.pack-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pack-preview {
+  max-height: 420px;
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text);
+  font: 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+.handover-preview {
+  font-family: inherit;
+  white-space: normal;
+}
+
+.handover-preview h3 {
+  margin: 0 0 8px;
+  color: var(--text-strong);
+}
+
+.handover-preview h4 {
+  margin: 16px 0 4px;
+  color: var(--text-strong);
+}
+
+.handover-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin: 16px 0;
+}
+
+.handover-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.handover-form label span {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.handover-form input,
+.handover-form textarea {
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text-strong);
+  font: inherit;
+}
+
+.handover-form .full-span {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .handover-form {
+    grid-template-columns: 1fr;
+  }
+}
