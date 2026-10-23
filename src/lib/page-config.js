@@ -5,7 +5,6 @@ import {
   FolderGit2,
   GitBranch,
   Globe2,
-  HeartPulse,
   Layers,
   LayoutDashboard,
   Lightbulb,
@@ -40,11 +39,6 @@ export const PAGE_META = {
     title: 'Infrastructure Map',
     tagline: 'Relationships between projects, domains, servers, and repositories.',
     icon: GitBranch,
-  },
-  'project-health': {
-    title: 'Project Health',
-    tagline: 'Portfolio health and risk indicators.',
-    icon: HeartPulse,
   },
   projects: {
     title: 'Projects',
