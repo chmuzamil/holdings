@@ -38,7 +38,7 @@ const COMMON_FIELDS = new Set([
   'addedAt', 'editedAt', 'health', 'moduleKey',
   'connectedProjectIds', 'connectedServerIds', 'connectedRepoIds', 'connectedDomainIds',
   'domainIds', 'repoIds', 'serverIds', 'subscriptionIds',
-  'slug', 'description', 'liveUrl',
+  'slug', 'description', 'liveUrl', 'monthlyRevenueUsd',
 ])
 
 const STATUS: Record<string, AssetStatus> = {
@@ -55,6 +55,12 @@ const ids = (value: unknown): string[] => (Array.isArray(value) ? value.filter((
 
 function details(record: V1Record): Record<string, unknown> {
   return Object.fromEntries(Object.entries(record).filter(([key]) => !COMMON_FIELDS.has(key)))
+}
+
+function revenue(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const amount = Number(value)
+  return Number.isFinite(amount) && amount >= 0 ? amount : null
 }
 
 function slugify(value: string): string {
@@ -124,6 +130,7 @@ export function fromV1(records: V1Records, options: MigrateOptions = {}): Holdin
       description: text(record.description),
       liveUrl: text(record.liveUrl),
       notes: text(record.notes),
+      monthlyRevenueUsd: revenue(record.monthlyRevenueUsd),
       details: details(record),
       addedAt: text(record.addedAt),
       editedAt: text(record.editedAt),

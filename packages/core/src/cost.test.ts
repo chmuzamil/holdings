@@ -10,7 +10,7 @@ function asset(id: string, costUsd: number, billing: Asset['billing'] = 'monthly
 }
 
 function project(id: string): Project {
-  return { id, name: id, slug: id, status: 'production', description: '', liveUrl: '', notes: '', details: {}, addedAt: '', editedAt: '' }
+  return { id, name: id, slug: id, status: 'production', description: '', liveUrl: '', notes: '', monthlyRevenueUsd: null, details: {}, addedAt: '', editedAt: '' }
 }
 
 function data(parts: Partial<HoldingsData>): HoldingsData {
