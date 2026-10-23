@@ -31,3 +31,5 @@ holdings-export-*.json
 *.sln
 *.sw?
 .claude/
+.code-review-graph/
+.serena/
