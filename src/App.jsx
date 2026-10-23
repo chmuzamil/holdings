@@ -44,6 +44,7 @@ import { getSeedRecords, isRecordsEmpty } from './lib/seed-data'
 import { DashboardView } from './components/dashboard/DashboardView'
 import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
 import { BrandMark } from './components/shared/BrandMark'
+import { SyncStatus, SyncProblem } from './components/server/SyncStatus'
 import { isRenewableModule } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
 import { statusTone } from './lib/status'
@@ -79,6 +80,7 @@ const AttentionCenterView = named(() => import('./components/command-center/Atte
 const TimelineView = named(() => import('./components/command-center/TimelineView'), 'TimelineView')
 const ImpactView = named(() => import('./components/command-center/ImpactView'), 'ImpactView')
 const ExpiryView = named(() => import('./components/command-center/ExpiryView'), 'ExpiryView')
+const AccountSettings = named(() => import('./components/server/AccountSettings'), 'AccountSettings')
 const PacksView = named(() => import('./components/command-center/PacksView'), 'PacksView')
 const CommandPalette = named(() => import('./components/command-palette/CommandPalette'), 'CommandPalette')
 
@@ -356,7 +358,7 @@ function isAttention(record) {
   return record.status === 'Expired' || record.status === 'Expiring Soon' || (days !== null && days <= 30)
 }
 
-function App() {
+function App({ server = null }) {
   // The open page is mirrored in the URL hash (e.g. #domains) so pages can be linked to.
   const [activePage, setActivePageState] = useState(pageFromHash)
   const setActivePage = useCallback((page) => {
@@ -432,13 +434,18 @@ function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
+  // The browser copy is the working copy; with a server, changes are saved there too.
+  const saver = server?.saver
   useEffect(() => {
     persistRecords(records)
-  }, [records])
+    saver?.update('records', records)
+  }, [records, saver])
 
   useEffect(() => {
-    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(persistableSettings(appSettings)))
-  }, [appSettings])
+    const persistable = persistableSettings(appSettings)
+    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(persistable))
+    saver?.update('settings', persistable)
+  }, [appSettings, saver])
 
   const flatRecords = useMemo(
     () =>
@@ -738,7 +745,7 @@ function App() {
 
         <div className="sidebar-card">
           <ShieldCheck size={18} />
-          <p>Your data stays in this browser. Export it from Settings to back it up.</p>
+          <p>{server ? 'Your data is saved on your own server.' : 'Your data stays in this browser. Export it from Settings to back it up.'}</p>
         </div>
       </aside>
 
@@ -750,6 +757,7 @@ function App() {
             <p className="page-description">{pageMeta.tagline}</p>
           </div>
           <div className="topbar-actions">
+            {server && <SyncStatus status={server.syncStatus} />}
             {secondCurrency && (
               <label className="currency-switch">
                 <span>Currency</span>
@@ -780,6 +788,8 @@ function App() {
             </p>
           </div>
         )}
+
+        {server && <SyncProblem status={server.syncStatus} onRetry={() => server.saver.retry()} />}
 
         {unconverted.length > 0 && (
           <div className="page-content">
@@ -969,6 +979,7 @@ function App() {
             ratesStatus={ratesStatus}
             importRecords={importRecords}
             transferStatus={transferStatus}
+            server={server}
           />
         )}
         </Suspense>
@@ -1158,6 +1169,7 @@ function SettingsView({
   loadDemoData,
   deleteAllData,
   ratesStatus,
+  server,
 }) {
   function updateSetting(key, value) {
     setAppSettings((current) => ({ ...current, [key]: value }))
@@ -1165,6 +1177,12 @@ function SettingsView({
 
   return (
     <section className="page-content settings-grid">
+      {server && (
+        <Suspense fallback={null}>
+          <AccountSettings server={server} />
+        </Suspense>
+      )}
+
       <div className="panel settings-wide">
         <div className="panel-heading">
           <h2>Export and import</h2>
@@ -1205,16 +1223,21 @@ function SettingsView({
         ratesStatus={ratesStatus}
       />
 
-      <div className="panel settings-wide">
-        <div className="panel-heading">
-          <h2>Where your data lives</h2>
-          <p>Everything is saved in this browser only. Nothing is sent to a server. Clearing site data deletes it, so export a copy now and then.</p>
+      {!server && (
+        <div className="panel settings-wide">
+          <div className="panel-heading">
+            <h2>Where your data lives</h2>
+            <p>
+              Everything is saved in this browser only. Nothing is sent to a server. Clearing site data deletes it, so export a
+              copy now and then. To use it from several browsers, run your own Holdings server (see docs/self-hosting.md).
+            </p>
+          </div>
+          <div className="checklist">
+            <span><ShieldCheck size={16} /> Saved in this browser</span>
+            <span><Database size={16} /> No account, no cloud sync</span>
+          </div>
         </div>
-        <div className="checklist">
-          <span><ShieldCheck size={16} /> Saved in this browser</span>
-          <span><Database size={16} /> No account, no cloud sync</span>
-        </div>
-      </div>
+      )}
 
       <div className="panel settings-wide">
         <div className="panel-heading">
