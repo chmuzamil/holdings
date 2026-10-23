@@ -10,6 +10,7 @@ import {
 } from '../../lib/domain-helpers'
 import { resolveDomainConnections } from '../../lib/asset-helpers'
 import { getDomainCheck } from '../../lib/health-score'
+import { getDomainRisks } from '../../lib/domain-risk'
 
 export function DomainCard({
   record,
@@ -35,6 +36,7 @@ export function DomainCard({
   const shownCost = money(fromUsd(toUsd(record), displayCurrency), displayCurrency)
   const usdCost = displayCurrency !== 'USD' ? money(toUsd(record), 'USD') : null
   const dnsCheck = getDomainCheck(record.health)
+  const safetyProblems = getDomainRisks(record).problems
   const usedBy = [
     ...connections.projects.map((item) => item.name),
     ...connections.servers.map((item) => item.name),
@@ -52,6 +54,9 @@ export function DomainCard({
                 ? <Badge variant="outline">Cancelled</Badge>
                 : <Badge variant={getCountdownVariant(record)}>{getCountdownLabel(record)}</Badge>}
               {dnsCheck.show && <Badge variant={dnsCheck.variant}>{dnsCheck.label}</Badge>}
+              {safetyProblems > 0 && (
+                <Badge variant="warning">{safetyProblems === 1 ? '1 safety fix' : `${safetyProblems} safety fixes`}</Badge>
+              )}
             </div>
             {record.notes && (
               <p className="domain-card-description">{record.notes}</p>

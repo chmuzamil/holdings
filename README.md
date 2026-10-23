@@ -32,7 +32,7 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Projects as the centre.** Link domains, servers, repos and subscriptions to a project and see what it costs and earns each month. A server shared by two projects is split between them, and anything not in a project is shown separately, so the numbers always add up.
 - **"What breaks if…"**: pick a server, domain, service or payment card and see which projects it affects, how much revenue they earn, and what else stops with it (including subdomains that point at it).
 - **Keys & cards, and an expiry radar**: track API keys, tokens, OAuth apps, TLS certificates and cards by name, where they are kept and when they expire or need rotating. Never the secret itself: Holdings refuses to save anything that looks like a real key or card number. Mark which card pays for what, and see everything that renews or expires on one page, soonest first.
-- **Domains** with subdomains attached to servers, notes, renewal dates, and an optional live DNS + registry (RDAP) check: registrar, expiry, nameservers, MX and SPF.
+- **Domains** with subdomains attached to servers, notes, renewal dates, and an optional live DNS + registry (RDAP) check. **Safety checks** then show what to fix and how: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC.
 - **Servers, repos, accounts and subscriptions** with costs, renewal dates and notes.
 - **GitHub import**: fetch your repos by username. An optional token is kept in memory only, never saved.
 - **Attention list**: what is overdue or due soon, and what to tidy up, each with the next step to take.
@@ -133,7 +133,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **MCP server** (read-only), so Claude, Cursor and other agents can answer questions like "what renews this month?" or "what breaks if this server dies?". It reads a JSON export, or live data from the self-hosted server with a read-only access token. See [docs/mcp.md](docs/mcp.md).
 - ✅ **Self-hosted mode**: one Docker container (Node + SQLite) with a login (password plus optional two-step codes) and saving to your server. Scheduled checks and notifications come next.
 
-**v0.3**: dead-man's switch, domain risk score (registrar lock, DNSSEC, SPF/DKIM/DMARC), Uptime Kuma / Gatus status import, subscription clean-up suggestions, registrar and Cloudflare importers.
+**v0.3**: ✅ domain safety checks (transfer lock, DNSSEC, SPF, DMARC), subscription clean-up suggestions, Uptime Kuma / Gatus status import, scheduled checks and notifications (self-hosted), dead-man's switch, registrar and Cloudflare importers.
 
 **Later**: verified backups via [BackupProof](https://github.com/chmuzamil/BackupProof), read-only second user.
 

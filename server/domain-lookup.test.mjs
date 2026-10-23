@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanDomain, createRateLimiter, validateDomain } from './domain-lookup.mjs'
+import { cleanDomain, createRateLimiter, summarizeRdap, validateDomain } from './domain-lookup.mjs'
 
 describe('cleanDomain', () => {
   it.each([
@@ -45,5 +45,35 @@ describe('createRateLimiter', () => {
     expect(allow('b')).toBe(true)
     time = 1000
     expect(allow('a')).toBe(true)
+  })
+})
+
+describe('summarizeRdap', () => {
+  const rdap = {
+    status: ['client transfer prohibited', 'active'],
+    secureDNS: { delegationSigned: true },
+    events: [
+      { eventAction: 'registration', eventDate: '2020-01-02T00:00:00Z' },
+      { eventAction: 'expiration', eventDate: '2027-01-02T00:00:00Z' },
+    ],
+    entities: [{ roles: ['registrar'], vcardArray: ['vcard', [['fn', {}, 'text', 'Example Registrar']]] }],
+    nameservers: [{ ldhName: 'ns1.dns.example' }, { ldhName: 'ns2.dns.example' }],
+  }
+
+  it('keeps what the safety checks need', () => {
+    expect(summarizeRdap(rdap)).toEqual({
+      registrar: 'Example Registrar',
+      created: '2020-01-02T00:00:00Z',
+      updated: '',
+      expires: '2027-01-02T00:00:00Z',
+      status: ['client transfer prohibited', 'active'],
+      nameservers: ['ns1.dns.example', 'ns2.dns.example'],
+      dnssec: true,
+    })
+  })
+
+  it('reports DNSSEC as unknown when the registry doesn’t say', () => {
+    expect(summarizeRdap({ ...rdap, secureDNS: undefined }).dnssec).toBeNull()
+    expect(summarizeRdap({ ...rdap, secureDNS: { delegationSigned: false } }).dnssec).toBe(false)
   })
 })

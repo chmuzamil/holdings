@@ -76,6 +76,8 @@ export function flattenDnsRecords(lookup) {
   if (dns.cname?.value?.length) pushRows('CNAME', '@', dns.cname.value)
   if (dns.ns?.value?.length) pushRows('NS', '@', dns.ns.value)
   if (dns.txt?.value?.length) pushRows('TXT', '@', dns.txt.value)
+  // TXT answers are arrays of chunks; DMARC lives on its own name.
+  if (dns.dmarc?.value?.length) pushRows('TXT', '_dmarc', dns.dmarc.value.map((record) => (Array.isArray(record) ? record.join('') : record)))
 
   if (dns.mx?.value?.length) {
     dns.mx.value.forEach((mx) => {

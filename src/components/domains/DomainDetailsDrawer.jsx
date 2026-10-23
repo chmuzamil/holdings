@@ -10,6 +10,7 @@ import {
 } from '../../lib/domain-helpers'
 import { resolveDomainConnections } from '../../lib/asset-helpers'
 import { DomainHealthChips, DomainHealthDetail } from './DomainHealthChips'
+import { DomainSafetyChecks } from './DomainSafetyChecks'
 import { statusTone } from '../../lib/status'
 
 function OverviewTab({ record, records, servers, money, prettyDate, toUsd, fromUsd, displayCurrency }) {
@@ -69,6 +70,8 @@ function OverviewTab({ record, records, servers, money, prettyDate, toUsd, fromU
           </div>
         </div>
       </div>
+
+      <DomainSafetyChecks record={record} />
 
       <div className="domain-drawer-section">
         <h4>Connected items</h4>
