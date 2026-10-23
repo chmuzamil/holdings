@@ -20,7 +20,8 @@
 
 .domain-card.attention {
   border-color: rgb(var(--warning-rgb) / 0.28);
-  background: linear-gradient(135deg, rgb(var(--warning-rgb) / 0.06), var(--surface));
+  background: var(--surface);
+  box-shadow: inset 3px 0 0 var(--warning);
 }
 
 .domain-card-grid {
@@ -74,10 +75,8 @@
 
 .domain-health-label {
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .domain-connected-assets {
@@ -109,10 +108,8 @@
 
 .domain-card-label {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .domain-card-value {
@@ -139,7 +136,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .domain-stat span:first-child {
@@ -192,10 +189,8 @@
 .domain-drawer-section h4 {
   margin: 0;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .domain-subdomain-list {

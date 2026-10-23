@@ -2,10 +2,7 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
-  background:
-    radial-gradient(circle at top left, rgb(var(--success-rgb) / 0.08), transparent 34rem),
-    radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.08), transparent 32rem),
-    var(--bg);
+  background: var(--bg);
 }
 
 .sidebar {
@@ -46,27 +43,13 @@
 }
 
 .brand-mark {
-  width: 42px;
-  height: 42px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: var(--radius-md);
-  display: grid;
-  place-items: center;
-  background: linear-gradient(145deg, #ffffff, #9fe7bf 40%, var(--accent));
-  color: #061018;
-  font-weight: 800;
-  font-size: 13px;
+  flex: 0 0 auto;
 }
 
-.brand strong,
-.brand small {
-  display: block;
-}
-
-.brand small {
-  color: var(--text-muted);
-  margin-top: 2px;
-  font-size: 12px;
+.brand strong {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .nav {
@@ -120,7 +103,7 @@
   padding: 2px 6px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .sidebar-card {
@@ -429,7 +412,6 @@ option {
   border-bottom: 1px solid var(--border);
   font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
 }
 
 .record-row {
@@ -544,7 +526,7 @@ option {
   width: 56px;
   height: 56px;
   border-radius: var(--radius-lg);
-  background: radial-gradient(circle at top, rgb(var(--accent-rgb) / 0.14), var(--fill-subtle));
+  background: var(--fill-subtle);
   border: 1px solid var(--border);
   color: var(--accent);
   animation: ui-fade-in 0.3s ease;

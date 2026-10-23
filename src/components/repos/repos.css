@@ -16,10 +16,8 @@
 .repo-stat-card span {
   display: block;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .repo-stat-card strong {
@@ -57,10 +55,8 @@
   height: 40px;
   border-bottom: 1px solid var(--border);
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .repo-table-row {
@@ -158,7 +154,7 @@
   display: block;
   margin-top: 2px;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -210,7 +206,7 @@
 .repo-metric-card span {
   display: block;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -233,7 +229,7 @@
   border: 1px solid var(--border);
   background: var(--fill);
   color: var(--text);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -305,10 +301,8 @@
 .repo-drawer-section h4 {
   margin: 0;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .repo-empty-panel {
