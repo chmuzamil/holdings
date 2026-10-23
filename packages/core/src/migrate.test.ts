@@ -60,9 +60,10 @@ describe('fromV1', () => {
     ])
   })
 
-  it('builds dependency links from domain and repo connections', () => {
+  it('builds dependency links from domain, subdomain and repo connections, dropping missing servers', () => {
     expect(data.links).toEqual([
       { from: 'd1', to: 'srv', relation: 'points_to' },
+      { from: 'd1', to: 'srv', relation: 'points_to', subdomain: 'app' },
       { from: 'r1', to: 'srv', relation: 'deploys_to' },
     ])
   })
