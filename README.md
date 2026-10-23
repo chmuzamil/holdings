@@ -12,7 +12,7 @@
 
 If you run a handful of side projects, you probably have 20 domains at three registrars, a couple of VPSes, a pile of SaaS subscriptions and a dozen repos. They're spread across a spreadsheet, your inbox and your memory. Holdings puts them in one register, links each one to the project it belongs to, and tells you what that project costs per month and what renews next.
 
-It runs entirely in your browser. No account, no tracking, no server required.
+It runs entirely in your browser. No account, no tracking, no server required. If you want it on every device, run it on your own server with one Docker command and a login.
 
 > **Status:** early. v0.1 is a working local-first tracker. The features that make Holdings different (see [Roadmap](#roadmap)) are being built for v0.2. Feedback and issues are very welcome.
 
@@ -49,7 +49,7 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 
 ## Quick start
 
-The fastest way to look around is the **[live demo](https://holdings.chaudhery.com)**. To run it yourself, you need Node.js 22 or newer.
+The fastest way to look around is the **[live demo](https://holdings.chaudhery.com)**. To run it yourself, you need Node.js 22.13 or newer.
 
 ```bash
 git clone https://github.com/chmuzamil/holdings.git
@@ -66,18 +66,32 @@ To use the live DNS/registry check, run the small lookup server in a second term
 npm run api
 ```
 
-### Hosting it
+### Self-hosting with Docker
 
-`npm run build` produces static files in `dist/` that any web server can serve. `npm run build:demo` builds the public demo version, and `scripts/deploy-demo.sh <ssh-host>` builds and publishes it to a server over SSH. [docs/hosting-the-demo.md](docs/hosting-the-demo.md) has ready-to-use Caddy and nginx configs with a tested Content-Security-Policy. A one-command Docker setup with a small server is planned for v0.2.
+Run it on your own server, with a login, so your data follows you between browsers:
+
+```bash
+git clone https://github.com/chmuzamil/holdings.git
+cd holdings
+docker compose up -d
+docker compose logs holdings   # shows a one-time setup code
+```
+
+Open http://localhost:8080, enter the setup code and pick a password. You can add two-step login with an authenticator app in Settings. Everything lives in one SQLite file in a Docker volume. [docs/self-hosting.md](docs/self-hosting.md) covers HTTPS, settings, backups and what to do if you're locked out.
+
+### Hosting it as static files
+
+`npm run build` produces static files in `dist/` that any web server can serve. `npm run build:demo` builds the public demo version, and `scripts/deploy-demo.sh <ssh-host>` builds and publishes it to a server over SSH. [docs/hosting-the-demo.md](docs/hosting-the-demo.md) has ready-to-use Caddy and nginx configs with a tested Content-Security-Policy.
 
 ## Your data and privacy
 
 - Everything is stored in your browser's local storage. Nothing is sent to a server you don't run.
+- With the self-hosted server, it is also saved in a SQLite file on your server. Passwords are hashed with scrypt, and the two-step login secret is encrypted.
 - Clearing site data deletes it, so use **Settings → Export JSON** for backups.
 - The app only contacts other services when you ask it to:
   - `api.github.com`, when you fetch or refresh GitHub repos
   - `open.er-api.com`, once a day, if you picked a second currency
-  - your own lookup server (`npm run api`), when you run a DNS check. It queries DNS, IANA's registry directory and the domain's public registry (RDAP).
+  - your own server (or `npm run api`), when you run a DNS check. It queries DNS, IANA's registry directory and the domain's public registry (RDAP).
 - No analytics, no telemetry, no third-party scripts, fonts or icons.
 
 ## Why not…
@@ -107,7 +121,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **Exit pack**: a one-click asset register and transfer checklist for selling a project (Markdown, JSON or print).
 - ✅ **Handover pack**: a passphrase-locked file for someone you trust, readable offline in any browser (AES-256-GCM, PBKDF2 with 600,000 iterations).
 - **MCP server** (read-only by default), so Claude and other agents can answer questions about your portfolio.
-- **Self-hosted mode**: one Docker container (Node + SQLite) with login, scheduled checks and notifications.
+- ✅ **Self-hosted mode**: one Docker container (Node + SQLite) with a login (password plus optional two-step codes) and saving to your server. Scheduled checks and notifications come next.
 
 **v0.3**: dead-man's switch, domain risk score (registrar lock, DNSSEC, SPF/DKIM/DMARC), Uptime Kuma / Gatus status import, subscription clean-up suggestions, registrar and Cloudflare importers.
 
@@ -122,9 +136,11 @@ npm test             # unit tests (Vitest)
 npm run lint         # ESLint
 npm run build        # production build
 npm run build:demo   # demo build with made-up data
+npm run build:server # bundle the self-hosted server
+npm run server       # run it (see docs/self-hosting.md)
 ```
 
-CI runs lint, tests and a build on Node 22 and 24 for every pull request.
+CI runs lint, typecheck, tests and builds on Node 22 and 24 for every pull request, and builds and smoke-tests the Docker image.
 
 Optional environment variables are listed in [.env.example](.env.example).
 
