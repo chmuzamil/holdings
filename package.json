@@ -1,7 +1,7 @@
 {
   "name": "holdings",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Everything your side projects run on, in one place: domains, servers, repos, accounts, subscriptions and what each project costs.",
   "license": "MIT",
   "repository": {

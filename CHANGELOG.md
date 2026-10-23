@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.2.0 (2026-10-24)
+
+The founder's asset register: what each project costs and earns, what breaks if something stops, and an optional self-hosted server.
+
+### Added
+- **Project ledger**: monthly cost, revenue and profit per project. Shared servers and subscriptions are split between the projects using them; costs not in any project are shown separately.
+- **"What breaks if…"**: pick a server, domain, account or payment card and see the affected projects, subdomains and revenue at risk.
+- **Keys & cards and the expiry radar**: API keys, tokens, certificates and cards tracked by name and date (never the secret), and one list of everything that renews or expires.
+- **Handover pack** (a passphrase-locked file for someone you trust, opens offline) and **exit pack** (asset register and transfer checklist for selling a project).
+- **Self-hosted server** (optional): one Docker container with Node and SQLite. Password login with optional two-step codes, data saved on your server with conflict protection, domain lookups. See docs/self-hosting.md.
+- **Stripe revenue** (self-hosted): connect a read-only restricted key and link products to projects; monthly recurring revenue fills in automatically.
+- **MCP server** (read-only) for Claude, Cursor and other agents, reading an export or live data with a read-only access token. See docs/mcp.md.
+- Saving anything that looks like a real API key, token or card number is refused.
+- `@holdings/core`: the data model, cost engine, ledger and impact analysis, shared by the app, server and MCP server.
+
+### Changed
+- New look: own colour tokens, typography (IBM Plex Sans, self-hosted) and logo.
+- Plain-language copy throughout, and numbers that are only ever real (no made-up scores or trends).
+- Keyboard and screen reader support: focus handling in dialogs and menus, skip link, labelled controls.
+- Phone layouts and long names no longer overflow cards.
+- The public demo has link previews and is code-split for a lighter first load.
+
+### Fixed
+- Settings fields had no visible border.
+
+
 ## 0.1.0 (2026-10-07)
 
 First release under the name Holdings (formerly Founder OS).

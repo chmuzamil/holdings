@@ -14,7 +14,7 @@ If you run a handful of side projects, you probably have 20 domains at three reg
 
 It runs entirely in your browser. No account, no tracking, no server required. If you want it on every device, run it on your own server with one Docker command and a login.
 
-> **Status:** early. v0.1 is a working local-first tracker. The features that make Holdings different (see [Roadmap](#roadmap)) are being built for v0.2. Feedback and issues are very welcome.
+> **Status:** v0.2. The asset register, "what breaks if…", the expiry radar, handover and exit packs, self-hosting with a login, Stripe revenue and an MCP server for AI agents all work today. Still young: feedback and issues are very welcome.
 
 ## Who it's for
 
@@ -39,13 +39,18 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Timeline** built only from real dates: when you added things, when repos were created, when domains were registered.
 - **Costs in USD**, with an optional second display currency. Its rate is fetched daily from [ExchangeRate-API](https://www.exchangerate-api.com).
 - **Handover and exit packs**: a locked "if I'm unavailable" file for someone you trust (opens offline in any browser with a passphrase, never contains passwords or keys), and an asset register with a transfer checklist for selling a project.
+- **Self-hosting** (optional): one Docker container with a password and two-step login, your data saved on your server and available in every browser.
+- **Revenue from Stripe** (self-hosted): link Stripe products to a project and its monthly revenue fills itself in, with a read-only key.
+- **MCP server** so Claude, Cursor and other agents can answer questions about your portfolio, read-only.
 - **Command palette** (Ctrl/Cmd + K) to jump to anything.
 - **Export and import** everything as JSON.
 - **Demo mode** with a made-up portfolio, to look around before adding your own data.
 
-| Projects | Domains | Infrastructure map |
-| --- | --- | --- |
-| ![Projects](docs/screenshots/projects.png) | ![Domains](docs/screenshots/domains.png) | ![Infrastructure map](docs/screenshots/infrastructure-map.png) |
+| Projects | What breaks if… |
+| --- | --- |
+| ![Projects: cost, revenue and profit per project](docs/screenshots/projects.png) | ![What breaks if a payment card stops](docs/screenshots/what-if.png) |
+| **Domains** | **Map** |
+| ![Domains with renewal dates and DNS checks](docs/screenshots/domains.png) | ![Map of what each project runs on](docs/screenshots/infrastructure-map.png) |
 
 ## Quick start
 
