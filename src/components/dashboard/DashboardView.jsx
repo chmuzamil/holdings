@@ -1,115 +1,86 @@
-import { AlertCircle, ArrowRight, FolderGit2, Layers, TrendingUp } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { EmptyState } from '../EmptyState'
-import { getAttentionItems, getDashboardWidgets, getTotalMonthlyBurn } from '../../lib/intelligence-helpers'
+import { getAttentionItems } from '../../lib/intelligence-helpers'
+import { getLedger } from '../../lib/project-helpers'
 import './dashboard.css'
 import '../ui/ui.css'
 
-function SummaryTile({ icon: Icon, label, value, detail, onClick }) {
-  return (
-    <button type="button" className="overview-summary-tile" onClick={onClick}>
-      <Icon size={18} />
-      <div>
-        <span>{label}</span>
-        <strong>{value}</strong>
-        {detail && <small>{detail}</small>}
-      </div>
-      <ArrowRight size={14} />
-    </button>
-  )
-}
+const URGENT = new Set(['critical', 'warning'])
 
-export function DashboardView({
-  records,
-  flatRecords,
-  displayCurrency,
-  money,
-  prettyDate,
-  fromUsd,
-  toUsd,
-  getReminder,
-  setActivePage,
-}) {
+export function DashboardView({ records, flatRecords, displayCurrency, money, fromUsd, toUsd, setActivePage }) {
+  const ledger = getLedger(records, toUsd)
+  const attention = getAttentionItems(records, flatRecords)
+  const urgent = attention.filter((item) => URGENT.has(item.priority))
+  const show = (usd) => money(fromUsd(usd, displayCurrency), displayCurrency)
 
-  const monthlyUsd = getTotalMonthlyBurn(records, toUsd)
-  const widgets = getDashboardWidgets(records, flatRecords, toUsd)
-  const attentionCount = getAttentionItems(records, flatRecords).length
-  const projectCount = (records.projects || []).length
-  const activeProjects = (records.projects || []).filter((p) => p.status !== 'Archived').length
-
-  const signalWidgets = [
-    widgets.nextRenewal && {
-      label: 'Next renewal',
-      value: widgets.nextRenewal.name,
-      detail: `${getReminder(widgets.nextRenewal)} · ${prettyDate(widgets.nextRenewal.renewalDate || widgets.nextRenewal.expiryDate)}`,
-      onClick: () => setActivePage('attention'),
-    },
-    widgets.mostExpensiveProject && {
-      label: 'Highest project burn',
-      value: money(fromUsd(widgets.mostExpensiveProject.monthlyUsd, displayCurrency), displayCurrency),
-      detail: widgets.mostExpensiveProject.project.name,
-      onClick: () => setActivePage('projects'),
-    },
-    widgets.latestRepo?.lastCommitAt && {
-      label: 'Latest repo activity',
-      value: widgets.latestRepo.name,
-      detail: prettyDate(widgets.latestRepo.lastCommitAt),
-      onClick: () => setActivePage('repos'),
-    },
-  ].filter(Boolean)
-
-  const hasSignals = attentionCount > 0 || signalWidgets.length > 0 || projectCount > 0
+  const counts = [
+    ['projects', 'project', (records.projects || []).length],
+    ['domains', 'domain', records.domains.length],
+    ['servers', 'server', records.servers.length],
+    ['repos', 'repo', records.repos.length],
+    ['subscriptions', 'subscription', records.subscriptions.length],
+  ].filter(([, , count]) => count > 0)
 
   return (
     <section className="page-content overview-page">
-      <div className="overview-summary-grid">
-        <SummaryTile
-          icon={AlertCircle}
-          label="Attention"
-          value={attentionCount ? `${attentionCount} open` : 'All clear'}
-          detail="Warnings and renewals"
-          onClick={() => setActivePage('attention')}
-        />
-        <SummaryTile
-          icon={TrendingUp}
-          label="Monthly burn"
-          value={money(fromUsd(monthlyUsd, displayCurrency), displayCurrency)}
-          detail="Recurring infrastructure spend"
-          onClick={() => setActivePage('insights')}
-        />
-        <SummaryTile
-          icon={Layers}
-          label="Projects"
-          value={`${activeProjects} active`}
-          detail={projectCount ? `${projectCount} total` : 'No projects yet'}
-          onClick={() => setActivePage('projects')}
-        />
-        <SummaryTile
-          icon={FolderGit2}
-          label="Repositories"
-          value={`${records.repos.length} tracked`}
-          detail={widgets.latestRepo ? `Last push ${prettyDate(widgets.latestRepo.lastCommitAt)}` : 'No recent activity'}
-          onClick={() => setActivePage('repos')}
-        />
-      </div>
+      <Card className="overview-hero">
+        <p className="overview-hero-label">You pay each month</p>
+        <p className="overview-hero-number">{show(ledger.costMonthlyUsd)}</p>
+        <p className="overview-hero-detail">
+          {ledger.projectsWithRevenue > 0 ? (
+            <>
+              Your projects earn {show(ledger.revenueMonthlyUsd)}, so you{' '}
+              {ledger.profitMonthlyUsd >= 0
+                ? <span className="money-gain">keep {show(ledger.profitMonthlyUsd)}</span>
+                : <span className="money-loss">lose {show(-ledger.profitMonthlyUsd)}</span>}
+              .
+            </>
+          ) : (
+            'Add monthly revenue to a project to see what you keep.'
+          )}{' '}
+          <button type="button" className="link-button" onClick={() => setActivePage('insights')}>See what&apos;s due when</button>
+        </p>
+      </Card>
 
-      {signalWidgets.length > 0 && (
-        <div className="overview-signals">
-          <p className="overview-section-label">Signals</p>
-          <div className="v3-widget-grid">
-            {signalWidgets.map((w) => (
-              <Card key={w.label} className="v3-widget clickable" onClick={w.onClick} role="button" tabIndex={0}>
-                <span>{w.label}</span>
-                <strong>{w.value}</strong>
-                {w.detail && <small>{w.detail}</small>}
-              </Card>
-            ))}
-          </div>
+      <Card className="overview-attention">
+        <div className="overview-section-head">
+          <h2>{urgent.length ? 'Needs you soon' : 'Nothing urgent'}</h2>
+          {attention.length > 0 && (
+            <button type="button" className="link-button" onClick={() => setActivePage('attention')}>
+              See all {attention.length}
+            </button>
+          )}
         </div>
-      )}
+        {urgent.length ? (
+          <ul className="overview-attention-list">
+            {urgent.slice(0, 5).map((item) => (
+              <li key={item.id}>
+                <button type="button" className={`overview-attention-item ${item.priority}`} onClick={() => setActivePage(item.moduleKey)}>
+                  <span>
+                    <strong>{item.detail}</strong>
+                    <small>{item.label} · {item.action}</small>
+                  </span>
+                  <ArrowRight size={14} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="settings-status">Nothing is overdue or due within a month.</p>
+        )}
+      </Card>
 
-      {!hasSignals && (
-        <EmptyState variant="calm" title="Your overview is clear" text="Add projects and assets — each page will surface a different lens on your stack." />
+      {counts.length > 0 ? (
+        <nav className="overview-counts" aria-label="Your lists">
+          {counts.map(([page, noun, count]) => (
+            <button key={page} type="button" className="link-button" onClick={() => setActivePage(page)}>
+              {count} {noun}{count === 1 ? '' : 's'}
+            </button>
+          ))}
+        </nav>
+      ) : (
+        <EmptyState variant="calm" title="Nothing here yet" text="Add a project to get started." />
       )}
     </section>
   )

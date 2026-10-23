@@ -50,7 +50,7 @@ import { AttentionCenterView } from './components/command-center/AttentionCenter
 import { TimelineView } from './components/command-center/TimelineView'
 import { CommandPalette } from './components/command-palette/CommandPalette'
 import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
-import { isRenewableModule, isRenewableRecord } from './lib/renewal-helpers'
+import { isRenewableModule } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
 import { useDialog } from './components/ui/use-dialog'
 import { buildExport, exportFileName, parseImport } from './lib/data-transfer'
@@ -316,6 +316,11 @@ function App() {
     window.history.replaceState(null, '', page === 'dashboard' ? window.location.pathname + window.location.search : `#${page}`)
   }, [])
 
+  // On narrow screens the nav is a scrolling row; keep the current page visible.
+  useEffect(() => {
+    document.querySelector('.nav [aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [activePage])
+
   useEffect(() => {
     const onHashChange = () => setActivePageState(pageFromHash())
     window.addEventListener('hashchange', onHashChange)
@@ -394,25 +399,6 @@ function App() {
     [records],
   )
 
-  const stats = useMemo(() => {
-    const domainYearly = records.domains.reduce((sum, item) => sum + toUsd(item), 0)
-    const monthly = records.servers.reduce((sum, item) => sum + toUsd(item), 0)
-      + records.accounts.reduce((sum, item) => sum + toUsd(item), 0)
-      + records.subscriptions.reduce((sum, item) => sum + toUsd(item), 0)
-      + domainYearly / 12
-    const renewableRecords = flatRecords.filter(isRenewableRecord)
-    const attention = renewableRecords.filter(isAttention)
-    return {
-      domains: records.domains.length,
-      servers: records.servers.length,
-      repos: records.repos.length,
-      accounts: records.accounts.length,
-      monthly,
-      yearly: monthly * 12 + domainYearly,
-      upcoming: attention.filter((item) => item.status !== 'Expired').length,
-      expired: renewableRecords.filter((item) => item.status === 'Expired' || daysUntil(item.expiryDate) < 0).length,
-    }
-  }, [records, flatRecords, toUsd])
 
   const currentConfig = moduleConfig[activePage]
   const pageMeta = getPageMeta(activePage)
@@ -748,14 +734,10 @@ function App() {
           <DashboardView
             records={records}
             flatRecords={flatRecords}
-            stats={stats}
             displayCurrency={displayCurrency}
             money={money}
-            prettyDate={prettyDate}
             fromUsd={fromUsd}
             toUsd={toUsd}
-            getReminder={getReminder}
-            isAttention={isAttention}
             setActivePage={setActivePage}
           />
         )}

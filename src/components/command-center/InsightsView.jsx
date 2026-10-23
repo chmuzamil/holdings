@@ -50,8 +50,9 @@ export function InsightsView({ records, displayCurrency, money, fromUsd, toUsd }
             </div>
           ))}
         </div>
-        <table className="sr-only">
-          <caption>Money due each month for the next 12 months</caption>
+        <div className="sr-only">
+          <table>
+            <caption>Money due each month for the next 12 months</caption>
           <tbody>
             {forecast.map((month) => (
               <tr key={month.key}>
@@ -61,7 +62,8 @@ export function InsightsView({ records, displayCurrency, money, fromUsd, toUsd }
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
         <ul className="forecast-renewals">
           {forecast.filter((month) => month.renewals.length).map((month) => (
             <li key={month.key}>

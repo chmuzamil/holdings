@@ -1,7 +1,6 @@
 import { Edit3, Eye, RefreshCw, Trash2 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
-import { Avatar } from '../ui/Avatar'
 import { DropdownMenu } from '../ui/DropdownMenu'
 import {
   countDnsRecords,
@@ -11,23 +10,6 @@ import {
 } from '../../lib/domain-helpers'
 import { resolveDomainConnections } from '../../lib/asset-helpers'
 import { getDomainCheck } from '../../lib/health-score'
-
-function statusVariant(status) {
-  if (status === 'Active') return 'success'
-  if (status === 'Expiring Soon') return 'warning'
-  if (status === 'Expired') return 'expired'
-  return 'outline'
-}
-
-// Initials only: loading favicons from a third-party service would send the
-// user's domain list to that service.
-function DomainAvatar({ name }) {
-  return (
-    <div className="domain-avatar">
-      <Avatar name={name} size="sm" className="domain-avatar-fallback" />
-    </div>
-  )
-}
 
 export function DomainCard({
   record,
@@ -52,36 +34,34 @@ export function DomainCard({
   const shownCost = money(fromUsd(toUsd(record), displayCurrency), displayCurrency)
   const usdCost = displayCurrency !== 'USD' ? money(toUsd(record), 'USD') : null
   const dnsCheck = getDomainCheck(record.health)
+  const usedBy = [
+    ...connections.projects.map((item) => item.name),
+    ...connections.servers.map((item) => item.name),
+    ...connections.repos.map((item) => `${item.name} repo`),
+  ].join(' · ')
 
   return (
     <Card className={`domain-card ${attention ? 'attention' : ''}`.trim()}>
       <div className="domain-card-grid">
         <div className="domain-card-info">
-          <DomainAvatar name={record.name} />
           <div className="domain-card-copy">
             <h3 className="domain-card-title">{record.name}</h3>
             <div className="domain-card-badges">
-              <Badge variant={statusVariant(record.status)}>{record.status}</Badge>
-              <Badge variant={getCountdownVariant(record)}>{getCountdownLabel(record)}</Badge>
+              {record.status === 'Cancelled'
+                ? <Badge variant="outline">Cancelled</Badge>
+                : <Badge variant={getCountdownVariant(record)}>{getCountdownLabel(record)}</Badge>}
               {dnsCheck.show && <Badge variant={dnsCheck.variant}>{dnsCheck.label}</Badge>}
             </div>
             {record.notes && (
               <p className="domain-card-description">{record.notes}</p>
             )}
-            {(connections.projects[0] || connections.servers[0] || connections.repos[0]) && (
-              <div className="domain-connected-assets">
-                {connections.projects[0] && <small>Project: {connections.projects[0].name}</small>}
-                {connections.servers[0] && <small>Server: {connections.servers[0].name}</small>}
-                {connections.repos[0] && <small>Repo: {connections.repos[0].name}</small>}
-              </div>
-            )}
+            {usedBy && <p className="domain-connected-assets" title={usedBy}>Used by {usedBy}</p>}
           </div>
         </div>
 
         <div className="domain-card-meta">
           <span className="domain-card-label">Registrar</span>
           <span className="domain-card-value">{record.provider || '—'}</span>
-          <span className="domain-card-subvalue">Auto renew not tracked</span>
         </div>
 
         <div className="domain-card-renewal">
@@ -110,8 +90,8 @@ export function DomainCard({
 
         <div className="domain-card-actions">
           <button className="ui-btn ui-btn-primary" type="button" onClick={() => onViewDetails(record)}>
-            <Eye size={15} />
-            View Details
+            <Eye size={15} aria-hidden="true" />
+            Details
           </button>
           <DropdownMenu
             items={[
