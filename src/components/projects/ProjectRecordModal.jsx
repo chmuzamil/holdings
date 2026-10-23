@@ -94,6 +94,18 @@ export function ProjectRecordModal({ modal, setModal, saveRecord, records }) {
               <span>Live URL</span>
               <input value={values.liveUrl} onChange={(e) => updateField('liveUrl', e.target.value)} placeholder="https://" />
             </div>
+            <label className="field-group">
+              <span>Monthly revenue (USD)</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={values.monthlyRevenueUsd ?? ''}
+                onChange={(e) => updateField('monthlyRevenueUsd', e.target.value)}
+                placeholder="Leave empty if you don't track it"
+              />
+            </label>
             <div className="field-group full-width">
               <span>Domains</span>
               <AssetCheckboxList
