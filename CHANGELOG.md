@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Domain safety checks**: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC, each with what to do next. Shown in a domain's details, with a count on its card. DKIM isn't checked (it needs your mail provider's selector).
+- The DNS check now also reads the domain's DMARC record and whether the registry says it is signed with DNSSEC.
+
+### Fixed
+- The Import JSON button could not be reached with the keyboard, and its icon sat above the text.
+
 ## 0.2.0 (2026-10-24)
 
 The founder's asset register: what each project costs and earns, what breaks if something stops, and an optional self-hosted server.
