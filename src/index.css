@@ -5,7 +5,7 @@
   --border: rgba(148, 163, 184, 0.1);
   --border-subtle: rgba(148, 163, 184, 0.06);
   --text: #a7b0c0;
-  --text-muted: #70798a;
+  --text-muted: #8b94a7;
   --text-strong: #f4f7fb;
   --accent: #7dd3fc;
   font-family:
@@ -56,5 +56,106 @@ select:focus-visible {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
+  border: 0;
+}
+
+/* Accessibility */
+
+textarea:focus-visible,
+[tabindex]:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.7);
+  outline-offset: 2px;
+}
+
+/* Inputs drawn inside a styled box: ring the box, not the bare input. */
+.search-box:focus-within,
+.select-box:focus-within,
+.currency-switch:focus-within,
+.ui-command-input-wrap:focus-within {
+  outline: 2px solid rgba(125, 211, 252, 0.7);
+  outline-offset: 2px;
+}
+
+.search-box input:focus-visible,
+.select-box select:focus-visible,
+.currency-switch select:focus-visible,
+.ui-command-input:focus-visible {
+  outline: none;
+}
+
+main:focus {
+  outline: none;
+}
+
+.skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--text-strong);
+  color: var(--bg);
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.nav-link {
+  text-decoration: none;
+}
+
+.form-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.form-fieldset legend {
+  margin-bottom: 8px;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ui-command-item {
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .ui-btn-icon,
+  .ui-btn-sm,
+  .row-actions button,
+  .modal-close,
+  .subdomain-row button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Live status regions stay in the page so screen readers announce changes, but take no space when empty. */
+.inline-status:empty,
+.settings-status:empty {
+  display: block;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
   border: 0;
 }
