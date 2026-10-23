@@ -4,10 +4,13 @@ import http from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, SESSION_COOKIE } from './app'
 import { openStore, type Store } from './db'
 import { totpCode } from './totp'
+
+// Password checks are deliberately slow (scrypt); allow for busy machines.
+vi.setConfig({ testTimeout: 30_000 })
 
 const SETUP_CODE = 'ABCD-EFGH-JKLM'
 const PASSWORD = 'a long test passphrase'
@@ -130,8 +133,7 @@ describe('signing in', () => {
     expect((await browser.call('GET', '/api/data')).status).toBe(200)
   })
 
-  // Twelve deliberately slow password checks: allow for slower machines.
-  it('locks an address out after 10 wrong passwords', { timeout: 30_000 }, async () => {
+  it('locks an address out after 10 wrong passwords', async () => {
     await signedIn()
     const browser = client()
     for (let attempt = 0; attempt < 10; attempt += 1) {
