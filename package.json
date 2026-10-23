@@ -10,7 +10,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13"
   },
   "scripts": {
     "dev": "vite",
@@ -21,7 +21,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:demo": "vite build --mode demo",
-    "typecheck": "tsc -p packages/core"
+    "typecheck": "tsc -p packages/core && tsc -p packages/server",
+    "build:server": "esbuild packages/server/src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=packages/server/dist/server.js",
+    "server": "node packages/server/dist/server.js"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.3.0",
@@ -31,9 +33,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "esbuild": "^0.28.2",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
