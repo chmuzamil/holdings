@@ -6,8 +6,11 @@ import {
   projectStatusVariant,
 } from '../../lib/project-helpers'
 import { getProjectCostAnalytics } from '../../lib/intelligence-helpers'
+import { percentLabel } from '../../lib/format'
 import { Progress } from '../ui/Progress'
 import { resolveProjectAssets } from '../../lib/asset-helpers'
+
+
 
 function OverviewTab({ project, money, fromUsd, displayCurrency, monthlyUsd }) {
   const normalized = normalizeProjectRecord(project)
@@ -126,9 +129,9 @@ function CostsTab({ project, records, toUsd, money, fromUsd, displayCurrency }) 
           <div className="cost-allocation-row" key={row.label} style={{ marginBottom: 10 }}>
             <div className="cost-allocation-meta">
               <span>{row.label}</span>
-              <span>{row.percent}%</span>
+              <span>{percentLabel(row.share)}</span>
             </div>
-            <Progress value={row.percent} />
+            <Progress value={row.share.percent} label={`${row.label}: ${percentLabel(row.share)} of this project's cost`} />
           </div>
         ))}
       </div>

@@ -10,7 +10,7 @@ import {
   normalizeSubdomains,
 } from '../../lib/domain-helpers'
 import { resolveDomainConnections } from '../../lib/asset-helpers'
-import { getDomainHealthScore } from '../../lib/health-score'
+import { getDomainCheck } from '../../lib/health-score'
 
 function statusVariant(status) {
   if (status === 'Active') return 'success'
@@ -51,7 +51,7 @@ export function DomainCard({
     || 0
   const shownCost = money(fromUsd(toUsd(record), displayCurrency), displayCurrency)
   const usdCost = displayCurrency !== 'USD' ? money(toUsd(record), 'USD') : null
-  const domainHealth = getDomainHealthScore(record.health)
+  const dnsCheck = getDomainCheck(record.health)
 
   return (
     <Card className={`domain-card ${attention ? 'attention' : ''}`.trim()}>
@@ -63,13 +63,7 @@ export function DomainCard({
             <div className="domain-card-badges">
               <Badge variant={statusVariant(record.status)}>{record.status}</Badge>
               <Badge variant={getCountdownVariant(record)}>{getCountdownLabel(record)}</Badge>
-              {domainHealth.score === null ? (
-                <Badge variant="outline">DNS not checked</Badge>
-              ) : (
-                <Badge variant={domainHealth.score >= 75 ? 'success' : domainHealth.score >= 50 ? 'warning' : 'outline'}>
-                  Health {domainHealth.score}
-                </Badge>
-              )}
+              {dnsCheck.show && <Badge variant={dnsCheck.variant}>{dnsCheck.label}</Badge>}
             </div>
             {record.notes && (
               <p className="domain-card-description">{record.notes}</p>

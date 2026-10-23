@@ -111,6 +111,16 @@ describe('formatMoney', () => {
   })
 
   it('falls back for codes Intl does not know', () => {
-    expect(formatMoney(12.4, 'XYZ1')).toBe('12 XYZ1')
+    expect(formatMoney(12.4, 'XYZ1')).toBe('12.40 XYZ1')
+  })
+
+  it('shows cents only for small amounts that have them', () => {
+    expect(formatMoney(4.5, 'USD')).toMatch(/4\.50/)
+    expect(formatMoney(364, 'USD')).not.toMatch(/\./)
+    expect(formatMoney(1234.56, 'USD')).not.toMatch(/\.\d/)
+  })
+
+  it('uses the plain symbol, not the country-prefixed one', () => {
+    expect(formatMoney(10, 'USD')).not.toMatch(/US/)
   })
 })

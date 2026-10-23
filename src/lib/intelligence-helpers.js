@@ -9,7 +9,8 @@ import {
 } from './project-helpers'
 import { normalizeRepoRecord } from './repo-helpers'
 import { normalizeServerRecord } from './server-helpers'
-import { getHealthScoreBreakdown } from './health-score'
+import { getProjectGaps } from './health-score'
+import { percentShares } from './format'
 
 function haystack(...parts) {
   return parts.filter(Boolean).join(' ').toLowerCase()
@@ -165,109 +166,49 @@ function priorityVariant(priority) {
 
 export function getAttentionItems(records, flatRecords) {
   const items = []
+  const add = (item) => items.push(item)
 
   flatRecords.filter(isRenewableRecord).forEach((record) => {
+    if (record.status === 'Cancelled') return
     const days = daysUntilRenewal(record)
     if (days === null) return
+    const base = { moduleKey: record.moduleKey, recordId: record.id, detail: record.name }
     if (record.status === 'Expired' || days < 0) {
-      items.push({
-        id: `expired-${record.id}`,
-        priority: 'critical',
-        label: 'Expired asset',
-        detail: `${record.name} is overdue`,
-        moduleKey: record.moduleKey,
-        recordId: record.id,
-      })
+      add({ ...base, id: `expired-${record.id}`, priority: 'critical', label: days < 0 ? `Overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'}` : 'Expired', action: 'Renew it, or mark it cancelled if you let it go.' })
     } else if (days <= 7) {
-      items.push({
-        id: `renew-7-${record.id}`,
-        priority: 'critical',
-        label: 'Renewal in 7 days',
-        detail: `${record.name} · ${days} days left`,
-        moduleKey: record.moduleKey,
-        recordId: record.id,
-      })
+      add({ ...base, id: `renew-7-${record.id}`, priority: 'critical', label: days === 0 ? 'Renews today' : `Renews in ${days} day${days === 1 ? '' : 's'}`, action: 'Renew or cancel it this week.' })
     } else if (days <= 30) {
-      items.push({
-        id: `renew-30-${record.id}`,
-        priority: 'warning',
-        label: 'Renewal in 30 days',
-        detail: `${record.name} · ${days} days left`,
-        moduleKey: record.moduleKey,
-        recordId: record.id,
-      })
+      add({ ...base, id: `renew-30-${record.id}`, priority: 'warning', label: `Renews in ${days} days`, action: 'Check the card it uses and whether you still need it.' })
     }
   })
 
   records.domains.forEach((domain) => {
     const normalized = normalizeDomainRecord(domain)
-    const lastChecked = normalized.health?.lastChecked
-    if (!lastChecked) {
-      items.push({
-        id: `health-${domain.id}`,
-        priority: 'warning',
-        label: 'DNS never checked',
-        detail: domain.name,
-        moduleKey: 'domains',
-        recordId: domain.id,
-      })
+    if (!normalized.health?.lastChecked) {
+      add({ id: `health-${domain.id}`, priority: 'info', label: 'DNS not checked yet', detail: domain.name, action: 'Run a DNS check from the Domains page.', moduleKey: 'domains', recordId: domain.id })
     }
   })
 
   records.servers.forEach((server) => {
     const s = normalizeServerRecord(server)
-    if (!s.connectedProjectIds?.length) {
-      const linked = (records.projects || []).some((p) =>
-        normalizeProjectRecord(p).serverIds.includes(server.id),
-      )
-      if (!linked) {
-        items.push({
-          id: `server-unlinked-${server.id}`,
-          priority: 'info',
-          label: 'Server with no linked project',
-          detail: s.name,
-          moduleKey: 'servers',
-          recordId: server.id,
-        })
-      }
+    const linked = s.connectedProjectIds?.length
+      || (records.projects || []).some((p) => normalizeProjectRecord(p).serverIds.includes(server.id))
+    if (!linked && server.status !== 'Cancelled') {
+      add({ id: `server-unlinked-${server.id}`, priority: 'info', label: 'Not used by any project', detail: s.name, action: 'Link it to a project, or cancel it.', moduleKey: 'servers', recordId: server.id })
     }
   })
 
   ;(records.projects || []).forEach((project) => {
     const p = normalizeProjectRecord(project)
-    if (!p.domainIds.length) {
-      items.push({
-        id: `project-no-domain-${project.id}`,
-        priority: 'info',
-        label: 'Project missing domain',
-        detail: p.name,
-        moduleKey: 'projects',
-        recordId: project.id,
-      })
-    }
-    if (!p.repoIds.length) {
-      items.push({
-        id: `project-no-repo-${project.id}`,
-        priority: 'warning',
-        label: 'Project missing repository',
-        detail: p.name,
-        moduleKey: 'projects',
-        recordId: project.id,
-      })
-    }
+    getProjectGaps(p).forEach((gap) => {
+      add({ id: `project-${gap.key}-${project.id}`, priority: 'info', label: gap.label, detail: p.name, action: gap.action, moduleKey: 'projects', recordId: project.id })
+    })
   })
 
   records.repos.forEach((repo) => {
     const r = normalizeRepoRecord(repo)
     if (r.githubHealth === 'Stale') {
-      items.push({
-        id: `stale-${repo.id}`,
-        priority: 'warning',
-        label: 'Stale repository',
-        detail: `${r.name} · no push in 180+ days`,
-        moduleKey: 'repos',
-        recordId: repo.id,
-      })
+      add({ id: `stale-${repo.id}`, priority: 'info', label: 'No code changes in 6 months', detail: r.name, action: 'Archive it, or link it to a project you still run.', moduleKey: 'repos', recordId: repo.id })
     }
   })
 
@@ -276,10 +217,6 @@ export function getAttentionItems(records, flatRecords) {
 }
 
 export { priorityVariant }
-
-export function getHealthScore(records, flatRecords) {
-  return getHealthScoreBreakdown(records, flatRecords)
-}
 
 export function getInfrastructureGraph(records) {
   return (records.projects || []).map((project) => {
@@ -322,17 +259,13 @@ export function getDashboardWidgets(records, flatRecords, toUsd) {
     latestRepo,
     latestDomain,
     latestServer,
-    health: getHealthScore(records, flatRecords),
     infrastructurePreview: getInfrastructureGraph(records).slice(0, 3),
   }
 }
 
 export function getProjectCostAnalytics(project, records, toUsd) {
   const breakdown = getProjectCostBreakdown(project, records, toUsd)
-  const totalUsd = breakdown.totalUsd || 1
-  const allocation = breakdown.rows.map((row) => ({
-    ...row,
-    percent: Math.round((row.monthlyUsd / totalUsd) * 100),
-  }))
+  const shares = percentShares(breakdown.rows.map((row) => row.monthlyUsd))
+  const allocation = breakdown.rows.map((row, index) => ({ ...row, share: shares[index] }))
   return { breakdown, allocation, totalUsd: breakdown.totalUsd, annualUsd: breakdown.totalUsd * 12 }
 }

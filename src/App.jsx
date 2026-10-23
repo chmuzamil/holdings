@@ -9,7 +9,6 @@ import {
   FolderGit2,
   GitBranch,
   Globe2,
-  HeartPulse,
   LayoutDashboard,
   Layers,
   Lightbulb,
@@ -51,7 +50,6 @@ import { AttentionCenterView } from './components/command-center/AttentionCenter
 import { TimelineView } from './components/command-center/TimelineView'
 import { CommandPalette } from './components/command-palette/CommandPalette'
 import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
-import { ProjectHealthView } from './components/command-center/ProjectHealthView'
 import { isRenewableModule, isRenewableRecord } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
 import { buildExport, exportFileName, parseImport } from './lib/data-transfer'
@@ -195,7 +193,6 @@ const navItems = [
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { type: 'divider' },
   { id: 'infrastructure-map', label: 'Infrastructure', icon: GitBranch },
-  { id: 'project-health', label: 'Health', icon: HeartPulse },
   { type: 'divider' },
   { id: 'projects', label: 'Projects', icon: Layers },
   { id: 'domains', label: 'Domains', icon: Globe2 },
@@ -764,10 +761,6 @@ function App() {
           <InfrastructureMapView records={records} setActivePage={setActivePage} />
         )}
 
-        {activePage === 'project-health' && (
-          <ProjectHealthView records={records} flatRecords={flatRecords} />
-        )}
-
         {activePage === 'insights' && (
           <InsightsView
             records={records}
@@ -858,7 +851,7 @@ function App() {
           />
         )}
 
-        {currentConfig && !['domains', 'repos', 'servers', 'projects', 'dashboard', 'settings', 'infrastructure-map', 'project-health', 'insights', 'attention', 'timeline'].includes(activePage) && (
+        {currentConfig && !['domains', 'repos', 'servers', 'projects', 'dashboard', 'settings', 'infrastructure-map', 'insights', 'attention', 'timeline'].includes(activePage) && (
           <ModuleView
             config={currentConfig}
             moduleKey={activePage}

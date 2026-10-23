@@ -1,9 +1,7 @@
-import { AlertCircle, ArrowRight, FolderGit2, HeartPulse, Layers, TrendingUp } from 'lucide-react'
+import { AlertCircle, ArrowRight, FolderGit2, Layers, TrendingUp } from 'lucide-react'
 import { Card } from '../ui/Card'
-import { Badge } from '../ui/Badge'
 import { EmptyState } from '../EmptyState'
 import { getAttentionItems, getDashboardWidgets, getTotalMonthlyBurn } from '../../lib/intelligence-helpers'
-import { getHealthScoreBreakdown } from '../../lib/health-score'
 import './dashboard.css'
 import '../ui/ui.css'
 
@@ -35,7 +33,6 @@ export function DashboardView({
 
   const monthlyUsd = getTotalMonthlyBurn(records, toUsd)
   const widgets = getDashboardWidgets(records, flatRecords, toUsd)
-  const health = getHealthScoreBreakdown(records, flatRecords)
   const attentionCount = getAttentionItems(records, flatRecords).length
   const projectCount = (records.projects || []).length
   const activeProjects = (records.projects || []).filter((p) => p.status !== 'Archived').length
@@ -65,15 +62,6 @@ export function DashboardView({
 
   return (
     <section className="page-content overview-page">
-      <div className="overview-toolbar">
-        <button type="button" className="overview-health-pill" onClick={() => setActivePage('project-health')}>
-          <HeartPulse size={16} />
-          <span>Health</span>
-          <strong>{health.score}</strong>
-          <Badge variant={health.score >= 75 ? 'success' : health.score >= 50 ? 'warning' : 'danger'}>{health.label}</Badge>
-        </button>
-      </div>
-
       <div className="overview-summary-grid">
         <SummaryTile
           icon={AlertCircle}
