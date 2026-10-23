@@ -197,3 +197,7 @@ main:focus {
   padding: 0;
   border: 0;
 }
+
+.page-loading {
+  color: var(--text-muted);
+}

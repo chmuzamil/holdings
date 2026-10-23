@@ -1,6 +1,6 @@
 # Hosting the public demo
 
-The demo is the normal app built with `VITE_DEMO=true`. It opens with a made-up portfolio, shows a "this is a demo" banner, and turns off DNS checks. It is plain static files: no server code, no database. Each visitor's changes stay in their own browser.
+The demo is the normal app built with `VITE_DEMO=true` (see `.env.demo`). It opens with a made-up portfolio, shows a "this is a demo" banner with a link to the repo, and turns off DNS checks. Because `.env.demo` also sets `VITE_SITE_URL`, the demo build gets link-preview tags (`og.png`), a canonical URL, a sitemap and a robots.txt that allows indexing. Set it to your own address if you host a public copy. Other builds get a robots.txt that keeps search engines out. It is plain static files: no server code, no database. Each visitor's changes stay in their own browser.
 
 ## Build
 
@@ -9,7 +9,7 @@ npm ci
 npm run build:demo
 ```
 
-Upload the contents of `dist/` to your server, for example to `/srv/holdings-demo`.
+Upload the contents of `dist/` to your server, for example to `/srv/holdings-demo/current`.
 
 Or build and publish in one step over SSH:
 
@@ -17,7 +17,7 @@ Or build and publish in one step over SSH:
 scripts/deploy-demo.sh <ssh-host> /srv/holdings-demo
 ```
 
-Each deploy goes into `/srv/holdings-demo/releases/<timestamp>`, and `/srv/holdings-demo/current` is switched to it in one step, so visitors never see a half-uploaded site. The three newest releases are kept. With the script, point your web server at `/srv/holdings-demo/current` instead of `/srv/holdings-demo` in the examples below.
+Each deploy goes into `/srv/holdings-demo/releases/<timestamp>`, and `/srv/holdings-demo/current` is switched to it in one step, so visitors never see a half-uploaded site. The three newest releases are kept. The examples below point at `/srv/holdings-demo/current`.
 
 The build assumes it is served from the root of a domain or subdomain (for example `demo.yourdomain.com`). To serve it from a sub-path, build with `npx vite build --mode demo --base=/holdings/`.
 
@@ -29,28 +29,50 @@ The app only needs to talk to its own origin, plus two services when a visitor p
 Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://open.er-api.com https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 ```
 
+## What the configs below do
+
+- Serve `index.html` at `/` without caching, so a new deploy shows up straight away.
+- Cache the hashed files in `/assets/` for a year, and other files (icons, `og.png`, `robots.txt`) for a day.
+- Return a real 404 for any other path. The app has no other routes (pages are `#hash` links), so this avoids soft-404 copies of the home page.
+- Send the security headers on every response. `Referrer-Policy: strict-origin-when-cross-origin` still lets GitHub see that visitors came from your demo.
+
 ## Caddy
 
 ```caddyfile
 demo.yourdomain.com {
-	root * /srv/holdings-demo
+	root * /srv/holdings-demo/current
 	encode zstd gzip
-	try_files {path} /index.html
 	file_server
 
 	header {
 		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://open.er-api.com https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
-		Referrer-Policy "no-referrer"
+		Referrer-Policy "strict-origin-when-cross-origin"
 		X-Content-Type-Options "nosniff"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 	}
 
+	@index path / /index.html
+	header @index Cache-Control "no-cache"
+
 	@assets path /assets/*
 	header @assets Cache-Control "public, max-age=31536000, immutable"
+
+	@static path /favicon.svg /apple-touch-icon.png /og.png /robots.txt /sitemap.xml
+	header @static Cache-Control "public, max-age=86400"
 }
 ```
 
 ## nginx
+
+In nginx, a `location` that adds any header of its own drops the headers set at `server` level. Keep the security headers in a snippet and include it in every location:
+
+```nginx
+# /etc/nginx/snippets/holdings-headers.conf
+add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://open.er-api.com https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+```
 
 ```nginx
 server {
@@ -58,21 +80,26 @@ server {
     server_name demo.yourdomain.com;
     # ssl_certificate / ssl_certificate_key: your certificates
 
-    root /srv/holdings-demo;
-    index index.html;
+    root /srv/holdings-demo/current;
+    gzip on;
+    gzip_types text/css application/javascript image/svg+xml;
 
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://open.er-api.com https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
-    add_header Referrer-Policy "no-referrer" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    location = / {
+        include snippets/holdings-headers.conf;
+        add_header Cache-Control "no-cache";
+        try_files /index.html =404;
+    }
 
     location /assets/ {
+        include snippets/holdings-headers.conf;
         add_header Cache-Control "public, max-age=31536000, immutable";
         try_files $uri =404;
     }
 
     location / {
-        try_files $uri /index.html;
+        include snippets/holdings-headers.conf;
+        add_header Cache-Control "public, max-age=86400";
+        try_files $uri =404;
     }
 }
 ```
