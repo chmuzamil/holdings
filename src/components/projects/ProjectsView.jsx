@@ -89,7 +89,7 @@ function ProjectCard({
       <div className="project-card-footer">
         <ProjectMoney project={project} records={records} toUsd={toUsd} money={money} fromUsd={fromUsd} displayCurrency={displayCurrency} />
         <div className="repo-actions">
-          <button className="ui-btn ui-btn-primary" type="button" onClick={() => onView(project)}>
+          <button className="ui-btn ui-btn-secondary" type="button" onClick={() => onView(project)}>
             <Eye size={15} /> View
           </button>
           <DropdownMenu items={[
@@ -226,7 +226,7 @@ export function ProjectsView({
                     <ProjectMoney project={project} records={records} toUsd={toUsd} money={money} fromUsd={fromUsd} displayCurrency={displayCurrency} />
                   </div>
                   <div className="repo-actions">
-                    <button className="ui-btn ui-btn-primary" type="button" onClick={() => setSelectedProject(project)}>
+                    <button className="ui-btn ui-btn-secondary" type="button" onClick={() => setSelectedProject(project)}>
                       <Eye size={15} /> View
                     </button>
                     <DropdownMenu items={[

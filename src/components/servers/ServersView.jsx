@@ -81,7 +81,7 @@ export function ServersView({
             <div className="project-asset-cell" data-label="Renews">{prettyDate(server.renewalDate)}</div>
             <div data-label="Status"><Badge variant={server.status === 'Active' ? 'success' : 'warning'}>{server.status}</Badge></div>
             <div className="repo-actions">
-              <button className="ui-btn ui-btn-primary" type="button" onClick={() => setSelectedServer(server)}>
+              <button className="ui-btn ui-btn-secondary" type="button" onClick={() => setSelectedServer(server)}>
                 <Eye size={15} aria-hidden="true" /> Details
               </button>
               <DropdownMenu items={[

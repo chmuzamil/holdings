@@ -89,7 +89,7 @@ export function DomainCard({
         </div>
 
         <div className="domain-card-actions">
-          <button className="ui-btn ui-btn-primary" type="button" onClick={() => onViewDetails(record)}>
+          <button className="ui-btn ui-btn-secondary" type="button" onClick={() => onViewDetails(record)}>
             <Eye size={15} aria-hidden="true" />
             Details
           </button>

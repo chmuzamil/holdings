@@ -1,21 +1,5 @@
 /* UX polish — calmer surfaces, less border noise, Linear/Vercel rhythm */
 
-:root {
-  --border: rgba(148, 163, 184, 0.1);
-  --border-subtle: rgba(148, 163, 184, 0.06);
-  --surface-elevated: rgba(16, 18, 23, 0.92);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --space-1: 6px;
-  --space-2: 10px;
-  --space-3: 16px;
-  --space-4: 24px;
-  --space-5: 32px;
-  --text-display: 28px;
-  --text-title: 18px;
-  --text-body: 14px;
-  --text-caption: 12px;
-}
 
 h1 {
   margin: 0;
@@ -36,7 +20,7 @@ h1 {
 .ui-card {
   border: 1px solid var(--border-subtle);
   background: var(--surface-elevated);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+  box-shadow: 0 1px 0 var(--fill-subtle) inset;
   transition: background 0.18s ease, transform 0.18s ease;
 }
 
@@ -58,11 +42,11 @@ h1 {
 }
 
 .nav-flat .nav-link:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--fill);
 }
 
 .nav-flat .nav-link[aria-current="page"] {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--fill-strong);
   border-color: var(--border-subtle);
 }
 
@@ -81,7 +65,7 @@ h1 {
   right: 0;
   min-width: 188px;
   padding: 6px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   background: rgba(14, 16, 22, 0.98);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
@@ -96,7 +80,7 @@ h1 {
   gap: 10px;
   padding: 9px 10px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text);
   font-size: 13px;
@@ -106,7 +90,7 @@ h1 {
 }
 
 .add-asset-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--fill-strong);
   color: var(--text-strong);
 }
 
@@ -125,15 +109,15 @@ h1 {
   width: 100%;
   padding: 10px 12px;
   border: 0;
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+  background: var(--fill-subtle);
   text-align: left;
   cursor: pointer;
   transition: background 0.12s ease;
 }
 
 .attention-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--fill);
 }
 
 .attention-item strong {
@@ -147,10 +131,10 @@ h1 {
 }
 
 /* Empty states */
-.empty-state-sky .empty-state-icon { color: #7dd3fc; }
-.empty-state-emerald .empty-state-icon { color: #6ee7b7; }
+.empty-state-sky .empty-state-icon { color: var(--accent); }
+.empty-state-emerald .empty-state-icon { color: var(--success-text); }
 .empty-state-violet .empty-state-icon { color: #c4b5fd; }
-.empty-state-amber .empty-state-icon { color: #fcd34d; }
+.empty-state-amber .empty-state-icon { color: var(--warning-text); }
 .empty-state-cyan .empty-state-icon { color: #67e8f9; }
 
 .empty-state-icon {
@@ -158,23 +142,23 @@ h1 {
 }
 
 /* Repo table — simplified */
-.repo-table.polish,
-.repo-table-head.polish + .repo-table-row,
-.repo-table .repo-table-head.polish,
-.repo-table-row.polish {
+.repo-table.compact,
+.repo-table-head.compact + .repo-table-row,
+.repo-table .repo-table-head.compact,
+.repo-table-row.compact {
   /* grid set in repos.css */
 }
 
-.repo-table.polish {
+.repo-table.compact {
   border-color: var(--border-subtle);
 }
 
-.repo-table-head.polish,
-.repo-table-row.polish {
+.repo-table-head.compact,
+.repo-table-row.compact {
   grid-template-columns: minmax(220px, 2.2fr) 0.75fr 0.8fr 0.65fr 0.8fr auto;
 }
 
-.repo-table-row.polish {
+.repo-table-row.compact {
   min-height: 72px;
   padding-top: 12px;
   padding-bottom: 12px;
@@ -251,9 +235,9 @@ h1 {
   position: relative;
   z-index: 2;
   padding: 12px 18px;
-  border: 1px solid rgba(125, 211, 252, 0.35);
-  border-radius: 999px;
-  background: rgba(125, 211, 252, 0.12);
+  border: 1px solid rgb(var(--accent-rgb) / 0.35);
+  border-radius: var(--radius-pill);
+  background: rgb(var(--accent-rgb) / 0.12);
   color: var(--text-strong);
   font-size: 14px;
   font-weight: 600;
@@ -262,7 +246,7 @@ h1 {
 }
 
 .infra-graph-hub:hover {
-  background: rgba(125, 211, 252, 0.2);
+  background: rgb(var(--accent-rgb) / 0.2);
   transform: scale(1.02);
 }
 
@@ -298,7 +282,7 @@ h1 {
   max-width: 100%;
   padding: 7px 11px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--text);
   font-size: 12px;

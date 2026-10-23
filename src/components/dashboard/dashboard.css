@@ -90,7 +90,7 @@
   width: 100%;
   padding: 12px 0 12px 12px;
   border: 0;
-  border-left: 3px solid #fbbf24;
+  border-left: 3px solid var(--warning);
   border-bottom: 1px solid var(--border-subtle, var(--border));
   background: transparent;
   color: var(--text-muted);
@@ -100,7 +100,7 @@
 }
 
 .overview-attention-item.critical {
-  border-left-color: #f87171;
+  border-left-color: var(--danger);
 }
 
 .overview-attention-list li:last-child .overview-attention-item {
