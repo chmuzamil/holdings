@@ -47,10 +47,10 @@ export function ServersView({
       <div className="toolbar">
         <label className="search-box">
           <Search size={17} />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search servers" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search servers" aria-label="Search servers" type="search" />
         </label>
         <label className="select-box">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select aria-label="Filter by status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option>All</option>
             <option>Active</option>
             <option>Expiring Soon</option>

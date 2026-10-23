@@ -40,18 +40,18 @@ export function DomainsView({
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search domains"
+            placeholder="Search domains" aria-label="Search domains" type="search"
           />
         </label>
         <label className="select-box">
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <select aria-label="Filter by status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option>All</option>
             {statuses.map((status) => <option key={status}>{status}</option>)}
           </select>
           <ChevronDown size={16} />
         </label>
         <label className="select-box">
-          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+          <select aria-label="Sort by" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
             <option value="renewalDate">Renewal date</option>
             <option value="expiryDate">Expiry date</option>
             <option value="cost">Cost</option>
@@ -60,9 +60,7 @@ export function DomainsView({
         </label>
       </div>
 
-      {domainLookupStatus && (
-        <div className="inline-status">{domainLookupStatus}</div>
-      )}
+      <div className="inline-status" role="status" aria-live="polite">{domainLookupStatus}</div>
 
       <div className="domains-grid">
         {records.length ? records.map((record) => (
