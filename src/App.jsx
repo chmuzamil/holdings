@@ -1203,6 +1203,8 @@ function SettingsView({
   server,
   stripe,
 }) {
+  const importInput = useRef(null)
+
   function updateSetting(key, value) {
     setAppSettings((current) => ({ ...current, [key]: value }))
   }
@@ -1225,19 +1227,21 @@ function SettingsView({
             <Download size={16} />
             Export JSON
           </button>
-          <label className="ghost-button">
+          {/* A real button, so it can be reached with the keyboard; it opens the hidden file picker. */}
+          <button className="ghost-button" type="button" onClick={() => importInput.current?.click()}>
             <Upload size={16} />
             Import JSON
-            <input
-              type="file"
-              accept="application/json,.json"
-              hidden
-              onChange={(event) => {
-                importRecords(event.target.files?.[0])
-                event.target.value = ''
-              }}
-            />
-          </label>
+          </button>
+          <input
+            ref={importInput}
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={(event) => {
+              importRecords(event.target.files?.[0])
+              event.target.value = ''
+            }}
+          />
           <button className="ghost-button" type="button" onClick={loadDemoData}>
             Load demo data
           </button>
