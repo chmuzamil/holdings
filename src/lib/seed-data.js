@@ -25,7 +25,7 @@ function stamp(offset, now) {
   return `${day(offset, now)}T09:00:00.000Z`
 }
 
-function lookup({ checkedDaysAgo, a, ns, mx = [], spf = false, registered, registrar, expires }, now) {
+function lookup({ checkedDaysAgo, a, ns, mx = [], spf = false, dmarc = '', dnssec = null, locked = true, registered, registrar, expires }, now) {
   return {
     checkedAt: stamp(-checkedDaysAgo, now),
     dns: {
@@ -36,12 +36,14 @@ function lookup({ checkedDaysAgo, a, ns, mx = [], spf = false, registered, regis
       ns: { value: ns },
       txt: { value: spf ? [['v=spf1 include:_spf.mail.example ~all']] : [] },
       soa: { value: {} },
+      dmarc: { value: dmarc ? [[dmarc]] : [] },
     },
     whois: {
       registrar,
       created: `${registered}T12:00:00Z`,
       expires: `${expires}T12:00:00Z`,
-      status: ['client transfer prohibited'],
+      status: locked ? ['client transfer prohibited'] : ['active'],
+      dnssec,
       nameservers: ns,
     },
   }
@@ -122,6 +124,8 @@ export function getSeedRecords(now = new Date()) {
         ns,
         mx: ['mx1.mail.example', 'mx2.mail.example'],
         spf: true,
+        dmarc: 'v=DMARC1; p=quarantine',
+        dnssec: false,
         registered: '2023-03-14',
         registrar: 'Porkbun LLC',
         expires: d(9),
@@ -147,6 +151,8 @@ export function getSeedRecords(now = new Date()) {
         ns,
         mx: ['mx1.mail.example'],
         spf: false,
+        dmarc: 'v=DMARC1; p=none',
+        dnssec: true,
         registered: '2024-06-02',
         registrar: 'Cloudflare, Inc.',
         expires: d(190),
@@ -185,6 +191,7 @@ export function getSeedRecords(now = new Date()) {
         checkedDaysAgo: 30,
         a: '203.0.113.30',
         ns,
+        locked: false,
         registered: '2019-11-20',
         registrar: 'NameCheap, Inc.',
         expires: d(75),
