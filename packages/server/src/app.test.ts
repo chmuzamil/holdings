@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, SESSION_COOKIE } from './app'
 import { openStore, type Store } from './db'
+import { fakeStripe, TEST_KEY } from './stripe-fake'
 import { totpCode } from './totp'
 
 // Password checks are deliberately slow (scrypt); allow for busy machines.
@@ -344,5 +345,69 @@ describe('domain lookups and static files', () => {
     expect((await fetch(`${base}/%2e%2e/%2e%2e/package.json`)).status).toBe(404)
     expect((await fetch(`${base}/api/nope`)).status).toBe(404)
     expect((await fetch(`${base}/api/healthz`)).status).toBe(200)
+  })
+})
+
+describe('Stripe revenue', () => {
+  async function withStripe(stripeFetch = fakeStripe()) {
+    await new Promise((resolve) => server.close(resolve))
+    store.close()
+    await start({ stripeFetch })
+    return { browser: await signedIn(), stripeFetch }
+  }
+
+  it('needs a login', async () => {
+    expect((await client().call('GET', '/api/integrations/stripe')).status).toBe(401)
+    expect((await client().call('GET', '/api/revenue/stripe')).status).toBe(401)
+  })
+
+  it('refuses secret keys and keeps nothing', async () => {
+    const { browser } = await withStripe()
+    const response = await browser.call('PUT', '/api/integrations/stripe', { key: 'sk_live_abcdefghij' })
+    expect(response.status).toBe(400)
+    expect(response.body.error).toMatch(/secret key/)
+    expect((await browser.call('GET', '/api/integrations/stripe')).body).toEqual({ connected: false })
+  })
+
+  it('refuses a key Stripe rejects', async () => {
+    const { browser } = await withStripe()
+    expect((await browser.call('PUT', '/api/integrations/stripe', { key: 'rk_test_OTHER00000' })).status).toBe(400)
+    expect((await browser.call('GET', '/api/integrations/stripe')).body).toEqual({ connected: false })
+  })
+
+  it('connects, stores the key encrypted and never sends it back', async () => {
+    const { browser } = await withStripe()
+    const connect = await browser.call('PUT', '/api/integrations/stripe', { key: TEST_KEY })
+    expect(connect.status).toBe(200)
+    expect(connect.body.hint).toBe('test key ending 0001')
+    expect(JSON.stringify(connect.body)).not.toContain(TEST_KEY)
+    expect(store.getIntegration('stripe')?.sealedKey).not.toContain(TEST_KEY)
+
+    const status = await browser.call('GET', '/api/integrations/stripe')
+    expect(status.body).toMatchObject({ connected: true, hint: 'test key ending 0001' })
+    expect(JSON.stringify(status.body)).not.toContain(TEST_KEY)
+  })
+
+  it('serves revenue from a short cache unless asked to refresh', async () => {
+    const { browser, stripeFetch } = await withStripe()
+    await browser.call('PUT', '/api/integrations/stripe', { key: TEST_KEY })
+    const calls = stripeFetch.mock.calls.length
+    const revenue = await browser.call('GET', '/api/revenue/stripe')
+    expect((revenue.body.products as { id: string }[])[0]?.id).toBe('prod_app')
+    expect(stripeFetch.mock.calls.length).toBe(calls)
+    await browser.call('GET', '/api/revenue/stripe?refresh=1')
+    expect(stripeFetch.mock.calls.length).toBeGreaterThan(calls)
+    clock += 11 * 60 * 1000
+    const before = stripeFetch.mock.calls.length
+    await browser.call('GET', '/api/revenue/stripe')
+    expect(stripeFetch.mock.calls.length).toBeGreaterThan(before)
+  })
+
+  it('disconnects', async () => {
+    const { browser } = await withStripe()
+    await browser.call('PUT', '/api/integrations/stripe', { key: TEST_KEY })
+    expect((await browser.call('DELETE', '/api/integrations/stripe')).body).toEqual({ connected: false })
+    expect(store.getIntegration('stripe')).toBeNull()
+    expect((await browser.call('GET', '/api/revenue/stripe')).status).toBe(404)
   })
 })

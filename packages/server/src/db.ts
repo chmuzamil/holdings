@@ -16,6 +16,13 @@ export interface SavedData {
   updatedAt: string
 }
 
+export interface Integration {
+  provider: string
+  sealedKey: string
+  hint: string
+  connectedAt: string
+}
+
 export interface Session {
   tokenHash: string
   expiresAt: number
@@ -42,6 +49,12 @@ const SCHEMA = `
     body TEXT NOT NULL,
     version INTEGER NOT NULL,
     updated_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS integrations (
+    provider TEXT PRIMARY KEY,
+    sealed_key TEXT NOT NULL,
+    hint TEXT NOT NULL,
+    connected_at TEXT NOT NULL
   );
   CREATE TABLE IF NOT EXISTS audit (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -157,6 +170,21 @@ export function openStore(path: string) {
         ? db.prepare('INSERT OR IGNORE INTO app_data (id, body, version, updated_at) VALUES (1, ?, 1, ?)').run(body, updatedAt)
         : db.prepare('UPDATE app_data SET body = ?, version = ?, updated_at = ? WHERE id = 1 AND version = ?').run(body, version, updatedAt, expectedVersion)
       return result.changes === 1 ? { body, version, updatedAt } : null
+    },
+
+    getIntegration(provider: string): Integration | null {
+      const row = db.prepare('SELECT provider, sealed_key, hint, connected_at FROM integrations WHERE provider = ?').get(provider)
+      if (!row) return null
+      return { provider: String(row.provider), sealedKey: String(row.sealed_key), hint: String(row.hint), connectedAt: String(row.connected_at) }
+    },
+
+    setIntegration(provider: string, sealedKey: string, hint: string) {
+      db.prepare('INSERT OR REPLACE INTO integrations (provider, sealed_key, hint, connected_at) VALUES (?, ?, ?, ?)')
+        .run(provider, sealedKey, hint, new Date().toISOString())
+    },
+
+    deleteIntegration(provider: string) {
+      db.prepare('DELETE FROM integrations WHERE provider = ?').run(provider)
     },
 
     audit(event: string, ip: string | null) {
