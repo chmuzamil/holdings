@@ -37,6 +37,7 @@ import {
   mapGitHubRepo,
   mergeGitHubImportedRepos,
   normalizeRepoRecord,
+  remapRepoLinks,
 } from './lib/repo-helpers'
 import { emptyProjectRecord, normalizeProjectRecord } from './lib/project-helpers'
 import { emptyServerRecord, normalizeServerRecord } from './lib/server-helpers'
@@ -206,7 +207,7 @@ const recordModules = ['domains', 'servers', 'repos', 'projects', 'accounts', 's
 const isDemoBuild = import.meta.env.VITE_DEMO === 'true'
 
 function normalizeRecordsByModule(recordsByModule) {
-  return Object.fromEntries(
+  const normalized = Object.fromEntries(
     recordModules.map((moduleKey) => {
       const records = (Array.isArray(recordsByModule[moduleKey]) ? recordsByModule[moduleKey] : []).map((record) => migrateRecordToUsd(record))
       return [
@@ -223,6 +224,8 @@ function normalizeRecordsByModule(recordsByModule) {
       ]
     }),
   )
+  // Merging duplicate repos must not leave projects pointing at one that is gone.
+  return remapRepoLinks(normalized, Array.isArray(recordsByModule.repos) ? recordsByModule.repos : [])
 }
 
 function pageFromHash() {
@@ -641,7 +644,7 @@ function App({ server = null }) {
         const now = new Date().toISOString()
         const repos = mergeGitHubImportedRepos(current.repos, importedRepos)
           .map((repo) => (knownIds.has(repo.id) || repo.addedAt ? repo : { ...repo, addedAt: now }))
-        return { ...current, repos }
+        return remapRepoLinks({ ...current, repos }, current.repos)
       })
       setActivePage('repos')
       setGithubSyncStatus(`Imported ${importedRepos.length} repos from GitHub.`)

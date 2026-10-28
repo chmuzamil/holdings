@@ -7,6 +7,7 @@
 - The DNS check now also reads the domain's DMARC record and whether the registry says it is signed with DNSSEC.
 
 ### Fixed
+- A repo could disappear from its project when an imported GitHub repo and a hand-added record for the same URL were merged. Links now move to the record that is kept, and links from both copies are kept.
 - The Import JSON button could not be reached with the keyboard, and its icon sat above the text.
 
 ## 0.2.0 (2026-10-24)

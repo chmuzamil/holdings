@@ -6,6 +6,7 @@ import {
   getRepoIdentityKey,
   mapGitHubRepo,
   mergeGitHubImportedRepos,
+  remapRepoLinks,
 } from './repo-helpers'
 
 describe('parseGitHubUrl', () => {
@@ -78,5 +79,41 @@ describe('repo identity and dedupe', () => {
       { id: 'c', name: 'No URL' },
     ]
     expect(dedupeRepoRecords(repos).map((repo) => repo.id).sort()).toEqual(['a', 'b', 'c'])
+  })
+})
+
+describe('remapRepoLinks', () => {
+  // The reported case: a project links to an imported repo, then a record is
+  // added by hand for the same URL. Loading merges the two.
+  const imported = { id: 'github-1', name: 'app', url: 'https://github.com/acme/app', owner: 'acme', connectedProjectIds: ['p1'] }
+  const manual = { id: 'm1', name: 'App', url: 'https://github.com/acme/app', notes: 'added by hand', connectedDomainIds: ['d1'] }
+
+  function load(records) {
+    const repos = dedupeRepoRecords(records.repos)
+    return remapRepoLinks({ ...records, repos }, records.repos)
+  }
+
+  it('keeps the project linked to the repo that survives the merge', () => {
+    const result = load({
+      repos: [imported, manual],
+      projects: [{ id: 'p1', name: 'Shop', repoIds: ['github-1'] }],
+      domains: [{ id: 'd1', name: 'app.example', connectedRepoIds: ['github-1', 'm1'] }],
+      servers: [{ id: 's1', name: 'VPS', connectedRepoIds: ['github-1'] }],
+    })
+    expect(result.repos.map((repo) => repo.id)).toEqual(['m1'])
+    expect(result.projects[0].repoIds).toEqual(['m1'])
+    expect(result.domains[0].connectedRepoIds).toEqual(['m1'])
+    expect(result.servers[0].connectedRepoIds).toEqual(['m1'])
+  })
+
+  it('keeps links from both copies on the merged repo', () => {
+    const [merged] = dedupeRepoRecords([imported, manual])
+    expect(merged.connectedProjectIds).toEqual(['p1'])
+    expect(merged.connectedDomainIds).toEqual(['d1'])
+  })
+
+  it('returns the same object when nothing was merged', () => {
+    const records = { repos: [manual], projects: [{ id: 'p1', repoIds: ['m1'] }] }
+    expect(remapRepoLinks(records, records.repos)).toBe(records)
   })
 })
