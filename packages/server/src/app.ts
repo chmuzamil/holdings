@@ -2,7 +2,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { hashPassword, hashToken, newToken, sameString, seal, unseal, verifyPassword } from './crypto'
 import type { Store } from './db'
 import { createNotifier, SettingsError, type Notifier } from './notify'
-import { serveStatic } from './static'
+import { createDeadman, type Deadman } from './deadman'
+import { SECURITY_HEADERS, serveStatic } from './static'
 import { checkStripeKey, fetchStripeRevenue, keyHint, StripeError, type FetchLike, type StripeRevenue } from './stripe'
 import { newTotpSecret, otpauthUri, verifyTotp } from './totp'
 // Shared with `npm run api`, which serves lookups when there is no server.
@@ -40,6 +41,8 @@ export interface AppOptions {
   stripeFetch?: FetchLike
   /** Sends notifications; made here unless given (index.ts shares it with the daily check). */
   notifier?: Notifier
+  /** The dead-man's switch; made here unless given (index.ts runs its hourly check). */
+  deadman?: Deadman
 }
 
 class HttpError extends Error {
@@ -66,6 +69,7 @@ export function createApp(options: AppOptions) {
   const allowLookup = createRateLimiter({ limit: 30, windowMs: 60_000, now })
   const failures = createFailureCounter(now)
   const notifier = options.notifier ?? createNotifier({ store, secretKey, now: () => new Date(now()) })
+  const deadman = options.deadman ?? createDeadman({ store, notifier, now: () => new Date(now()) })
   const settingsError = async <T>(work: () => T | Promise<T>): Promise<T> => {
     try {
       return await work()
@@ -248,6 +252,7 @@ export function createApp(options: AppOptions) {
       }
       failures.clear(ip)
       store.audit('login', ip)
+      deadman.touch()
       startSession(response)
       return { authenticated: true, totpEnabled: Boolean(owner.totpSealed) }
     },
@@ -278,6 +283,7 @@ export function createApp(options: AppOptions) {
         const current = store.getData()
         throw new HttpError(409, 'Your data changed somewhere else. Reload to get the latest copy.', { version: current?.version ?? 0 })
       }
+      deadman.touch()
       return { version: saved.version, updatedAt: saved.updatedAt }
     },
 
@@ -432,6 +438,45 @@ export function createApp(options: AppOptions) {
       return notifier.check()
     },
 
+    'GET /api/deadman': (context) => {
+      requireSession(context)
+      return deadman.view()
+    },
+
+    'PUT /api/deadman': async (context) => {
+      requireSession(context)
+      const input = await context.body()
+      const result = await settingsError(() => deadman.configure(input))
+      store.audit(input.enabled === undefined ? 'deadman_changed' : input.enabled ? 'deadman_on' : 'deadman_off', context.ip)
+      return result
+    },
+
+    'PUT /api/deadman/file': async (context) => {
+      requireSession(context)
+      const { html } = await context.body()
+      return settingsError(() => deadman.saveFile(html))
+    },
+
+    'POST /api/deadman/checkin': (context) => {
+      requireSession(context)
+      return { wasTriggered: deadman.checkIn() }
+    },
+
+    // The one-click link in reminders: works without signing in, but only
+    // with a link that was sent since the last check-in.
+    'GET /api/deadman/checkin': ({ url, ip, response }) => {
+      checkNotLocked(ip)
+      const result = deadman.checkInWithLink(url.searchParams.get('token') ?? '')
+      if (!result) failures.add(ip)
+      const message = !result
+        ? 'This check-in link has expired or was already used. Open Holdings to check in.'
+        : result.wasTriggered
+          ? 'You’re checked in. Your handover file had already been sent, so the switch is on again from now.'
+          : 'You’re checked in. Thanks.'
+      response.writeHead(result ? 200 : 404, { ...SECURITY_HEADERS, 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' })
+      response.end(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Holdings check-in</title><style>body{margin:0;display:grid;min-height:100vh;place-items:center;background:#08090d;color:#f4f7fb;font:16px/1.5 system-ui,sans-serif}p{max-width:420px;padding:24px}</style></head><body><p>${message}</p></body></html>`)
+    },
+
     'GET /api/domain-lookup': async (context) => {
       requireSession(context)
       if (!allowLookup(context.ip)) throw new HttpError(429, 'Too many lookups. Wait a minute and try again.')
@@ -458,7 +503,7 @@ export function createApp(options: AppOptions) {
       if (!handler) throw new HttpError(404, 'Not found')
       if (method !== 'GET' && method !== 'HEAD') checkSameOrigin(request, trustProxy)
       const sessionHash = readSessionHash(request)
-      const limit = url.pathname === '/api/data' ? MAX_DATA_BYTES : MAX_SMALL_BODY_BYTES
+      const limit = url.pathname === '/api/data' || url.pathname === '/api/deadman/file' ? MAX_DATA_BYTES : MAX_SMALL_BODY_BYTES
       const result = await handler({ request, response, url, ip: clientIp(request), sessionHash, body: () => readJson(request, limit) })
       sendJson(response, 200, result)
     } catch (error) {

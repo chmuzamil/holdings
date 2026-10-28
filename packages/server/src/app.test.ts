@@ -474,3 +474,31 @@ describe('access tokens for agents', () => {
     expect((await withToken(token)).status).toBe(401)
   })
 })
+
+describe('dead-man’s switch routes', () => {
+  it('needs a login, except for the one-click link page', async () => {
+    expect((await client().call('GET', '/api/deadman')).status).toBe(401)
+    expect((await client().call('PUT', '/api/deadman', { enabled: true })).status).toBe(401)
+    const page = await fetch(`${base}/api/deadman/checkin?token=made-up`)
+    expect(page.status).toBe(404)
+    expect(page.headers.get('content-type')).toContain('text/html')
+    expect(page.headers.get('content-security-policy')).toContain("default-src 'self'")
+    expect(await page.text()).toContain('expired or was already used')
+  })
+
+  it('stays off and explains what turning it on needs', async () => {
+    const browser = await signedIn()
+    const view = await browser.call('GET', '/api/deadman')
+    expect(view.body).toMatchObject({ enabled: false, hasFile: false, emailReady: false })
+    const on = await browser.call('PUT', '/api/deadman', { enabled: true, contactEmail: 'sara@mail.example' })
+    expect(on.status).toBe(400)
+    expect(on.body.error).toMatch(/email notifications first/)
+  })
+
+  it('stores a locked file', async () => {
+    const browser = await signedIn()
+    const html = '<!doctype html><script>const decryptHandover = 1</script>'
+    expect((await browser.call('PUT', '/api/deadman/file', { html })).body.hasFile).toBe(true)
+    expect((await browser.call('PUT', '/api/deadman/file', { html: 'plain' })).status).toBe(400)
+  })
+})

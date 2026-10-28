@@ -4,6 +4,7 @@ import http from 'node:http'
 import { join, resolve } from 'node:path'
 import { createApp } from './app'
 import { openStore } from './db'
+import { createDeadman } from './deadman'
 import { createNotifier } from './notify'
 
 // Settings come from environment variables; see docs/self-hosting.md.
@@ -36,7 +37,10 @@ if (!store.getOwner()) {
 // Notifications are off until turned on in Settings; the daily check then sends what is due.
 const notifier = createNotifier({ store, secretKey })
 notifier.start()
-const server = http.createServer(createApp({ store, secretKey, setupCode, staticDir, secureCookies, trustProxy, notifier }))
+// The dead-man's switch is off until turned on; its hourly check then sends reminders and, if due, the file.
+const deadman = createDeadman({ store, notifier })
+deadman.start()
+const server = http.createServer(createApp({ store, secretKey, setupCode, staticDir, secureCookies, trustProxy, notifier, deadman }))
 server.listen(port, host, () => {
   console.log(`Holdings server listening on http://${host}:${port}${staticDir ? '' : ' (API only)'}`)
   if (!secureCookies) console.log('Warning: HOLDINGS_SECURE_COOKIES=false. Only do this on a trusted network.')

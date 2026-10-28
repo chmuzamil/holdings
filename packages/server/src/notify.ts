@@ -139,8 +139,14 @@ export function publicSettings(stored: Stored) {
 
 // --- sending ---------------------------------------------------------------
 
+export interface Attachment {
+  filename: string
+  content: string
+  contentType: string
+}
+
 export type MailTransport = (options: { host: string; port: number; secure: boolean; requireTLS: boolean; auth?: { user: string; pass: string } }) => {
-  sendMail: (mail: { from: string; to: string; subject: string; text: string }) => Promise<unknown>
+  sendMail: (mail: { from: string; to: string; subject: string; text: string; attachments?: Attachment[] }) => Promise<unknown>
 }
 
 const defaultTransport: MailTransport = (options) =>
@@ -156,23 +162,28 @@ async function post(fetchImpl: FetchLike, url: string, init: RequestInit, label:
   if (!response.ok) throw new SettingsError(`The ${label} answered ${response.status}.`)
 }
 
+/** Sends one email through the owner's SMTP settings, to anyone (the dead-man's switch emails the trusted person). */
+export async function sendEmail(stored: Stored, key: Buffer, deps: { transport: MailTransport }, mail: { to: string; subject: string; text: string; attachments?: Attachment[] }) {
+  const e = stored.email
+  const password = stored.emailPasswordSealed ? unseal(stored.emailPasswordSealed, key) : ''
+  const transport = deps.transport({
+    host: e.host,
+    port: e.port,
+    secure: e.security === 'tls',
+    requireTLS: e.security === 'starttls',
+    ...(e.user ? { auth: { user: e.user, pass: password } } : {}),
+  })
+  try {
+    await transport.sendMail({ from: e.from, ...mail })
+  } catch (error) {
+    throw new SettingsError(`The mail server refused: ${(error as Error).message}`)
+  }
+}
+
 export async function send(channel: Channel, stored: Stored, message: Message, key: Buffer, deps: { fetch: FetchLike; transport: MailTransport }) {
   const text = message.lines.join('\n')
   if (channel === 'email') {
-    const e = stored.email
-    const password = stored.emailPasswordSealed ? unseal(stored.emailPasswordSealed, key) : ''
-    const transport = deps.transport({
-      host: e.host,
-      port: e.port,
-      secure: e.security === 'tls',
-      requireTLS: e.security === 'starttls',
-      ...(e.user ? { auth: { user: e.user, pass: password } } : {}),
-    })
-    try {
-      await transport.sendMail({ from: e.from, to: e.to, subject: message.title, text: `${text}\n\n— Holdings` })
-    } catch (error) {
-      throw new SettingsError(`The mail server refused: ${(error as Error).message}`)
-    }
+    await sendEmail(stored, key, deps, { to: stored.email.to, subject: message.title, text: `${text}\n\n— Holdings` })
     return
   }
   if (channel === 'webhook') {
@@ -275,6 +286,27 @@ export function createNotifier({ store, secretKey, now = () => new Date(), fetch
       if (!stored[channel]?.enabled) throw new SettingsError('Turn this on and save it first.')
       await send(channel, stored, { title: 'Holdings test notification', lines: ['If you can read this, notifications work.'] }, secretKey, deps)
     },
+
+    /** Whether email is set up and on (the dead-man's switch needs it). */
+    emailReady: () => load().email.enabled,
+
+    /** Sends a message to every channel that is on. Returns how many there are and any problems. */
+    async broadcast(message: Message) {
+      const stored = load()
+      const channels = enabledChannels(stored)
+      const failures: string[] = []
+      for (const channel of channels) {
+        try {
+          await send(channel, stored, message, secretKey, deps)
+        } catch (error) {
+          failures.push(`${channel}: ${(error as Error).message}`)
+        }
+      }
+      return { channels: channels.length, failures }
+    },
+
+    /** Emails someone through the owner's SMTP settings. */
+    emailTo: (mail: { to: string; subject: string; text: string; attachments?: Attachment[] }) => sendEmail(load(), secretKey, deps, mail),
 
     /** Sends whatever reached a milestone since the last check, to every channel that is on. */
     async check() {
