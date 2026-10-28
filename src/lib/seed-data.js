@@ -3,6 +3,8 @@
 // and repos link to the hosted demo. Dates are relative to today so the demo
 // never goes stale.
 
+import { snapshotFromLookup } from '@holdings/core'
+
 export const DEMO_HOST = 'holdings.chaudhery.com'
 const DEMO_REPOS_URL = `https://${DEMO_HOST}/#repos`
 
@@ -307,6 +309,8 @@ export function getSeedRecords(now = new Date()) {
       slug: 'shopfront',
       description: 'Storefront builder for small shops. The main earner.',
       status: 'Production',
+      stage: 'launched',
+      stageChangedAt: stamp(-300, now),
       priority: 'High',
       category: 'SaaS',
       liveUrl: 'https://app.shopfront.example',
@@ -314,6 +318,12 @@ export function getSeedRecords(now = new Date()) {
       repoIds: ['repo_shopfront'],
       serverIds: ['server_main'],
       subscriptionIds: ['subscription_postmark', 'subscription_sentry'],
+      runbook: [
+        '1. Keep **Main VPS** and **shopfront.example** paid: both renew from the Business Visa.',
+        '2. Customers email support@ through Postmark; reply from the shared inbox in the password manager.',
+        '3. If the site is down, check [the status page](https://status.shopfront.example) and the host\u2019s console.',
+        '4. To wind it down, give customers 30 days\u2019 notice and export their data first.',
+      ].join('\n'),
       notes: '',
       ...added(-420),
     },
@@ -324,6 +334,8 @@ export function getSeedRecords(now = new Date()) {
       slug: 'newsbite',
       description: 'Weekly newsletter generator with a small paid tier.',
       status: 'Production',
+      stage: 'launched',
+      stageChangedAt: stamp(-200, now),
       priority: 'Medium',
       category: 'SaaS',
       liveUrl: 'https://newsbite.example',
@@ -341,6 +353,8 @@ export function getSeedRecords(now = new Date()) {
       slug: 'cityguide',
       description: 'Static city directory. Earns a little from ads.',
       status: 'Maintained',
+      stage: 'maintenance',
+      stageChangedAt: stamp(-260, now),
       priority: 'Low',
       category: 'Website',
       liveUrl: 'https://cityguide.example',
@@ -357,6 +371,8 @@ export function getSeedRecords(now = new Date()) {
       slug: 'inkwell',
       description: 'Open-source CLI that also markets NewsBite.',
       status: 'Production',
+      stage: 'launched',
+      stageChangedAt: stamp(-150, now),
       priority: 'Medium',
       category: 'OSS Library',
       liveUrl: '',
@@ -517,6 +533,33 @@ export function getSeedRecords(now = new Date()) {
       ...added(-300),
     },
   ]
+
+  // Domain watch history for the demo: a recent nameserver move (shown on
+  // the Attention page) and an older renewal.
+  const newsbite = domains.find((domain) => domain.id === 'domain_newsbite')
+  newsbite.watch = {
+    snapshot: snapshotFromLookup(newsbite.lookup),
+    changes: [
+      {
+        id: 'demo-newsbite-ns',
+        field: 'nameservers',
+        before: 'ns1.oldhost.example, ns2.oldhost.example',
+        after: ns.join(', '),
+        severity: 'high',
+        at: stamp(-5, now),
+        message: `Nameservers changed from ns1.oldhost.example, ns2.oldhost.example to ${ns.join(', ')}.`,
+      },
+      {
+        id: 'demo-newsbite-renewed',
+        field: 'expires',
+        before: d(-175),
+        after: d(190),
+        severity: 'normal',
+        at: stamp(-40, now),
+        message: `Renewed: now expires ${d(190)} (was ${d(-175)}).`,
+      },
+    ],
+  }
 
   return { domains, servers, repos, projects, accounts, subscriptions, keys }
 }

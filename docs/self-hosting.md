@@ -109,6 +109,24 @@ Everything is off until you turn it on in **Settings → Notifications**. Use an
 
 Each channel has a **Send test** button. Messages go only to the addresses you enter.
 
+## Domain watch
+
+Every DNS check (the button on a domain) already compares the result with the previous one and lists what changed in the domain's details. With the server you can also run it on a schedule:
+
+1. Open **Settings → Domain watch** and turn it on.
+2. Choose how often: every 6 or 12 hours, once a day, every 3 days or once a week.
+
+The server checks every domain that isn't cancelled, keeps its own history (it doesn't change your saved data), and sends new changes to the notification channels you turned on. Each change is sent once. Nameserver changes, registry status changes, a removed transfer lock and an expiry date moving earlier are marked as important and also appear on the Attention page. If a registry doesn't answer, nothing is reported for it: a missing answer never looks like a removed lock.
+
+## Calendar subscription
+
+The Expiry page can always download a calendar file. With the server you can also **subscribe**, so your calendar app picks up new renewals by itself:
+
+1. Open **Settings → Calendar subscription**, choose a project (or all) and how many days ahead to be reminded, and press **Make a link**.
+2. Copy the link (it is shown only once) and add it in your calendar app as a subscription ("Add from URL" in Google Calendar, "New Calendar Subscription" in Apple Calendar, "Subscribe from web" in Outlook).
+
+The link carries its own token. It can read the calendar and nothing else: not your data, not your settings. Only its hash is stored. **Make a new link** replaces it (the old one stops working) and **Turn off** removes it. Your calendar app needs to reach your server for this, so it only works if Holdings is reachable from where the app runs.
+
 ## Uptime status (Uptime Kuma or Gatus)
 
 If you already run [Uptime Kuma](https://github.com/louislam/uptime-kuma) or [Gatus](https://github.com/TwiN/gatus), Holdings can show **Up** or **Down** next to your servers, domains and projects. It is off until you turn it on in **Settings → Uptime status**.
@@ -116,7 +134,7 @@ If you already run [Uptime Kuma](https://github.com/louislam/uptime-kuma) or [Ga
 - **Uptime Kuma**: enter its address and the name of a status page (the part after `/status/`). Only monitors on that status page are shown.
 - **Gatus**: enter its address.
 
-Holdings reads the public status page data (no login or API key), from your server at most once a minute. Then link each monitor to the server, domain or project it watches; monitors with the same name are linked for you.
+Holdings reads the public status page data (no login or API key), from your server at most once a minute while Holdings is open. Monitors named like one of your servers, domains or projects are linked for you; link the rest in the list below the switch. Linked items then show **Up**, **Down**, **Checking** or **In maintenance**, and anything down appears on the Attention page.
 
 ## Dead-man's switch
 

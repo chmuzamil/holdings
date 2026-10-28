@@ -39,7 +39,7 @@ import {
   normalizeRepoRecord,
   remapRepoLinks,
 } from './lib/repo-helpers'
-import { emptyProjectRecord, getHoldingsData, normalizeProjectRecord } from './lib/project-helpers'
+import { emptyProjectRecord, getHoldingsData, normalizeProjectRecord, withStage } from './lib/project-helpers'
 import { emptyServerRecord, normalizeServerRecord } from './lib/server-helpers'
 import { getSeedRecords, isRecordsEmpty } from './lib/seed-data'
 import { DashboardView } from './components/dashboard/DashboardView'
@@ -47,14 +47,17 @@ import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
 import { BrandMark } from './components/shared/BrandMark'
 import { SyncStatus, SyncProblem } from './components/server/SyncStatus'
 import { useStripe } from './components/server/use-stripe'
+import { UptimeContext, useUptime } from './components/server/use-uptime'
 import { applyStripeRevenue, missingRates } from './lib/stripe-revenue'
+import { applyLookup } from './lib/domain-watch'
+import { api } from './lib/server-api'
 import { isRenewableModule } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
 import { statusTone } from './lib/status'
 import { findSecretsInRecord } from './lib/secrets'
 import { Badge } from './components/ui/Badge'
 import { useDialog } from './components/ui/use-dialog'
-import { buildExport, exportFileName, parseImport } from './lib/data-transfer'
+import { buildExport, exportFileName, findImportSecrets, parseImportFile } from './lib/data-transfer'
 import { RECORDS_KEY, SETTINGS_KEY, migrateLegacyStorage } from './lib/storage'
 import {
   RATES_ATTRIBUTION_URL,
@@ -84,6 +87,7 @@ const TimelineView = named(() => import('./components/command-center/TimelineVie
 const ImpactView = named(() => import('./components/command-center/ImpactView'), 'ImpactView')
 const ExpiryView = named(() => import('./components/command-center/ExpiryView'), 'ExpiryView')
 const AccountSettings = named(() => import('./components/server/AccountSettings'), 'AccountSettings')
+const CsvImport = named(() => import('./components/shared/CsvImport'), 'CsvImport')
 const PacksView = named(() => import('./components/command-center/PacksView'), 'PacksView')
 const CommandPalette = named(() => import('./components/command-palette/CommandPalette'), 'CommandPalette')
 
@@ -432,6 +436,17 @@ function App({ server = null }) {
   }, [])
   const stripe = useStripe(server, applyStripe)
 
+  // Self-hosted: Up/Down from Uptime Kuma or Gatus, linked to items.
+  const uptime = useUptime(server)
+
+  // Self-hosted: changes found by the server's scheduled domain watch.
+  const [serverChanges, setServerChanges] = useState({})
+  const hasServer = Boolean(server)
+  useEffect(() => {
+    if (!hasServer) return
+    api('GET', '/api/domain-watch').then((view) => setServerChanges(view.changes ?? {})).catch(() => {})
+  }, [hasServer])
+
   // Fetch the second currency's rate when it is chosen, and refresh it daily.
   const ratesStale = ratesAreStale(appSettings.ratesFetchedAt)
   useEffect(() => {
@@ -583,15 +598,20 @@ function App({ server = null }) {
             }
     setRecords((current) => {
       const next = { ...current }
+      // A project's stage change is dated (and keeps the older status in step).
+      const previous = modal.mode === 'create' ? null : (current[modal.moduleKey] || []).find((item) => item.id === modal.id)
+      const stamped = modal.moduleKey === 'projects' && (!previous || normalizeProjectRecord(previous).stage !== values.stage)
+        ? withStage({ ...values, stageChangedAt: '' }, values.stage)
+        : values
       if (modal.mode === 'create') {
         const now = new Date().toISOString()
         next[modal.moduleKey] = [
-          withoutCurrency({ ...values, id: `${modal.moduleKey}-${crypto.randomUUID()}`, addedAt: now, editedAt: now }),
+          withoutCurrency({ ...stamped, id: `${modal.moduleKey}-${crypto.randomUUID()}`, addedAt: now, editedAt: now }),
           ...(current[modal.moduleKey] || []),
         ]
       } else {
         next[modal.moduleKey] = (current[modal.moduleKey] || []).map((item) =>
-          item.id === modal.id ? withoutCurrency({ ...item, ...values, editedAt: new Date().toISOString() }) : item,
+          item.id === modal.id ? withoutCurrency({ ...item, ...stamped, editedAt: new Date().toISOString() }) : item,
         )
       }
       persistRecords(next)
@@ -671,7 +691,7 @@ function App({ server = null }) {
   }
 
   function exportRecords() {
-    const blob = new Blob([JSON.stringify(buildExport(records), null, 2)], { type: 'application/json' })
+    const blob = new Blob([JSON.stringify(buildExport(records, new Date(), { handover: appSettings.handover }), null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -684,14 +704,31 @@ function App({ server = null }) {
   async function importRecords(file) {
     if (!file) return
     try {
-      const imported = parseImport(await file.text())
+      const { records: imported, handover } = parseImportFile(await file.text())
+      // Never load anything that looks like a real key, token or card number.
+      const secrets = findImportSecrets(imported, findSecretsInRecord, handover)
+      if (secrets.length) {
+        const first = secrets[0]
+        setTransferStatus(`Couldn't import that file: ${secrets.length === 1 ? 'one record has' : `${secrets.length} records have`} something that looks like a ${first.kind} (first: ${first.module} "${first.name}", ${first.field}). Holdings never stores secrets. Remove them and import again. Nothing was changed.`)
+        return
+      }
       const total = Object.values(imported).reduce((sum, items) => sum + items.length, 0)
       if (!window.confirm(`Replace everything here with ${total} records from ${file.name}?`)) return
       setRecords(normalizeRecordsByModule(imported))
-      setTransferStatus(`Imported ${total} records.`)
+      if (handover) setAppSettings((current) => ({ ...current, handover }))
+      setTransferStatus(`Imported ${total} records${handover ? ' and your handover pack settings' : ''}.`)
     } catch (error) {
       setTransferStatus(`Couldn't import that file: ${error.message} Nothing was changed.`)
     }
+  }
+
+  // Rows from the CSV import, already checked (see CsvImport).
+  function importCsvRecords(moduleKey, rows) {
+    const now = new Date().toISOString()
+    const base = moduleKey === 'servers' ? emptyServerRecord : emptyRecord
+    const normalize = moduleKey === 'domains' ? normalizeDomainRecord : moduleKey === 'servers' ? normalizeServerRecord : (record) => record
+    const added = rows.map((row) => normalize({ ...base, ...row, id: `${moduleKey}-${crypto.randomUUID()}`, addedAt: now, editedAt: now }))
+    setRecords((current) => ({ ...current, [moduleKey]: [...added, ...(current[moduleKey] || [])] }))
   }
 
   function updateRepoStats(results) {
@@ -719,19 +756,24 @@ function App({ server = null }) {
         throw new Error(result.error || `Lookup returned ${response.status}`)
       }
 
-      setRecords((current) => ({
-        ...current,
-        domains: current.domains.map((domain) =>
-          domain.id === record.id ? { ...domain, lookup: result } : domain,
-        ),
+      const current = records.domains.find((domain) => domain.id === record.id) ?? record
+      const applied = applyLookup(current, result)
+      setRecords((latest) => ({
+        ...latest,
+        domains: latest.domains.map((domain) => (domain.id === record.id ? applyLookup(domain, result).domain : domain)),
       }))
-      setDomainLookupStatus(`Checked ${record.name}.`)
+      setDomainLookupStatus(applied.firstCheck
+        ? `Checked ${record.name}. Future checks will show what changed.`
+        : applied.changes.length
+          ? `Checked ${record.name}. Changed since the last check: ${applied.changes.map((change) => change.message).join(' ')}`
+          : `Checked ${record.name}. Nothing changed since the last check.`)
     } catch (error) {
       setDomainLookupStatus(`Couldn't check ${record.name} (${error.message}). Try again in a minute.`)
     }
   }
 
   return (
+    <UptimeContext.Provider value={uptime.byItem}>
     <div className="app-shell">
       <a className="skip-link" href="#main-content">Skip to content</a>
       <aside className="sidebar">
@@ -844,6 +886,8 @@ function App({ server = null }) {
           <DashboardView
             records={records}
             flatRecords={flatRecords}
+            serverChanges={serverChanges}
+            uptime={uptime.byItem}
             displayCurrency={displayCurrency}
             money={money}
             fromUsd={fromUsd}
@@ -866,7 +910,13 @@ function App({ server = null }) {
         )}
 
         {activePage === 'expiring' && (
-          <ExpiryView flatRecords={flatRecords} prettyDate={prettyDate} setActivePage={setActivePage} />
+          <ExpiryView
+            flatRecords={flatRecords}
+            prettyDate={prettyDate}
+            setActivePage={setActivePage}
+            getData={() => getHoldingsData(records, toUsd)}
+            projects={records.projects}
+          />
         )}
 
         {activePage === 'impact' && (
@@ -890,6 +940,7 @@ function App({ server = null }) {
             money={money}
             fromUsd={fromUsd}
             toUsd={toUsd}
+            staleDays={appSettings.staleDays ?? 90}
             onKeepWithoutProject={(id) => setRecords((current) => Object.fromEntries(
               Object.entries(current).map(([moduleKey, items]) => [
                 moduleKey,
@@ -913,6 +964,8 @@ function App({ server = null }) {
           <AttentionCenterView
             records={records}
             flatRecords={flatRecords}
+            serverChanges={serverChanges}
+            uptime={uptime.byItem}
             setActivePage={setActivePage}
           />
         )}
@@ -924,6 +977,12 @@ function App({ server = null }) {
         {activePage === 'projects' && (
           <ProjectsView
             records={records}
+            onWorkedToday={(id) => setRecords((current) => ({
+              ...current,
+              projects: current.projects.map((project) => (project.id === id
+                ? { ...project, lastWorkedOn: new Date().toLocaleDateString('en-CA'), editedAt: new Date().toISOString() }
+                : project)),
+            }))}
             displayCurrency={displayCurrency}
             money={money}
             toUsd={toUsd}
@@ -936,6 +995,7 @@ function App({ server = null }) {
 
         {activePage === 'domains' && (
           <DomainsView
+            serverChanges={serverChanges}
             onWhatIf={showImpact}
             records={visibleRecords}
             allRecords={records}
@@ -1025,6 +1085,9 @@ function App({ server = null }) {
             transferStatus={transferStatus}
             server={server}
             stripe={stripe}
+            onDomainChanges={setServerChanges}
+            uptime={uptime}
+            csvImport={<CsvImport records={records} onImport={importCsvRecords} />}
             getHandover={() => ({
               data: getHoldingsData(records, toUsd),
               options: { owner: '', recipient: '', message: '', ...appSettings.handover },
@@ -1094,6 +1157,7 @@ function App({ server = null }) {
 
       </Suspense>
     </div>
+    </UptimeContext.Provider>
   )
 }
 
@@ -1231,6 +1295,9 @@ function SettingsView({
   server,
   stripe,
   getHandover,
+  onDomainChanges,
+  csvImport,
+  uptime,
 }) {
   const importInput = useRef(null)
 
@@ -1242,7 +1309,7 @@ function SettingsView({
     <section className="page-content settings-grid">
       {server && (
         <Suspense fallback={null}>
-          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} />
+          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} projects={getHandover().data.projects} onDomainChanges={onDomainChanges} uptime={uptime} />
         </Suspense>
       )}
 
@@ -1282,21 +1349,38 @@ function SettingsView({
         </div>
       </div>
 
+      {csvImport}
+
       <CurrencySettings
         appSettings={appSettings}
         updateSetting={updateSetting}
         ratesStatus={ratesStatus}
       />
 
+      <div className="panel settings-wide">
+        <div className="panel-heading">
+          <h2>Clean-up suggestions</h2>
+          <p>Insights suggests looking at projects that still cost money but haven&apos;t been worked on for a while.</p>
+        </div>
+        <div className="settings-form">
+          <label>
+            <span>A project is stale after</span>
+            <select value={appSettings.staleDays ?? 90} onChange={(event) => updateSetting('staleDays', Number(event.target.value))}>
+              {[30, 60, 90, 180, 365].map((days) => <option key={days} value={days}>{days} days without activity</option>)}
+            </select>
+          </label>
+        </div>
+      </div>
+
       {!server && (
         <div className="panel settings-wide">
           <div className="panel-heading">
-            <h2>Notifications and dead-man&apos;s switch</h2>
+            <h2>More with your own server</h2>
             <p>
-              Reminders by email, webhook (Slack, Discord) or ntfy before things renew or expire, and an optional
-              dead-man&apos;s switch that sends your locked handover file to someone you trust if you stop checking in. They
-              need the optional self-hosted server, because a browser tab can&apos;t send anything while it&apos;s closed. See
-              docs/self-hosting.md.
+              Reminders by email, webhook (Slack, Discord) or ntfy before things renew or expire, an optional dead-man&apos;s
+              switch that sends your locked handover file to someone you trust if you stop checking in, scheduled domain
+              watch, a calendar subscription link, and Up/Down from your Uptime Kuma or Gatus. They need the optional
+              self-hosted server, because a browser tab can&apos;t do these while it&apos;s closed. See docs/self-hosting.md.
             </p>
           </div>
         </div>

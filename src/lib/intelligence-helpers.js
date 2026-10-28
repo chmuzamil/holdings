@@ -1,3 +1,4 @@
+import { recentHighChanges } from './domain-watch'
 import { resolveProjectAssets } from './asset-helpers'
 import { normalizeDomainRecord } from './domain-helpers'
 import { daysUntilRenewal, isRenewableRecord } from './renewal-helpers'
@@ -159,9 +160,47 @@ export function getFounderInsights(records, toUsd) {
 }
 
 
-export function getAttentionItems(records, flatRecords) {
+const CHANGE_LABELS = {
+  nameservers: 'Nameservers changed',
+  transferLock: 'Transfer lock removed',
+  status: 'Registry status changed',
+  expires: 'Expiry date moved earlier',
+}
+
+export function getAttentionItems(records, flatRecords, serverChanges = {}, uptime = {}) {
   const items = []
   const add = (item) => items.push(item)
+
+  // Linked uptime monitors that are down right now (self-hosted only).
+  for (const [moduleKey, list] of [['servers', records.servers], ['domains', records.domains], ['projects', records.projects || []]]) {
+    list.forEach((record) => {
+      const monitor = uptime[record.id]
+      if (monitor?.status !== 'down') return
+      add({
+        id: `uptime-down-${record.id}`,
+        priority: 'critical',
+        label: 'Down right now',
+        detail: record.name,
+        action: `${monitor.name} reports it down. Check it, or see your status page.`,
+        moduleKey,
+        recordId: record.id,
+      })
+    })
+  }
+
+  records.domains.forEach((domain) => {
+    recentHighChanges(domain, serverChanges).forEach((change) => {
+      add({
+        id: `domain-change-${change.id}`,
+        priority: 'critical',
+        label: CHANGE_LABELS[change.field] || 'Domain changed',
+        detail: domain.name,
+        action: 'Check that this was you. If it wasn\u2019t, contact your registrar now.',
+        moduleKey: 'domains',
+        recordId: domain.id,
+      })
+    })
+  })
 
   flatRecords.filter(isRenewableRecord).forEach((record) => {
     if (record.status === 'Cancelled') return

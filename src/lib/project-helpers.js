@@ -1,4 +1,4 @@
-import { buildLedger, cleanupSuggestions, fromV1, impactOf, localDate, rankByImpact, summarizeCosts } from '@holdings/core'
+import { buildLedger, cleanupSuggestions, fromV1, impactOf, lastActivity, localDate, rankByImpact, stageFromStatus, summarizeCosts } from '@holdings/core'
 
 export const projectStatuses = [
   'Idea',
@@ -38,6 +38,38 @@ export const emptyProjectRecord = {
   subscriptionIds: [],
   notes: '',
   monthlyRevenueUsd: null,
+  stage: 'idea',
+  stageChangedAt: '',
+  lastWorkedOn: '',
+  runbook: '',
+}
+
+// Where a project is in its life. Replaces the older status in the UI; the
+// status is kept in step so older exports and code still read sensibly.
+export const projectStages = [
+  ['idea', 'Idea'],
+  ['building', 'Building'],
+  ['launched', 'Launched'],
+  ['maintenance', 'Maintenance'],
+  ['paused', 'Paused'],
+  ['archived', 'Archived'],
+]
+const STAGE_IDS = projectStages.map(([id]) => id)
+const STATUS_FOR_STAGE = { idea: 'Idea', building: 'Building', launched: 'Production', maintenance: 'Maintained', archived: 'Archived' }
+
+export const stageName = (stage) => projectStages.find(([id]) => id === stage)?.[1] ?? 'Idea'
+
+export function stageVariant(stage) {
+  if (stage === 'launched' || stage === 'maintenance') return 'success'
+  if (stage === 'building') return 'warning'
+  if (stage === 'archived') return 'expired'
+  return 'outline'
+}
+
+/** Sets the stage, notes when it changed, and keeps the older status in step. */
+export function withStage(project, stage, now = new Date()) {
+  if (project.stage === stage && project.stageChangedAt) return project
+  return { ...project, stage, stageChangedAt: now.toISOString(), status: STATUS_FOR_STAGE[stage] ?? project.status }
 }
 
 // Monthly revenue in USD, or null when it isn't tracked ('' from an empty form field).
@@ -60,6 +92,10 @@ export function normalizeProjectRecord(record) {
     ...emptyProjectRecord,
     ...record,
     monthlyRevenueUsd: parseRevenue(record.monthlyRevenueUsd),
+    stage: STAGE_IDS.includes(record.stage) ? record.stage : stageFromStatus(String(record.status || '')),
+    stageChangedAt: record.stageChangedAt || '',
+    lastWorkedOn: /^\d{4}-\d{2}-\d{2}$/.test(record.lastWorkedOn || '') ? record.lastWorkedOn : '',
+    runbook: typeof record.runbook === 'string' ? record.runbook : '',
     domainIds: Array.isArray(record.domainIds) ? record.domainIds : [],
     repoIds: Array.isArray(record.repoIds) ? record.repoIds : [],
     serverIds: Array.isArray(record.serverIds) ? record.serverIds : [],
@@ -113,8 +149,13 @@ export function getLedger(records, toUsd) {
 }
 
 // Paid items you may not need. See @holdings/core cleanupSuggestions.
-export function getCleanup(records, toUsd, now = new Date()) {
-  return cleanupSuggestions(getPortfolio(records, toUsd).data, localDate(now))
+export function getCleanup(records, toUsd, { staleDays = 90, now = new Date() } = {}) {
+  return cleanupSuggestions(getPortfolio(records, toUsd).data, localDate(now), { staleDays })
+}
+
+// When the project was last worked on (newest repo push, or set by hand).
+export function getLastActivity(records, toUsd, projectId) {
+  return lastActivity(getPortfolio(records, toUsd).data, projectId)
 }
 
 // What stops if one item stops. See @holdings/core impactOf.

@@ -1,3 +1,5 @@
+import { renderMarkdown } from './markdown'
+import { activityLabel, lastActivity, stageLabel } from './activity'
 import { summarizeCosts } from './cost'
 import { localDate } from './exit'
 import type { Asset, HoldingsData } from './model'
@@ -9,12 +11,16 @@ export interface HandoverOptions {
   owner: string
   /** A personal note from the owner, shown first. */
   message: string
+  /** Markdown: what to do across all projects if the owner is unavailable. Never secrets. */
+  runbook?: string
 }
 
 export interface HandoverSection {
   heading: string
   paragraphs: string[]
   items: string[]
+  /** A runbook, written in Markdown and rendered safely (see renderMarkdown). */
+  markdown?: string
 }
 
 export interface HandoverDoc {
@@ -73,6 +79,10 @@ export function buildHandover(data: HoldingsData, options: HandoverOptions, now:
     items: [],
   })
 
+  if (options.runbook?.trim()) {
+    sections.push({ heading: 'If I\u2019m unavailable, do this', paragraphs: [], items: [], markdown: options.runbook.trim() })
+  }
+
   sections.push({
     heading: 'Do this first (next 30 days)',
     paragraphs: dueSoon.length ? [] : ['Nothing renews or expires in the next 30 days.'],
@@ -91,9 +101,11 @@ export function buildHandover(data: HoldingsData, options: HandoverOptions, now:
       project.monthlyRevenueUsd === null ? 'Revenue not tracked' : `Earns ${usd(project.monthlyRevenueUsd)} a month`,
       `costs ${usd(costs.projects.get(project.id)?.monthlyUsd ?? 0)} a month`,
     ].join(', ')
+    const stage = `Stage: ${stageLabel(project.stage)}. Last worked on: ${activityLabel(lastActivity(data, project.id))}.`
     sections.push({
       heading: `Project: ${project.name}`,
-      paragraphs: [project.description, project.liveUrl ? `Live at ${project.liveUrl}.` : '', `${money}.`, project.notes].filter(Boolean),
+      paragraphs: [project.description, project.liveUrl ? `Live at ${project.liveUrl}.` : '', `${money}.`, stage, project.notes].filter(Boolean),
+      ...(project.runbook.trim() ? { markdown: project.runbook.trim() } : {}),
       items: projectAssets.map((asset) => {
         const facts = [asset.provider, keptIn(asset) ? `kept in ${keptIn(asset)}` : '', asset.notes].filter(Boolean)
         return `${asset.name}${facts.length ? `: ${facts.join('. ')}` : ''}`
@@ -148,6 +160,7 @@ export function handoverMarkdown(doc: HandoverDoc): string {
     for (const paragraph of section.paragraphs) lines.push(paragraph, '')
     for (const item of section.items) lines.push(`- ${item}`)
     if (section.items.length) lines.push('')
+    if (section.markdown) lines.push(section.markdown, '')
   }
   return lines.join('\n')
 }
@@ -161,6 +174,7 @@ export function handoverHtml(doc: HandoverDoc): string {
     parts.push(`<h2>${escapeHtml(section.heading)}</h2>`)
     for (const paragraph of section.paragraphs) parts.push(`<p>${escapeHtml(paragraph)}</p>`)
     if (section.items.length) parts.push(`<ul>${section.items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`)
+    if (section.markdown) parts.push(`<div class="runbook">${renderMarkdown(section.markdown)}</div>`)
   }
   return parts.join('\n')
 }

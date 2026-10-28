@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { UptimeBadge } from '../server/UptimeBadge'
 import { ChevronDown, Edit3, Eye, Search, Trash2, Unplug } from 'lucide-react'
 import { Badge } from '../ui/Badge'
 import { DropdownMenu } from '../ui/DropdownMenu'
@@ -80,7 +81,7 @@ export function ServersView({
             <div className="project-asset-cell" data-label="Location">{server.location || '—'}</div>
             <div className="project-cost numeric" data-label="Per month">{money(fromUsd(toUsd(server), displayCurrency), displayCurrency)}</div>
             <div className="project-asset-cell" data-label="Renews">{prettyDate(server.renewalDate)}</div>
-            <div data-label="Status"><Badge variant={server.status === 'Active' ? 'success' : 'warning'}>{server.status}</Badge></div>
+            <div data-label="Status" className="status-badges"><Badge variant={server.status === 'Active' ? 'success' : 'warning'}>{server.status}</Badge> <UptimeBadge itemId={server.id} /></div>
             <div className="repo-actions">
               <button className="ui-btn ui-btn-secondary" type="button" onClick={() => setSelectedServer(server)}>
                 <Eye size={15} aria-hidden="true" /> Details

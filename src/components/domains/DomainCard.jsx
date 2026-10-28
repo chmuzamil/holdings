@@ -11,6 +11,7 @@ import {
 import { resolveDomainConnections } from '../../lib/asset-helpers'
 import { getDomainCheck } from '../../lib/health-score'
 import { getDomainRisks } from '../../lib/domain-risk'
+import { UptimeBadge } from '../server/UptimeBadge'
 
 export function DomainCard({
   record,
@@ -54,6 +55,7 @@ export function DomainCard({
                 ? <Badge variant="outline">Cancelled</Badge>
                 : <Badge variant={getCountdownVariant(record)}>{getCountdownLabel(record)}</Badge>}
               {dnsCheck.show && <Badge variant={dnsCheck.variant}>{dnsCheck.label}</Badge>}
+              <UptimeBadge itemId={record.id} />
               {safetyProblems > 0 && (
                 <Badge variant="warning">{safetyProblems === 1 ? '1 safety fix' : `${safetyProblems} safety fixes`}</Badge>
               )}

@@ -8,7 +8,10 @@ import {
   type Link,
   type Project,
   type ProjectAsset,
+  type ProjectStage,
   type ProjectStatus,
+  PROJECT_STAGES,
+  stageFromStatus,
 } from './model'
 
 /** A record as stored by Holdings 0.1 (one list per module). */
@@ -46,6 +49,7 @@ const COMMON_FIELDS = new Set([
   'connectedProjectIds', 'connectedServerIds', 'connectedRepoIds', 'connectedDomainIds',
   'domainIds', 'repoIds', 'serverIds', 'subscriptionIds',
   'slug', 'description', 'liveUrl', 'monthlyRevenueUsd', 'paidWithId',
+  'stage', 'stageChangedAt', 'lastWorkedOn', 'runbook',
 ])
 
 const STATUS: Record<string, AssetStatus> = {
@@ -142,6 +146,10 @@ export function fromV1(records: V1Records, options: MigrateOptions = {}): Holdin
       liveUrl: text(record.liveUrl),
       notes: text(record.notes),
       monthlyRevenueUsd: revenue(record.monthlyRevenueUsd),
+      stage: PROJECT_STAGES.includes(text(record.stage) as ProjectStage) ? (text(record.stage) as ProjectStage) : stageFromStatus(text(record.status)),
+      stageChangedAt: text(record.stageChangedAt),
+      lastWorkedOn: /^\d{4}-\d{2}-\d{2}$/.test(text(record.lastWorkedOn)) ? text(record.lastWorkedOn) : '',
+      runbook: text(record.runbook),
       details: details(record),
       addedAt: text(record.addedAt),
       editedAt: text(record.editedAt),

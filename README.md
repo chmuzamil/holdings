@@ -15,7 +15,7 @@ If you run a handful of side projects, you probably have 20 domains at three reg
 
 It runs entirely in your browser. No account, no tracking, no server required. If you want it on every device, run it on your own server with one Docker command and a login.
 
-> **Status:** v0.2, with v0.3 under way. The asset register, "what breaks if…", the expiry radar, handover and exit packs, self-hosting with a login, Stripe revenue and an MCP server for AI agents all work today. Still young: feedback and issues are very welcome.
+> **Status:** v0.3. On top of the asset register, "what breaks if…", the expiry radar, handover and exit packs, self-hosting, Stripe revenue and the MCP server, Holdings now watches for you: domain safety checks and change watch, clean-up suggestions and stale projects, a calendar feed, CSV import, runbooks, and (self-hosted) notifications, uptime status and a dead-man's switch. Still young: feedback and issues are very welcome.
 
 ## Who it's for
 
@@ -33,19 +33,22 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Projects as the centre.** Link domains, servers, repos and subscriptions to a project and see what it costs and earns each month. A server shared by two projects is split between them, and anything not in a project is shown separately, so the numbers always add up.
 - **"What breaks if…"**: pick a server, domain, service or payment card and see which projects it affects, how much revenue they earn, and what else stops with it (including subdomains that point at it).
 - **Keys & cards, and an expiry radar**: track API keys, tokens, OAuth apps, TLS certificates and cards by name, where they are kept and when they expire or need rotating. Never the secret itself: Holdings refuses to save anything that looks like a real key or card number. Mark which card pays for what, and see everything that renews or expires on one page, soonest first.
-- **Domains** with subdomains attached to servers, notes, renewal dates, and an optional live DNS + registry (RDAP) check. **Safety checks** then show what to fix and how: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC.
+- **Calendar (.ics)**: download your renewals and expiries for Google Calendar, Apple Calendar or Outlook, for everything or one project, with a reminder a few days before. Importing it again updates the same events. Self-hosted, you can subscribe with a private link instead.
+- **Domains** with subdomains attached to servers, notes, renewal dates, and an optional live DNS + registry (RDAP) check. **Safety checks** then show what to fix and how: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC. **Change watch** compares each check with the last one and lists what changed (nameservers, registry status, expiry, DNSSEC, transfer lock); important changes go on the Attention page. Self-hosted, it can run on a schedule and notify you.
 - **Servers, repos, accounts and subscriptions** with costs, renewal dates and notes.
 - **GitHub import**: fetch your repos by username. An optional token is kept in memory only, never saved.
-- **Clean-up suggestions** on the Insights page: paid items no project uses, items only archived projects use, duplicate subscriptions, with what you could save.
+- **Project stages**: idea, building, launched, maintenance, paused or archived, with a filter on the Projects page. Holdings knows when you last worked on a project from your GitHub pushes, or a date you set with one click.
+- **Clean-up suggestions** on the Insights page: paid items no project uses, items only archived projects use, duplicate subscriptions, and stale projects (still costing money but not worked on for 90 days, or what you choose in Settings), with what you could save.
 - **Attention list**: what is overdue or due soon, and what to tidy up, each with the next step to take.
 - **Timeline** built only from real dates: when you added things, when repos were created, when domains were registered.
 - **Costs in USD**, with an optional second display currency. Its rate is fetched daily from [ExchangeRate-API](https://www.exchangerate-api.com).
-- **Handover and exit packs**: a locked "if I'm unavailable" file for someone you trust (opens offline in any browser with a passphrase, never contains passwords or keys), and an asset register with a transfer checklist for selling a project.
+- **Handover and exit packs**: a locked "if I'm unavailable" file for someone you trust (opens offline in any browser with a passphrase, never contains passwords or keys), and an asset register with a transfer checklist for selling a project. Add **runbooks** in Markdown, one for everything and one per project, saying what to do step by step; they go into both packs.
+- **Uptime status** (self-hosted, optional): already run Uptime Kuma or Gatus? See Up or Down next to your servers, domains and projects, and down items on the Attention page.
 - **Self-hosting** (optional): one Docker container with a password and two-step login, your data saved on your server and available in every browser.
 - **Revenue from Stripe** (self-hosted): link Stripe products to a project and its monthly revenue fills itself in, with a read-only key.
 - **MCP server** so Claude, Cursor and other agents can answer questions about your portfolio, read-only.
 - **Command palette** (Ctrl/Cmd + K) to jump to anything.
-- **Export and import** everything as JSON.
+- **Export and import** everything as JSON, and **import from a spreadsheet** (CSV) for domains, subscriptions and servers, with a preview of every row before anything is added. See [docs/importing.md](docs/importing.md).
 - **Demo mode** with a made-up portfolio, to look around before adding your own data.
 
 | Projects | What breaks if… |
@@ -53,6 +56,8 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 | ![Projects: cost, revenue and profit per project](docs/screenshots/projects.png) | ![What breaks if a payment card stops](docs/screenshots/what-if.png) |
 | **Domains** | **Map** |
 | ![Domains with renewal dates and DNS checks](docs/screenshots/domains.png) | ![Map of what each project runs on](docs/screenshots/infrastructure-map.png) |
+| **Insights** | **Expiring** |
+| ![Clean-up suggestions: unused items and a stale project](docs/screenshots/insights.png) | ![Renewals and expiries with a calendar download](docs/screenshots/expiring.png) |
 
 ## Quick start
 
@@ -104,6 +109,9 @@ Open http://localhost:8080, enter the setup code and pick a password. You can ad
   - `open.er-api.com`, once a day, if you picked a second currency or Stripe reports revenue in a currency other than USD
   - `api.stripe.com`, from your server only, if you connect Stripe (read-only key)
   - your own server (or `npm run api`), when you run a DNS check. It queries DNS, IANA's registry directory and the domain's public registry (RDAP).
+- With the self-hosted server and uptime status turned on, your server reads your own Uptime Kuma or Gatus status page once a minute while Holdings is open.
+- With the self-hosted server and domain watch turned on, your server runs the same DNS and registry lookups for your domains on the schedule you choose.
+- With the self-hosted server, a calendar subscription link (if you make one) lets your calendar app read your renewal dates from your server. It can read nothing else, and you can turn it off at any time.
 - No analytics, no telemetry, no third-party scripts, fonts or icons.
 
 ## Why not…
@@ -135,17 +143,21 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **MCP server** (read-only), so Claude, Cursor and other agents can answer questions like "what renews this month?" or "what breaks if this server dies?". It reads a JSON export, or live data from the self-hosted server with a read-only access token. See [docs/mcp.md](docs/mcp.md).
 - ✅ **Self-hosted mode**: one Docker container (Node + SQLite) with a login (password plus optional two-step codes) and saving to your server. Scheduled checks and notifications come next.
 
-**v0.3: it watches for you** (in progress)
+**v0.3: it watches for you** (released)
 - ✅ **Domain safety checks**: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC, each with the next step.
 - ✅ **Clean-up suggestions**: what you pay for that no project uses, what only archived projects use, duplicate subscriptions, and things marked cancelled that still renew, with the possible saving.
-- **Uptime Kuma / Gatus status**: up or down next to each server and project, read from your own instance.
+- ✅ **Uptime Kuma / Gatus status** (self-hosted, optional): Up or Down next to each server, domain and project, read from your own status page.
 - ✅ **Notifications** (self-hosted, optional): renewals and expiries by email, webhook (Slack, Discord) or ntfy, each switched on separately.
 - ✅ **Dead-man's switch** (self-hosted, optional): if you don't check in for a while, the person you chose gets your locked handover file. Reminders come with a one-click check-in link first.
+- ✅ **Calendar (.ics)**: renewals and expiries in your calendar app, as a download or (self-hosted) a private subscription link.
+- ✅ **Runbooks**: "if I'm unavailable, do this" steps in Markdown, globally and per project, in the handover and exit packs.
+- ✅ **Domain change watch**: nameserver, registry status, expiry, DNSSEC and transfer-lock changes, on a schedule when self-hosted, sent once to your notification channels.
+- ✅ **Project stages and stale projects**: where each project is in its life, when you last worked on it, and a nudge when an idle project still costs money.
 
 **v0.4: less typing**
 - Read-only importers for Cloudflare, registrars with an API (Porkbun, Namecheap, Spaceship) and Hetzner / DigitalOcean servers.
 - Lemon Squeezy and Paddle revenue, next to Stripe.
-- CSV import for the spreadsheet you already keep.
+- ✅ CSV import for the spreadsheet you already keep (done early, in v0.3).
 
 **v0.5: sharing**
 - A read-only second user: a co-founder, an accountant, or a buyer during a sale.

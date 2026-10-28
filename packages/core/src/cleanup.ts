@@ -1,7 +1,8 @@
-import { monthlyCostUsd } from './cost'
+import { daysSince, lastActivity, type Activity } from './activity'
+import { monthlyCostUsd, summarizeCosts } from './cost'
 import type { Asset, HoldingsData } from './model'
 
-export type CleanupReason = 'unused' | 'archived-only' | 'duplicate' | 'cancelled-but-renews'
+export type CleanupReason = 'unused' | 'archived-only' | 'duplicate' | 'cancelled-but-renews' | 'stale-project'
 
 export interface CleanupSuggestion {
   reason: CleanupReason
@@ -11,6 +12,13 @@ export interface CleanupSuggestion {
   savingMonthlyUsd: number | null
   /** Projects using it (for archived-only). */
   projects: string[]
+  /** For stale-project: the project, its last activity and how long ago. */
+  project?: { id: string; name: string; stage: string; lastActivity: Activity; daysIdle: number }
+}
+
+export interface CleanupOptions {
+  /** A project counts as stale after this many days without activity. */
+  staleDays?: number
 }
 
 export interface Cleanup {
@@ -27,7 +35,8 @@ export const KEEP_WITHOUT_PROJECT = 'keepWithoutProject'
  * question for the owner, not a verdict: only they know whether an unlinked
  * subscription is for everything.
  */
-export function cleanupSuggestions(data: HoldingsData, today: string): Cleanup {
+export function cleanupSuggestions(data: HoldingsData, today: string, options: CleanupOptions = {}): Cleanup {
+  const staleDays = options.staleDays ?? 90
   const projectsById = new Map(data.projects.map((project) => [project.id, project]))
   const usedBy = new Map<string, string[]>()
   for (const row of data.projectAssets) {
@@ -44,7 +53,7 @@ export function cleanupSuggestions(data: HoldingsData, today: string): Cleanup {
     if (!projectIds.length) {
       if (asset.details[KEEP_WITHOUT_PROJECT] === true) continue
       suggestions.push({ reason: 'unused', assets: [asset], savingMonthlyUsd: monthly, projects: [] })
-    } else if (projectIds.every((id) => projectsById.get(id)?.status === 'archived')) {
+    } else if (projectIds.every((id) => projectsById.get(id)?.stage === 'archived')) {
       suggestions.push({
         reason: 'archived-only',
         assets: [asset],
@@ -69,7 +78,25 @@ export function cleanupSuggestions(data: HoldingsData, today: string): Cleanup {
     }
   }
 
-  const order: Record<CleanupReason, number> = { 'cancelled-but-renews': 0, unused: 1, 'archived-only': 1, duplicate: 2 }
+  // Stale projects: not archived, nothing done for a while, still costing money.
+  const costs = summarizeCosts(data)
+  for (const project of data.projects) {
+    if (project.stage === 'archived') continue
+    const activity = lastActivity(data, project.id)
+    if (!activity) continue
+    const daysIdle = daysSince(activity.date, today)
+    const monthly = costs.projects.get(project.id)?.monthlyUsd ?? 0
+    if (daysIdle < staleDays || monthly <= 0) continue
+    suggestions.push({
+      reason: 'stale-project',
+      assets: [],
+      savingMonthlyUsd: monthly,
+      projects: [project.name],
+      project: { id: project.id, name: project.name, stage: project.stage, lastActivity: activity, daysIdle },
+    })
+  }
+
+  const order: Record<CleanupReason, number> = { 'cancelled-but-renews': 0, unused: 1, 'archived-only': 1, 'stale-project': 1, duplicate: 2 }
   suggestions.sort((a, b) => order[a.reason] - order[b.reason] || (b.savingMonthlyUsd ?? 0) - (a.savingMonthlyUsd ?? 0))
   const saving = suggestions.reduce((sum, item) => sum + (item.savingMonthlyUsd ?? 0), 0)
   return { suggestions, savingMonthlyUsd: Math.round(saving * 100) / 100 }

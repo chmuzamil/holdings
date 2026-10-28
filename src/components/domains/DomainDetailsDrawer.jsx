@@ -11,9 +11,10 @@ import {
 import { resolveDomainConnections } from '../../lib/asset-helpers'
 import { DomainHealthChips, DomainHealthDetail } from './DomainHealthChips'
 import { DomainSafetyChecks } from './DomainSafetyChecks'
+import { DomainChanges } from './DomainChanges'
 import { statusTone } from '../../lib/status'
 
-function OverviewTab({ record, records, servers, money, prettyDate, toUsd, fromUsd, displayCurrency }) {
+function OverviewTab({ record, records, servers, money, prettyDate, toUsd, fromUsd, displayCurrency, serverChanges }) {
   const subdomains = normalizeSubdomains(record).filter((sub) => sub.name?.trim())
   const shownCost = money(fromUsd(toUsd(record), displayCurrency), displayCurrency)
   const usdCost = displayCurrency !== 'USD' ? money(toUsd(record), 'USD') : null
@@ -72,6 +73,8 @@ function OverviewTab({ record, records, servers, money, prettyDate, toUsd, fromU
       </div>
 
       <DomainSafetyChecks record={record} />
+
+      <DomainChanges record={record} serverChanges={serverChanges} />
 
       <div className="domain-drawer-section">
         <h4>Connected items</h4>
@@ -244,6 +247,7 @@ export function DomainDetailsDrawer({
   toUsd,
   fromUsd,
   onCheckHealth,
+  serverChanges,
 }) {
   if (!record) return null
 
@@ -264,6 +268,7 @@ export function DomainDetailsDrawer({
               <OverviewTab
                 record={record}
                 records={records}
+                serverChanges={serverChanges}
                 servers={servers}
                 money={money}
                 prettyDate={prettyDate}

@@ -7,11 +7,11 @@ import { getCleanup } from '../../lib/project-helpers'
 import { CleanupPanel } from './CleanupPanel'
 import './command-center.css'
 
-export function InsightsView({ records, displayCurrency, money, fromUsd, toUsd, onKeepWithoutProject, onShowKept }) {
+export function InsightsView({ records, displayCurrency, money, fromUsd, toUsd, onKeepWithoutProject, onShowKept, staleDays = 90 }) {
   const insights = getFounderInsights(records, toUsd)
   const providerCosts = getCostByProvider(records, toUsd)
   const forecast = getCashForecast(records, toUsd)
-  const cleanup = getCleanup(records, toUsd)
+  const cleanup = getCleanup(records, toUsd, { staleDays })
   const keptCount = Object.values(records).flat().filter((item) => item.keepWithoutProject).length
   const forecastMax = Math.max(...forecast.map((month) => month.totalUsd), 1)
   const forecastTotal = forecast.reduce((sum, month) => sum + month.totalUsd, 0)

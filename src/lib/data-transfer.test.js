@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildExport, exportFileName, parseImport } from './data-transfer'
+import { buildExport, exportFileName, findImportSecrets, parseImport, parseImportFile } from './data-transfer'
+import { findSecretsInRecord } from './secrets'
 
 const records = {
   domains: [{ id: 'd1', name: 'shopfront.example' }],
@@ -54,5 +55,38 @@ describe('parseImport', () => {
 describe('exportFileName', () => {
   it('uses the date', () => {
     expect(exportFileName(new Date('2026-10-07T23:00:00Z'))).toBe('holdings-export-2026-10-07.json')
+  })
+})
+
+describe('findImportSecrets', () => {
+  it('finds secrets anywhere in an import, and names where', () => {
+    const card = ['4242', '4242', '4242', '4242'].join(' ')
+    const imported = {
+      domains: [{ id: 'd1', name: 'shop.example', notes: 'fine' }],
+      keys: [{ id: 'k1', name: 'Visa', notes: `number ${card}` }],
+    }
+    expect(findImportSecrets(imported, findSecretsInRecord)).toEqual([{ module: 'Key or card', name: 'Visa', field: 'notes', kind: 'card number' }])
+    expect(findImportSecrets({ domains: imported.domains }, findSecretsInRecord)).toEqual([])
+  })
+})
+
+describe('handover settings in the export', () => {
+  const handover = { owner: 'Sam', recipient: 'Sara', message: 'Call the accountant first.', runbook: '1. Renew shop.example' }
+
+  it('exports and imports the note and global runbook', () => {
+    const text = JSON.stringify(buildExport(records, new Date(), { handover: { ...handover, extra: 'dropped' } }))
+    expect(parseImportFile(text)).toEqual({ records, handover })
+  })
+
+  it('leaves them out when empty, and older exports without them still import', () => {
+    expect(buildExport(records, new Date(), { handover: { owner: '', runbook: '' } })).not.toHaveProperty('handover')
+    expect(parseImportFile(JSON.stringify(buildExport(records)))).toEqual({ records, handover: null })
+    expect(parseImportFile(JSON.stringify({ format: 'holdings-export', version: 1, records, handover: 'nonsense' })).handover).toBeNull()
+  })
+
+  it('checks them for secrets too', () => {
+    const card = ['4242', '4242', '4242', '4242'].join(' ')
+    const hits = findImportSecrets({ domains: [] }, findSecretsInRecord, { ...handover, runbook: `card ${card}` })
+    expect(hits).toEqual([{ module: 'Handover pack', name: 'settings', field: 'runbook', kind: 'card number' }])
   })
 })

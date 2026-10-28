@@ -14,7 +14,8 @@ describe('demo data', () => {
   })
 
   it('links nowhere outside the demo', () => {
-    const urls = text.match(/https?:\/\/[^"\s]+/g) || []
+    // Stops at ")" too, so Markdown links in runbooks are read correctly.
+    const urls = text.match(/https?:\/\/[^"\s)]+/g) || []
     expect(urls.length).toBeGreaterThan(0)
     urls.forEach((url) => {
       const { hostname } = new URL(url)

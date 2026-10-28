@@ -72,6 +72,8 @@ export function handoverFileHtml(payload, { owner = '' } = {}) {
   input, button { font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid #c7ccd1; }
   button { background: #1f2328; color: #fff; cursor: pointer; } .error { color: #b42318; }
   li { margin: 4px 0; } @media print { form, .hint { display: none; } }
+  .runbook { padding: 4px 16px; border-left: 3px solid #c7ccd1; } .runbook h3, .runbook h4 { font-size: 17px; margin: 16px 0 4px; }
+  code, pre { font: 14px/1.5 ui-monospace, Consolas, monospace; background: #eceef0; border-radius: 4px; } code { padding: 1px 4px; } pre { padding: 10px; overflow-x: auto; }
 </style>
 </head>
 <body>

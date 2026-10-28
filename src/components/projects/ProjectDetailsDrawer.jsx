@@ -2,8 +2,10 @@ import { Drawer } from '../ui/Drawer'
 import { Badge } from '../ui/Badge'
 import { Tabs } from '../ui/Tabs'
 import {
+  getLastActivity,
   normalizeProjectRecord,
-  projectStatusVariant,
+  stageName,
+  stageVariant,
 } from '../../lib/project-helpers'
 import { getProjectCostAnalytics } from '../../lib/intelligence-helpers'
 import { percentLabel } from '../../lib/format'
@@ -12,13 +14,26 @@ import { resolveProjectAssets } from '../../lib/asset-helpers'
 
 
 
-function OverviewTab({ project, money, fromUsd, displayCurrency, monthlyUsd }) {
+function OverviewTab({ project, records, toUsd, money, fromUsd, displayCurrency, monthlyUsd, onWorkedToday }) {
   const normalized = normalizeProjectRecord(project)
+  const activity = records ? getLastActivity(records, toUsd, project.id) : null
   return (
     <div className="ui-kv-grid">
       <div className="ui-kv-row">
-        <span className="ui-kv-label">Status</span>
-        <span className="ui-kv-value"><Badge variant={projectStatusVariant(normalized.status)}>{normalized.status}</Badge></span>
+        <span className="ui-kv-label">Stage</span>
+        <span className="ui-kv-value"><Badge variant={stageVariant(normalized.stage)}>{stageName(normalized.stage)}</Badge></span>
+      </div>
+      <div className="ui-kv-row">
+        <span className="ui-kv-label">Last worked on</span>
+        <span className="ui-kv-value">
+          {activity ? `${activity.date}${activity.source === 'repo' ? ' (last push)' : ''}` : 'Not known'}
+          {onWorkedToday && (
+            <>
+              {' '}
+              <button type="button" className="link-button" onClick={() => onWorkedToday(project.id)}>Worked on it today</button>
+            </>
+          )}
+        </span>
       </div>
       <div className="ui-kv-row">
         <span className="ui-kv-label">Category</span>
@@ -150,6 +165,7 @@ export function ProjectDetailsDrawer({
   fromUsd,
   displayCurrency,
   monthlyUsd,
+  onWorkedToday,
 }) {
   if (!project) return null
   const normalized = normalizeProjectRecord(project)
@@ -167,7 +183,7 @@ export function ProjectDetailsDrawer({
           <h3>{normalized.name}</h3>
           <p>{normalized.description || 'No description'}</p>
         </div>
-        <Badge variant={projectStatusVariant(normalized.status)}>{normalized.status}</Badge>
+        <Badge variant={stageVariant(normalized.stage)}>{stageName(normalized.stage)}</Badge>
       </div>
 
       <Tabs
@@ -179,6 +195,9 @@ export function ProjectDetailsDrawer({
             content: (
               <OverviewTab
                 project={project}
+                records={records}
+                toUsd={toUsd}
+                onWorkedToday={onWorkedToday}
                 money={money}
                 fromUsd={fromUsd}
                 displayCurrency={displayCurrency}

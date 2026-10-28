@@ -1,8 +1,18 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-10-29)
+
+Holdings watches for you: it tells you what needs doing, what changed and what you could stop paying for, and can hand over if you can't.
 
 ### Added
+- **Uptime status** (self-hosted, optional): connect your Uptime Kuma status page or Gatus in Settings. Monitors named like a server, domain or project are linked for you; link the rest by hand. Linked items show Up, Down, Checking or In maintenance, refreshed every minute, and down items appear on the Attention page.
+- **Runbooks**: an optional "If I'm unavailable, do this" field in Markdown for each project and one for everything (on the Handover page), with a warning not to put secrets there; the secret detector enforces it. Runbooks go into the handover pack (rendered safely: no raw HTML, no scripts, links only http, https and mailto) and the exit pack. The handover file's encryption is unchanged and it still opens offline. The JSON export now includes the handover settings (name, recipient, note and global runbook), and importing restores them.
+- **CSV import** (Settings) for domains, subscriptions and servers: works out the delimiter, matches columns (remembered for the session), shows every row as will add, already here or problem (with the reason), and adds nothing until you confirm. Duplicates: domain name for domains; name, cost and renewal date for subscriptions; name and IP for servers. Templates to download. Parsed in the browser; handles quoted cells, line breaks inside quotes, BOM and CRLF. Rows with anything that looks like a key, token or card number are left out.
+- **Domain change watch**: each DNS/registry check is compared with the last one, and changes to nameservers, registry status, expiry, DNSSEC and the transfer lock are kept (last 20 per domain) and shown in the domain's details. Nameserver changes, status changes, a removed transfer lock and an earlier expiry are marked important and appear on the Attention page for two weeks. Self-hosted: optional scheduled checks (every 6 hours to once a week) that send new changes once to the notification channels you turned on.
+- **Project stages**: idea, building, launched, maintenance, paused, archived. Older projects get a stage from their status (Archived stays archived). The Projects page shows a stage badge and filters by stage, and the stage and when it changed are saved.
+- **Last worked on**: taken from the newest push to a linked GitHub repo, or a date you set (in the project form, or "Worked on it today" in its details).
+- **Stale project** clean-up suggestion: not archived, no activity for 90 days (change it in Settings), still costing money, with the monthly saving. Stage and last activity also appear in the exit pack, handover pack and MCP output.
+- **Calendar (.ics)**: on the Expiry page, download renewals and expiries (all, or one project's) with an optional reminder N days before (7 by default), or add a single item with "Add to calendar". Events are all-day and keep the same ID, so importing again updates them. Self-hosted: a private subscription link in Settings, with its own token that opens the calendar and nothing else, and can be replaced or turned off.
 - **Clean-up suggestions** on the Insights page: paid items no project uses, items only archived projects use, several subscriptions with the same provider, and items marked cancelled that still show a renewal, with the possible monthly saving. Items that are for everything can be marked so they stop showing up, and shown again later.
 - MCP server: `cleanup_suggestions` tool.
 - **Notifications** (self-hosted, all optional): email through your own SMTP, a webhook (Slack, Discord or JSON) and ntfy. Each has its own switch in Settings, and its fields appear when you turn it on. A daily check sends reminders when something reaches 30, 7 or 1 day before renewing or expiring, or is overdue, each once.
@@ -18,9 +28,11 @@ Bug fixes, and the first v0.3 feature: domain safety checks.
 - The DNS check now also reads the domain's DMARC record and whether the registry says it is signed with DNSSEC.
 
 ### Changed
+- The project form and Projects page use the stage instead of the older status. The status is still saved and kept in step, so older exports and tools read it as before.
 - Demo repos link to the hosted demo instead of a placeholder GitHub organisation.
 
 ### Fixed
+- JSON import now refuses a file that contains anything looking like a real key, token or card number, instead of loading it.
 - A repo could disappear from its project when an imported GitHub repo and a hand-added record for the same URL were merged. Links now move to the record that is kept, and links from both copies are kept.
 - The Import JSON button could not be reached with the keyboard, and its icon sat above the text.
 
