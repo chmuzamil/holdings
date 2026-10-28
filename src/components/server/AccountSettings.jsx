@@ -5,6 +5,7 @@ import { api } from '../../lib/server-api'
 import { AccessTokens } from './AccessTokens'
 import { CalendarFeed } from './CalendarFeed'
 import { DomainWatchSettings } from './DomainWatchSettings'
+import { UptimeSettings } from './UptimeSettings'
 import { DeadmanSettings } from './DeadmanSettings'
 import { NotificationSettings } from './NotificationSettings'
 import { StripeSettings } from './StripeSettings'
@@ -63,7 +64,7 @@ function Status({ status }) {
   )
 }
 
-export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, projects, onDomainChanges }) {
+export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, projects, onDomainChanges, uptime }) {
   const totpEnabled = Boolean(server.session?.totpEnabled)
 
   return (
@@ -87,6 +88,16 @@ export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, proj
       <PasswordSettings totpEnabled={totpEnabled} />
       <NotificationSettings />
       <DomainWatchSettings onChanges={onDomainChanges} />
+      {uptime?.settings && (
+        <UptimeSettings
+          uptime={uptime}
+          groups={[
+            { label: 'Servers', items: getHandover().data.assets.filter((asset) => asset.kind === 'server') },
+            { label: 'Domains', items: getHandover().data.assets.filter((asset) => asset.kind === 'domain') },
+            { label: 'Projects', items: projects },
+          ]}
+        />
+      )}
       <DeadmanSettings getHandover={getHandover} />
       <CalendarFeed projects={projects} />
       <StripeSettings stripe={stripe} ratesPerUsd={ratesPerUsd} />

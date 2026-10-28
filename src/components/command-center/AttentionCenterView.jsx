@@ -9,8 +9,8 @@ const PRIORITY_LABELS = {
   info: 'Tidy up',
 }
 
-export function AttentionCenterView({ records, flatRecords, setActivePage, serverChanges }) {
-  const items = getAttentionItems(records, flatRecords, serverChanges)
+export function AttentionCenterView({ records, flatRecords, setActivePage, serverChanges, uptime }) {
+  const items = getAttentionItems(records, flatRecords, serverChanges, uptime)
   const groups = {
     critical: items.filter((i) => i.priority === 'critical'),
     warning: items.filter((i) => i.priority === 'warning'),

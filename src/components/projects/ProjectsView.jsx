@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { UptimeBadge } from '../server/UptimeBadge'
 import { ChevronDown, Edit3, Eye, Globe2, Search, Server, Trash2, FolderGit2 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
@@ -66,7 +67,10 @@ function ProjectCard({
           <strong>{project.name}</strong>
           <small>{project.category} · {stageName(project.stage)}</small>
         </div>
-        <Badge variant={stageVariant(project.stage)}>{stageName(project.stage)}</Badge>
+        <span className="status-badges">
+          <UptimeBadge itemId={project.id} />
+          <Badge variant={stageVariant(project.stage)}>{stageName(project.stage)}</Badge>
+        </span>
       </div>
 
       {gaps.length > 0 && (
@@ -221,7 +225,7 @@ export function ProjectsView({
                     <strong>{project.name}</strong>
                     <small>{project.category}</small>
                   </div>
-                  <div><Badge variant={stageVariant(project.stage)}>{stageName(project.stage)}</Badge></div>
+                  <div className="status-badges"><Badge variant={stageVariant(project.stage)}>{stageName(project.stage)}</Badge> <UptimeBadge itemId={project.id} /></div>
                   <div className="project-asset-cell">{gaps.length ? gaps.map((gap) => gap.label).join(' · ') : 'Nothing missing'}</div>
                   <div className="project-asset-cell">{connected}</div>
                   <div className="project-cost">

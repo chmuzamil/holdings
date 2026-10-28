@@ -47,6 +47,7 @@ import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
 import { BrandMark } from './components/shared/BrandMark'
 import { SyncStatus, SyncProblem } from './components/server/SyncStatus'
 import { useStripe } from './components/server/use-stripe'
+import { UptimeContext, useUptime } from './components/server/use-uptime'
 import { applyStripeRevenue, missingRates } from './lib/stripe-revenue'
 import { applyLookup } from './lib/domain-watch'
 import { api } from './lib/server-api'
@@ -435,6 +436,9 @@ function App({ server = null }) {
   }, [])
   const stripe = useStripe(server, applyStripe)
 
+  // Self-hosted: Up/Down from Uptime Kuma or Gatus, linked to items.
+  const uptime = useUptime(server)
+
   // Self-hosted: changes found by the server's scheduled domain watch.
   const [serverChanges, setServerChanges] = useState({})
   const hasServer = Boolean(server)
@@ -769,6 +773,7 @@ function App({ server = null }) {
   }
 
   return (
+    <UptimeContext.Provider value={uptime.byItem}>
     <div className="app-shell">
       <a className="skip-link" href="#main-content">Skip to content</a>
       <aside className="sidebar">
@@ -882,6 +887,7 @@ function App({ server = null }) {
             records={records}
             flatRecords={flatRecords}
             serverChanges={serverChanges}
+            uptime={uptime.byItem}
             displayCurrency={displayCurrency}
             money={money}
             fromUsd={fromUsd}
@@ -959,6 +965,7 @@ function App({ server = null }) {
             records={records}
             flatRecords={flatRecords}
             serverChanges={serverChanges}
+            uptime={uptime.byItem}
             setActivePage={setActivePage}
           />
         )}
@@ -1079,6 +1086,7 @@ function App({ server = null }) {
             server={server}
             stripe={stripe}
             onDomainChanges={setServerChanges}
+            uptime={uptime}
             csvImport={<CsvImport records={records} onImport={importCsvRecords} />}
             getHandover={() => ({
               data: getHoldingsData(records, toUsd),
@@ -1149,6 +1157,7 @@ function App({ server = null }) {
 
       </Suspense>
     </div>
+    </UptimeContext.Provider>
   )
 }
 
@@ -1288,6 +1297,7 @@ function SettingsView({
   getHandover,
   onDomainChanges,
   csvImport,
+  uptime,
 }) {
   const importInput = useRef(null)
 
@@ -1299,7 +1309,7 @@ function SettingsView({
     <section className="page-content settings-grid">
       {server && (
         <Suspense fallback={null}>
-          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} projects={getHandover().data.projects} onDomainChanges={onDomainChanges} />
+          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} projects={getHandover().data.projects} onDomainChanges={onDomainChanges} uptime={uptime} />
         </Suspense>
       )}
 
@@ -1365,12 +1375,12 @@ function SettingsView({
       {!server && (
         <div className="panel settings-wide">
           <div className="panel-heading">
-            <h2>Notifications and dead-man&apos;s switch</h2>
+            <h2>More with your own server</h2>
             <p>
-              Reminders by email, webhook (Slack, Discord) or ntfy before things renew or expire, and an optional
-              dead-man&apos;s switch that sends your locked handover file to someone you trust if you stop checking in. They
-              need the optional self-hosted server, because a browser tab can&apos;t send anything while it&apos;s closed. See
-              docs/self-hosting.md.
+              Reminders by email, webhook (Slack, Discord) or ntfy before things renew or expire, an optional dead-man&apos;s
+              switch that sends your locked handover file to someone you trust if you stop checking in, scheduled domain
+              watch, a calendar subscription link, and Up/Down from your Uptime Kuma or Gatus. They need the optional
+              self-hosted server, because a browser tab can&apos;t do these while it&apos;s closed. See docs/self-hosting.md.
             </p>
           </div>
         </div>

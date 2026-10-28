@@ -167,9 +167,26 @@ const CHANGE_LABELS = {
   expires: 'Expiry date moved earlier',
 }
 
-export function getAttentionItems(records, flatRecords, serverChanges = {}) {
+export function getAttentionItems(records, flatRecords, serverChanges = {}, uptime = {}) {
   const items = []
   const add = (item) => items.push(item)
+
+  // Linked uptime monitors that are down right now (self-hosted only).
+  for (const [moduleKey, list] of [['servers', records.servers], ['domains', records.domains], ['projects', records.projects || []]]) {
+    list.forEach((record) => {
+      const monitor = uptime[record.id]
+      if (monitor?.status !== 'down') return
+      add({
+        id: `uptime-down-${record.id}`,
+        priority: 'critical',
+        label: 'Down right now',
+        detail: record.name,
+        action: `${monitor.name} reports it down. Check it, or see your status page.`,
+        moduleKey,
+        recordId: record.id,
+      })
+    })
+  }
 
   records.domains.forEach((domain) => {
     recentHighChanges(domain, serverChanges).forEach((change) => {

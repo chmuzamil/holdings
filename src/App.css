@@ -986,3 +986,10 @@ option {
 .runbook-warning {
   color: var(--warning-text);
 }
+
+.status-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}

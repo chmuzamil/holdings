@@ -8,9 +8,9 @@ import '../ui/ui.css'
 
 const URGENT = new Set(['critical', 'warning'])
 
-export function DashboardView({ records, flatRecords, displayCurrency, money, fromUsd, toUsd, setActivePage, serverChanges }) {
+export function DashboardView({ records, flatRecords, displayCurrency, money, fromUsd, toUsd, setActivePage, serverChanges, uptime }) {
   const ledger = getLedger(records, toUsd)
-  const attention = getAttentionItems(records, flatRecords, serverChanges)
+  const attention = getAttentionItems(records, flatRecords, serverChanges, uptime)
   const urgent = attention.filter((item) => URGENT.has(item.priority))
   const show = (usd) => money(fromUsd(usd, displayCurrency), displayCurrency)
 

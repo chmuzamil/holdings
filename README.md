@@ -43,6 +43,7 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Timeline** built only from real dates: when you added things, when repos were created, when domains were registered.
 - **Costs in USD**, with an optional second display currency. Its rate is fetched daily from [ExchangeRate-API](https://www.exchangerate-api.com).
 - **Handover and exit packs**: a locked "if I'm unavailable" file for someone you trust (opens offline in any browser with a passphrase, never contains passwords or keys), and an asset register with a transfer checklist for selling a project. Add **runbooks** in Markdown, one for everything and one per project, saying what to do step by step; they go into both packs.
+- **Uptime status** (self-hosted, optional): already run Uptime Kuma or Gatus? See Up or Down next to your servers, domains and projects, and down items on the Attention page.
 - **Self-hosting** (optional): one Docker container with a password and two-step login, your data saved on your server and available in every browser.
 - **Revenue from Stripe** (self-hosted): link Stripe products to a project and its monthly revenue fills itself in, with a read-only key.
 - **MCP server** so Claude, Cursor and other agents can answer questions about your portfolio, read-only.
@@ -106,6 +107,7 @@ Open http://localhost:8080, enter the setup code and pick a password. You can ad
   - `open.er-api.com`, once a day, if you picked a second currency or Stripe reports revenue in a currency other than USD
   - `api.stripe.com`, from your server only, if you connect Stripe (read-only key)
   - your own server (or `npm run api`), when you run a DNS check. It queries DNS, IANA's registry directory and the domain's public registry (RDAP).
+- With the self-hosted server and uptime status turned on, your server reads your own Uptime Kuma or Gatus status page once a minute while Holdings is open.
 - With the self-hosted server and domain watch turned on, your server runs the same DNS and registry lookups for your domains on the schedule you choose.
 - With the self-hosted server, a calendar subscription link (if you make one) lets your calendar app read your renewal dates from your server. It can read nothing else, and you can turn it off at any time.
 - No analytics, no telemetry, no third-party scripts, fonts or icons.
@@ -142,7 +144,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 **v0.3: it watches for you** (in progress)
 - ✅ **Domain safety checks**: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC, each with the next step.
 - ✅ **Clean-up suggestions**: what you pay for that no project uses, what only archived projects use, duplicate subscriptions, and things marked cancelled that still renew, with the possible saving.
-- **Uptime Kuma / Gatus status**: up or down next to each server and project, read from your own instance.
+- ✅ **Uptime Kuma / Gatus status** (self-hosted, optional): Up or Down next to each server, domain and project, read from your own status page.
 - ✅ **Notifications** (self-hosted, optional): renewals and expiries by email, webhook (Slack, Discord) or ntfy, each switched on separately.
 - ✅ **Dead-man's switch** (self-hosted, optional): if you don't check in for a while, the person you chose gets your locked handover file. Reminders come with a one-click check-in link first.
 - ✅ **Calendar (.ics)**: renewals and expiries in your calendar app, as a download or (self-hosted) a private subscription link.

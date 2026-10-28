@@ -134,7 +134,7 @@ If you already run [Uptime Kuma](https://github.com/louislam/uptime-kuma) or [Ga
 - **Uptime Kuma**: enter its address and the name of a status page (the part after `/status/`). Only monitors on that status page are shown.
 - **Gatus**: enter its address.
 
-Holdings reads the public status page data (no login or API key), from your server at most once a minute. Then link each monitor to the server, domain or project it watches; monitors with the same name are linked for you.
+Holdings reads the public status page data (no login or API key), from your server at most once a minute while Holdings is open. Monitors named like one of your servers, domains or projects are linked for you; link the rest in the list below the switch. Linked items then show **Up**, **Down**, **Checking** or **In maintenance**, and anything down appears on the Attention page.
 
 ## Dead-man's switch
 
