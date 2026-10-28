@@ -1,10 +1,10 @@
 # Holdings
 
-**Everything your side projects run on, in one place.** Domains, servers, repos, accounts and subscriptions, grouped by project, with what each project costs and what's about to expire.
+**Everything your side projects run on, in one place.** Domains, servers, repos, accounts, subscriptions, keys and cards, grouped by project, with what each project costs and earns, what's about to expire, and what breaks if something stops.
 
 [![CI](https://github.com/chmuzamil/holdings/actions/workflows/ci.yml/badge.svg)](https://github.com/chmuzamil/holdings/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
-![Status: early](https://img.shields.io/badge/status-early%20(v0.1)-f59e0b)
+[![Release](https://img.shields.io/github/v/release/chmuzamil/holdings?color=0ea5e9)](https://github.com/chmuzamil/holdings/releases/latest)
 
 **[Try the live demo →](https://holdings.chaudhery.com)** It uses made-up data, and anything you change stays in your browser.
 
@@ -14,7 +14,7 @@ If you run a handful of side projects, you probably have 20 domains at three reg
 
 It runs entirely in your browser. No account, no tracking, no server required. If you want it on every device, run it on your own server with one Docker command and a login.
 
-> **Status:** v0.2. The asset register, "what breaks if…", the expiry radar, handover and exit packs, self-hosting with a login, Stripe revenue and an MCP server for AI agents all work today. Still young: feedback and issues are very welcome.
+> **Status:** v0.2, with v0.3 under way. The asset register, "what breaks if…", the expiry radar, handover and exit packs, self-hosting with a login, Stripe revenue and an MCP server for AI agents all work today. Still young: feedback and issues are very welcome.
 
 ## Who it's for
 
@@ -133,9 +133,24 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **MCP server** (read-only), so Claude, Cursor and other agents can answer questions like "what renews this month?" or "what breaks if this server dies?". It reads a JSON export, or live data from the self-hosted server with a read-only access token. See [docs/mcp.md](docs/mcp.md).
 - ✅ **Self-hosted mode**: one Docker container (Node + SQLite) with a login (password plus optional two-step codes) and saving to your server. Scheduled checks and notifications come next.
 
-**v0.3**: ✅ domain safety checks (transfer lock, DNSSEC, SPF, DMARC), subscription clean-up suggestions, Uptime Kuma / Gatus status import, scheduled checks and notifications (self-hosted), dead-man's switch, registrar and Cloudflare importers.
+**v0.3: it watches for you** (in progress)
+- ✅ **Domain safety checks**: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC, each with the next step.
+- **Subscription clean-up**: what you pay for that no project uses, duplicates, and renewals for archived projects.
+- **Uptime Kuma / Gatus status**: up or down next to each server and project, read from your own instance.
+- **Scheduled checks and notifications** (self-hosted): renewals, expiring keys and cards, failed safety checks, by webhook, ntfy or your own email.
+- **Dead-man's switch**: if you don't check in for a while, the person you chose gets your locked handover file.
 
-**Later**: verified backups via [BackupProof](https://github.com/chmuzamil/BackupProof), read-only second user.
+**v0.4: less typing**
+- Read-only importers for Cloudflare, registrars with an API (Porkbun, Namecheap, Spaceship) and Hetzner / DigitalOcean servers.
+- Lemon Squeezy and Paddle revenue, next to Stripe.
+- CSV import for the spreadsheet you already keep.
+
+**v0.5: sharing**
+- A read-only second user: a co-founder, an accountant, or a buyer during a sale.
+- Verified backups via [BackupProof](https://github.com/chmuzamil/BackupProof).
+- A read-only data room link for the exit pack, with an expiry date.
+
+**Not planned, on purpose**: storing real secrets (Holdings keeps names, dates and where things live, never the key itself); uptime monitoring (Uptime Kuma and Gatus do it well, so Holdings reads them); a hosted multi-user service.
 
 ## Development
 

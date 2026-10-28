@@ -1,7 +1,7 @@
 {
   "name": "@holdings/core",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Holdings data model, migration and cost engine, shared by the app, server and MCP server.",
   "type": "module",
   "exports": {

@@ -1,10 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 (2026-10-29)
+
+Bug fixes, and the first v0.3 feature: domain safety checks.
 
 ### Added
 - **Domain safety checks**: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC, each with what to do next. Shown in a domain's details, with a count on its card. DKIM isn't checked (it needs your mail provider's selector).
 - The DNS check now also reads the domain's DMARC record and whether the registry says it is signed with DNSSEC.
+
+### Changed
+- Demo repos link to the hosted demo instead of a placeholder GitHub organisation.
 
 ### Fixed
 - A repo could disappear from its project when an imported GitHub repo and a hand-added record for the same URL were merged. Links now move to the record that is kept, and links from both copies are kept.
