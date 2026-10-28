@@ -139,7 +139,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **Domain safety checks**: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC, each with the next step.
 - ✅ **Clean-up suggestions**: what you pay for that no project uses, what only archived projects use, duplicate subscriptions, and things marked cancelled that still renew, with the possible saving.
 - **Uptime Kuma / Gatus status**: up or down next to each server and project, read from your own instance.
-- **Scheduled checks and notifications** (self-hosted): renewals, expiring keys and cards, failed safety checks, by webhook, ntfy or your own email.
+- ✅ **Notifications** (self-hosted, optional): renewals and expiries by email, webhook (Slack, Discord) or ntfy, each switched on separately.
 - **Dead-man's switch**: if you don't check in for a while, the person you chose gets your locked handover file.
 
 **v0.4: less typing**
