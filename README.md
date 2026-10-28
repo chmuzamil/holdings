@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/chmuzamil/holdings/actions/workflows/ci.yml/badge.svg)](https://github.com/chmuzamil/holdings/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/chmuzamil/holdings?color=0ea5e9)](https://github.com/chmuzamil/holdings/releases/latest)
+[![Release](https://img.shields.io/github/v/release/chmuzamil/holdings?color=0ea5e9&cacheSeconds=1800)](https://github.com/chmuzamil/holdings/releases/latest)
 [![Live demo](https://img.shields.io/badge/demo-holdings.chaudhery.com-7dd3fc)](https://holdings.chaudhery.com)
 
 **[Try the live demo →](https://holdings.chaudhery.com)** It uses made-up data, and anything you change stays in your browser.
