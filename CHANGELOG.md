@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-10-29)
+
+Holdings watches for you: it tells you what needs doing, what changed and what you could stop paying for, and can hand over if you can't.
 
 ### Added
 - **Uptime status** (self-hosted, optional): connect your Uptime Kuma status page or Gatus in Settings. Monitors named like a server, domain or project are linked for you; link the rest by hand. Linked items show Up, Down, Checking or In maintenance, refreshed every minute, and down items appear on the Attention page.

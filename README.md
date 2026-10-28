@@ -15,7 +15,7 @@ If you run a handful of side projects, you probably have 20 domains at three reg
 
 It runs entirely in your browser. No account, no tracking, no server required. If you want it on every device, run it on your own server with one Docker command and a login.
 
-> **Status:** v0.2, with v0.3 under way. The asset register, "what breaks if…", the expiry radar, handover and exit packs, self-hosting with a login, Stripe revenue and an MCP server for AI agents all work today. Still young: feedback and issues are very welcome.
+> **Status:** v0.3. On top of the asset register, "what breaks if…", the expiry radar, handover and exit packs, self-hosting, Stripe revenue and the MCP server, Holdings now watches for you: domain safety checks and change watch, clean-up suggestions and stale projects, a calendar feed, CSV import, runbooks, and (self-hosted) notifications, uptime status and a dead-man's switch. Still young: feedback and issues are very welcome.
 
 ## Who it's for
 
@@ -56,6 +56,8 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 | ![Projects: cost, revenue and profit per project](docs/screenshots/projects.png) | ![What breaks if a payment card stops](docs/screenshots/what-if.png) |
 | **Domains** | **Map** |
 | ![Domains with renewal dates and DNS checks](docs/screenshots/domains.png) | ![Map of what each project runs on](docs/screenshots/infrastructure-map.png) |
+| **Insights** | **Expiring** |
+| ![Clean-up suggestions: unused items and a stale project](docs/screenshots/insights.png) | ![Renewals and expiries with a calendar download](docs/screenshots/expiring.png) |
 
 ## Quick start
 
@@ -141,7 +143,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **MCP server** (read-only), so Claude, Cursor and other agents can answer questions like "what renews this month?" or "what breaks if this server dies?". It reads a JSON export, or live data from the self-hosted server with a read-only access token. See [docs/mcp.md](docs/mcp.md).
 - ✅ **Self-hosted mode**: one Docker container (Node + SQLite) with a login (password plus optional two-step codes) and saving to your server. Scheduled checks and notifications come next.
 
-**v0.3: it watches for you** (in progress)
+**v0.3: it watches for you** (released)
 - ✅ **Domain safety checks**: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC, each with the next step.
 - ✅ **Clean-up suggestions**: what you pay for that no project uses, what only archived projects use, duplicate subscriptions, and things marked cancelled that still renew, with the possible saving.
 - ✅ **Uptime Kuma / Gatus status** (self-hosted, optional): Up or Down next to each server, domain and project, read from your own status page.
