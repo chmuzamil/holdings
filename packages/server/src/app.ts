@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { hashPassword, hashToken, newToken, sameString, seal, unseal, verifyPassword } from './crypto'
 import type { Store } from './db'
+import { createNotifier, SettingsError, type Notifier } from './notify'
 import { serveStatic } from './static'
 import { checkStripeKey, fetchStripeRevenue, keyHint, StripeError, type FetchLike, type StripeRevenue } from './stripe'
 import { newTotpSecret, otpauthUri, verifyTotp } from './totp'
@@ -37,6 +38,8 @@ export interface AppOptions {
   lookup?: (domain: string) => Promise<unknown>
   /** fetch() used for Stripe; replaced in tests. */
   stripeFetch?: FetchLike
+  /** Sends notifications; made here unless given (index.ts shares it with the daily check). */
+  notifier?: Notifier
 }
 
 class HttpError extends Error {
@@ -62,6 +65,15 @@ export function createApp(options: AppOptions) {
   const lookup = options.lookup ?? ((domain: string) => lookupDomain(domain))
   const allowLookup = createRateLimiter({ limit: 30, windowMs: 60_000, now })
   const failures = createFailureCounter(now)
+  const notifier = options.notifier ?? createNotifier({ store, secretKey, now: () => new Date(now()) })
+  const settingsError = async <T>(work: () => T | Promise<T>): Promise<T> => {
+    try {
+      return await work()
+    } catch (error) {
+      if (error instanceof SettingsError) throw new HttpError(400, error.message)
+      throw error
+    }
+  }
   let revenueCache: { at: number; revenue: StripeRevenue } | null = null
 
   async function stripeRevenue(key: string, refresh: boolean) {
@@ -392,6 +404,32 @@ export function createApp(options: AppOptions) {
       if (!store.deleteToken(String(input.id ?? ''))) throw new HttpError(404, 'No such token.')
       store.audit('token_deleted', context.ip)
       return { ok: true }
+    },
+
+    'GET /api/notifications': (context) => {
+      requireSession(context)
+      return notifier.settings()
+    },
+
+    'PUT /api/notifications': async (context) => {
+      requireSession(context)
+      const input = await context.body()
+      const saved = await settingsError(() => notifier.save(input))
+      store.audit('notifications_changed', context.ip)
+      return saved
+    },
+
+    'POST /api/notifications/test': async (context) => {
+      requireSession(context)
+      const { channel } = await context.body()
+      if (channel !== 'email' && channel !== 'webhook' && channel !== 'ntfy') throw new HttpError(400, 'Unknown channel.')
+      await settingsError(() => notifier.test(channel))
+      return { ok: true }
+    },
+
+    'POST /api/notifications/check': async (context) => {
+      requireSession(context)
+      return notifier.check()
     },
 
     'GET /api/domain-lookup': async (context) => {

@@ -3,5 +3,11 @@
   "private": true,
   "version": "0.2.1",
   "description": "Optional self-hosted server for Holdings: login with password and TOTP, saved data, domain lookups.",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "nodemailer": "10.0.16"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "8.0.2"
+  }
 }

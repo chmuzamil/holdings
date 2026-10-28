@@ -95,6 +95,20 @@ The server can read each product's monthly recurring revenue from Stripe, so you
 
 What it counts: active subscriptions, turned into a monthly amount (a yearly plan counts a twelfth each month), before discounts and tax. One-off payments, and metered or tiered prices, aren't included. The key is encrypted on your server and is never sent back to the browser. Only your server talks to `api.stripe.com`, and at most once every 10 minutes unless you press refresh.
 
+## Notifications
+
+The server can tell you when something is about to renew or expire: domains, servers, subscriptions, certificates, API keys and payment cards. It checks once a day (from 8:00 server time) and sends one message listing what reached a milestone: 30, 14 or 7 days ahead (you choose), then 7 days, 1 day, and overdue. Each milestone is sent once.
+
+Everything is off until you turn it on in **Settings → Notifications**. Use any or all of:
+
+| Channel | What you need |
+|---|---|
+| **Email** | Your own mail server or provider's SMTP details (host, port, login). The password is encrypted on your server and never shown again. |
+| **Webhook** | A Slack or Discord incoming webhook, or any address that accepts JSON. |
+| **ntfy** | A topic on [ntfy.sh](https://ntfy.sh) or your own ntfy server, for push notifications on your phone. Anyone who knows a public topic can read it, so pick one that is hard to guess, or use a token. |
+
+Each channel has a **Send test** button. Messages go only to the addresses you enter.
+
 ## Two-step login
 
 After signing in, turn on two-step login in Settings. Scan the QR code with any authenticator app (1Password, Bitwarden, Google Authenticator, Aegis, and others), then enter a code to confirm.
