@@ -1,4 +1,4 @@
-import { buildLedger, impactOf, localDate, monthlyCostUsd, summarizeCosts, type Asset, type HoldingsData, type Project } from '@holdings/core'
+import { buildLedger, cleanupSuggestions, impactOf, localDate, monthlyCostUsd, summarizeCosts, type Asset, type HoldingsData, type Project } from '@holdings/core'
 import { ToolError, type Tool } from './protocol'
 
 const KINDS = ['domain', 'server', 'repo', 'account', 'subscription', 'credential', 'card', 'certificate', 'other']
@@ -233,6 +233,27 @@ export function createTools(load: () => Promise<HoldingsData>, { now = () => new
         const data = await load()
         const days = numberArg(args.days, 30, 1, 365)
         return { asOf: today(), days, items: upcoming(data, today(), days) }
+      },
+    },
+    {
+      name: 'cleanup_suggestions',
+      title: 'Clean-up suggestions',
+      description:
+        'Paid items the owner may not need: not used by any project, only used by archived projects, several subscriptions with the same provider, or marked cancelled but still showing a renewal. Includes the monthly saving in US dollars where it is known. These are questions for the owner, not verdicts: an unlinked subscription may be for everything.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      async run() {
+        const data = await load()
+        const cleanup = cleanupSuggestions(data, today())
+        return {
+          asOf: today(),
+          possibleSavingMonthlyUsd: cleanup.savingMonthlyUsd,
+          suggestions: cleanup.suggestions.map((item) => ({
+            reason: item.reason,
+            items: item.assets.map((asset) => ({ name: asset.name, kind: asset.kind, provider: asset.provider })),
+            savingMonthlyUsd: item.savingMonthlyUsd === null ? null : round(item.savingMonthlyUsd),
+            ...(item.projects.length ? { projects: item.projects } : {}),
+          })),
+        }
       },
     },
     {

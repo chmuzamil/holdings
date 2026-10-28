@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Clean-up suggestions** on the Insights page: paid items no project uses, items only archived projects use, several subscriptions with the same provider, and items marked cancelled that still show a renewal, with the possible monthly saving. Items that are for everything can be marked so they stop showing up, and shown again later.
+- MCP server: `cleanup_suggestions` tool.
+- Settings shows the installed version and build, with links to what is new and the source.
+
 ## 0.2.1 (2026-10-29)
 
 Bug fixes, and the first v0.3 feature: domain safety checks.

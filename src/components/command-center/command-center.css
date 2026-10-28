@@ -441,3 +441,28 @@ button.impact-item:hover strong {
     grid-template-columns: 1fr;
   }
 }
+
+.cleanup-summary {
+  margin: 0 0 4px;
+  color: var(--text-muted);
+}
+
+.cleanup-summary strong {
+  color: var(--text-strong);
+}
+
+.cleanup-item {
+  align-items: start;
+  line-height: 1.5;
+}
+
+.cleanup-item strong {
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.cleanup-saving {
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

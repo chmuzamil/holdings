@@ -5,6 +5,7 @@ Holdings includes a small [MCP](https://modelcontextprotocol.io) server, so Clau
 - "What renews in the next two weeks, and which projects does it affect?"
 - "Which project makes the least money for what it costs?"
 - "What breaks if my Hetzner server goes down?"
+- "What am I paying for that I could cancel?"
 - "Which domains are paid with the card that expires in December?"
 
 It is **read-only**: it has no tools that change anything, and it never writes to your files. It runs on your machine and only reads the file you point it at. Nothing is sent anywhere except to the agent you connect it to.
@@ -52,6 +53,7 @@ It is **read-only**: it has no tools that change anything, and it never writes t
 | `get_project` | One project in detail: cost lines, every item it uses, how they depend on each other. |
 | `list_items` | Domains, servers, repos, accounts, subscriptions, keys, certificates and cards, filtered by kind or text. |
 | `upcoming_renewals` | What renews or expires in the next N days, including anything overdue. |
+| `cleanup_suggestions` | Paid items you may not need (no project uses them, only archived projects do, duplicates), with the possible saving. |
 | `what_breaks_if` | What stops if one item stops, which projects are affected and the revenue at risk. |
 
 All amounts are in US dollars, the same numbers the app shows. Holdings stores metadata only (names, providers, dates, costs), never passwords, keys or card numbers, so there are none to leak.
