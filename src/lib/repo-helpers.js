@@ -325,6 +325,8 @@ function repoRecordPriority(record) {
   return score
 }
 
+const union = (a, b) => [...new Set([...(a || []), ...(b || [])])]
+
 export function mergeRepoRecords(primary, secondary) {
   const keep = normalizeRepoRecord(primary)
   const merge = normalizeRepoRecord(secondary)
@@ -344,9 +346,10 @@ export function mergeRepoRecords(primary, secondary) {
     projectStatus: keep.projectStatus,
     devStatus: keep.devStatus,
     notes: keep.notes || merge.notes,
-    connectedProjectIds: keep.connectedProjectIds?.length ? keep.connectedProjectIds : merge.connectedProjectIds,
-    connectedDomainIds: keep.connectedDomainIds?.length ? keep.connectedDomainIds : merge.connectedDomainIds,
-    connectedServerIds: keep.connectedServerIds?.length ? keep.connectedServerIds : merge.connectedServerIds,
+    // Links from both copies are kept, so merging never drops a connection.
+    connectedProjectIds: union(keep.connectedProjectIds, merge.connectedProjectIds),
+    connectedDomainIds: union(keep.connectedDomainIds, merge.connectedDomainIds),
+    connectedServerIds: union(keep.connectedServerIds, merge.connectedServerIds),
     connectedDomain: keep.connectedDomain || merge.connectedDomain,
     deployment: keep.deployment || merge.deployment,
     database: keep.database || merge.database,
@@ -419,6 +422,37 @@ export function dedupeRepoRecords(repos) {
   })
 
   return deduped
+}
+
+/**
+ * After duplicate repos are merged, points every link that used a merged-away
+ * repo at the one that was kept: a project's repoIds, and connectedRepoIds on
+ * domains, servers and anything else. `before` is the repo list before
+ * merging. Returns the same object when nothing changed.
+ */
+export function remapRepoLinks(records, before) {
+  const kept = new Set(records.repos.map((repo) => repo.id))
+  const keptByKey = new Map(records.repos.map((repo) => [getRepoIdentityKey(repo), repo.id]).filter(([key]) => key))
+  const remap = new Map()
+  before.forEach((repo) => {
+    if (kept.has(repo.id)) return
+    const id = keptByKey.get(getRepoIdentityKey(repo))
+    if (id) remap.set(repo.id, id)
+  })
+  if (!remap.size) return records
+
+  const fix = (ids) => [...new Set(ids.map((id) => remap.get(id) ?? id))]
+  const fixRecord = (record) => {
+    let next = record
+    for (const field of ['repoIds', 'connectedRepoIds']) {
+      if (Array.isArray(record[field]) && record[field].some((id) => remap.has(id))) next = { ...next, [field]: fix(record[field]) }
+    }
+    return next
+  }
+  return Object.fromEntries(Object.entries(records).map(([moduleKey, items]) => [
+    moduleKey,
+    moduleKey === 'repos' || !Array.isArray(items) ? items : items.map(fixRecord),
+  ]))
 }
 
 export function mergeGitHubImportedRepos(currentRepos, importedRepos) {
