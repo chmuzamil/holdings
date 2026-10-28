@@ -70,7 +70,7 @@ describe('protocol', () => {
 
     const list = (await mcp.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list' })) as any
     expect(list.result.tools.map((tool: { name: string }) => tool.name)).toEqual([
-      'portfolio_overview', 'list_projects', 'get_project', 'list_items', 'upcoming_renewals', 'what_breaks_if',
+      'portfolio_overview', 'list_projects', 'get_project', 'list_items', 'upcoming_renewals', 'cleanup_suggestions', 'what_breaks_if',
     ])
     expect(list.result.tools.every((tool: any) => tool.annotations.readOnlyHint && !tool.annotations.destructiveHint)).toBe(true)
   })
@@ -148,6 +148,13 @@ describe('tools', () => {
     expect(later.data.items.at(-1)).toMatchObject({ name: 'Main VPS', renewsOn: '2027-01-01' })
     expect(later.data.items).toContainEqual(expect.objectContaining({ name: 'Visa ending 4242', expiresOn: '2026-12-31' }))
     expect((await callTool('upcoming_renewals', { days: 9999 })).isError).toBe(true)
+  })
+
+  it('cleanup_suggestions lists paid items no project uses, with the saving', async () => {
+    const { data } = await callTool('cleanup_suggestions')
+    // old.example is the only paid item outside a project: $10 a year.
+    expect(data.possibleSavingMonthlyUsd).toBe(0.83)
+    expect(data.suggestions).toEqual([{ reason: 'unused', items: [{ name: 'old.example', kind: 'domain', provider: 'Namecheap' }], savingMonthlyUsd: 0.83 }])
   })
 
   it('what_breaks_if follows dependencies to projects and revenue', async () => {

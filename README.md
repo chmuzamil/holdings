@@ -35,6 +35,7 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Domains** with subdomains attached to servers, notes, renewal dates, and an optional live DNS + registry (RDAP) check. **Safety checks** then show what to fix and how: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC.
 - **Servers, repos, accounts and subscriptions** with costs, renewal dates and notes.
 - **GitHub import**: fetch your repos by username. An optional token is kept in memory only, never saved.
+- **Clean-up suggestions** on the Insights page: paid items no project uses, items only archived projects use, duplicate subscriptions, with what you could save.
 - **Attention list**: what is overdue or due soon, and what to tidy up, each with the next step to take.
 - **Timeline** built only from real dates: when you added things, when repos were created, when domains were registered.
 - **Costs in USD**, with an optional second display currency. Its rate is fetched daily from [ExchangeRate-API](https://www.exchangerate-api.com).
@@ -135,7 +136,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 
 **v0.3: it watches for you** (in progress)
 - ✅ **Domain safety checks**: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC, each with the next step.
-- **Subscription clean-up**: what you pay for that no project uses, duplicates, and renewals for archived projects.
+- ✅ **Clean-up suggestions**: what you pay for that no project uses, what only archived projects use, duplicate subscriptions, and things marked cancelled that still renew, with the possible saving.
 - **Uptime Kuma / Gatus status**: up or down next to each server and project, read from your own instance.
 - **Scheduled checks and notifications** (self-hosted): renewals, expiring keys and cards, failed safety checks, by webhook, ntfy or your own email.
 - **Dead-man's switch**: if you don't check in for a while, the person you chose gets your locked handover file.
