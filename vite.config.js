@@ -1,5 +1,17 @@
+import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+
+// Shown in Settings, so you can tell which version is running.
+const APP_VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version
+function gitCommit() {
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+  } catch {
+    return '' // e.g. a Docker build, which has no .git folder
+  }
+}
 
 const apiPort = process.env.HOLDINGS_API_PORT || process.env.FOUNDER_OS_API_PORT || 4180
 
@@ -71,6 +83,10 @@ function siteMeta(mode) {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [react(), siteMeta(mode)],
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION),
+    'import.meta.env.VITE_APP_COMMIT': JSON.stringify(gitCommit()),
+  },
   server: {
     // `npm run api` serves domain lookups; proxy them so the app stays same-origin.
     proxy: {

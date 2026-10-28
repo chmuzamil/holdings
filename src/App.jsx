@@ -1336,7 +1336,36 @@ function SettingsView({
           <p className="settings-status" role="status" aria-live="polite">{githubSyncStatus}</p>
         </div>
       </div>
+
+      <AboutPanel />
     </section>
+  )
+}
+
+const APP_VERSION = import.meta.env.VITE_APP_VERSION
+const APP_COMMIT = import.meta.env.VITE_APP_COMMIT
+const REPO_URL = 'https://github.com/chmuzamil/holdings'
+
+function AboutPanel() {
+  return (
+    <div className="panel settings-wide">
+      <div className="panel-heading">
+        <h2>About</h2>
+        <p>
+          Holdings {APP_VERSION}
+          {APP_COMMIT && (
+            <>
+              {' · build '}
+              <a href={`${REPO_URL}/commit/${APP_COMMIT}`} target="_blank" rel="noopener">{APP_COMMIT}</a>
+            </>
+          )}
+          {' · '}
+          <a href={`${REPO_URL}/releases/tag/v${APP_VERSION}`} target="_blank" rel="noopener">What&apos;s new</a>
+          {' · '}
+          <a href={REPO_URL} target="_blank" rel="noopener">Source on GitHub</a>
+        </p>
+      </div>
+    </div>
   )
 }
 
