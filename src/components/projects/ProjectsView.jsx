@@ -13,8 +13,9 @@ import {
   getLedger,
   getLedgerRow,
   normalizeProjectRecord,
-  projectStatuses,
-  projectStatusVariant,
+  projectStages,
+  stageName,
+  stageVariant,
 } from '../../lib/project-helpers'
 import { resolveProjectAssets } from '../../lib/asset-helpers'
 import './projects.css'
@@ -63,9 +64,9 @@ function ProjectCard({
       <div className="project-card-head">
         <div className="project-card-title">
           <strong>{project.name}</strong>
-          <small>{project.category} · {project.status}</small>
+          <small>{project.category} · {stageName(project.stage)}</small>
         </div>
-        <Badge variant={projectStatusVariant(project.status)}>{project.status}</Badge>
+        <Badge variant={stageVariant(project.stage)}>{stageName(project.stage)}</Badge>
       </div>
 
       {gaps.length > 0 && (
@@ -104,6 +105,7 @@ function ProjectCard({
 
 export function ProjectsView({
   records,
+  onWorkedToday,
   displayCurrency,
   money,
   toUsd,
@@ -128,9 +130,9 @@ export function ProjectsView({
   const visibleProjects = useMemo(() => {
     return [...normalized]
       .filter((project) => {
-        const haystack = `${project.name} ${project.description} ${project.category} ${project.status}`.toLowerCase()
+        const haystack = `${project.name} ${project.description} ${project.category} ${stageName(project.stage)}`.toLowerCase()
         const matchesSearch = haystack.includes(query.toLowerCase())
-        const matchesStatus = statusFilter === 'All' || project.status === statusFilter
+        const matchesStatus = statusFilter === 'All' || project.stage === statusFilter
         return matchesSearch && matchesStatus
       })
       .sort((a, b) => a.name.localeCompare(b.name))
@@ -169,9 +171,9 @@ export function ProjectsView({
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search projects" aria-label="Search projects" type="search" />
         </label>
         <label className="select-box">
-          <select aria-label="Filter by status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option>All</option>
-            {projectStatuses.map((status) => <option key={status}>{status}</option>)}
+          <select aria-label="Filter by stage" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="All">All stages</option>
+            {projectStages.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
           </select>
           <ChevronDown size={16} />
         </label>
@@ -219,7 +221,7 @@ export function ProjectsView({
                     <strong>{project.name}</strong>
                     <small>{project.category}</small>
                   </div>
-                  <div><Badge variant={projectStatusVariant(project.status)}>{project.status}</Badge></div>
+                  <div><Badge variant={stageVariant(project.stage)}>{stageName(project.stage)}</Badge></div>
                   <div className="project-asset-cell">{gaps.length ? gaps.map((gap) => gap.label).join(' · ') : 'Nothing missing'}</div>
                   <div className="project-asset-cell">{connected}</div>
                   <div className="project-cost">
@@ -259,6 +261,7 @@ export function ProjectsView({
         fromUsd={fromUsd}
         displayCurrency={displayCurrency}
         monthlyUsd={selectedProject ? computeProjectMonthlyCostUsd(selectedProject, records, toUsd) : 0}
+        onWorkedToday={onWorkedToday}
       />
     </section>
   )

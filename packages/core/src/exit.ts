@@ -1,3 +1,4 @@
+import { activityLabel, lastActivity, stageLabel, type Activity } from './activity'
 import { monthlyCostUsd, summarizeCosts } from './cost'
 import type { Asset, AssetKind, HoldingsData, Project } from './model'
 
@@ -14,6 +15,8 @@ export interface ExitAsset {
 
 export interface ExitPack {
   project: Project
+  /** Newest push to a linked repo, or the date set by hand. */
+  lastActivity: Activity | null
   generatedAt: string
   /** Local calendar date the pack was made. */
   generatedOn: string
@@ -126,6 +129,7 @@ export function buildExitPack(data: HoldingsData, projectId: string, now: Date =
 
   return {
     project,
+    lastActivity: lastActivity(data, project.id),
     generatedAt: now.toISOString(),
     generatedOn: localDate(now),
     monthlyRevenueUsd: project.monthlyRevenueUsd,
@@ -172,6 +176,7 @@ export function exitPackMarkdown(pack: ExitPack): string {
   ]
   if (project.description) lines.push(project.description, '')
   if (project.liveUrl) lines.push(`Live: ${project.liveUrl}`, '')
+  lines.push(`- Stage: ${stageLabel(project.stage)}`, `- Last worked on: ${activityLabel(pack.lastActivity)}`, '')
   lines.push(
     '## Money',
     '',

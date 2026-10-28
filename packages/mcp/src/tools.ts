@@ -1,4 +1,4 @@
-import { buildLedger, cleanupSuggestions, impactOf, localDate, monthlyCostUsd, summarizeCosts, type Asset, type HoldingsData, type Project } from '@holdings/core'
+import { activityLabel, buildLedger, cleanupSuggestions, impactOf, lastActivity, stageLabel, localDate, monthlyCostUsd, summarizeCosts, type Asset, type HoldingsData, type Project } from '@holdings/core'
 import { ToolError, type Tool } from './protocol'
 
 const KINDS = ['domain', 'server', 'repo', 'account', 'subscription', 'credential', 'card', 'certificate', 'other']
@@ -120,25 +120,31 @@ export function createTools(load: () => Promise<HoldingsData>, { now = () => new
       name: 'list_projects',
       title: 'List projects',
       description:
-        'Every project with its status and monthly cost, revenue, profit and margin in US dollars. Shared servers and subscriptions are split between the projects using them. Revenue is null when the project does not track it (which is not the same as earning nothing).',
+        'Every project with its stage (idea, building, launched, maintenance, paused, archived), when it was last worked on, and its monthly cost, revenue, profit and margin in US dollars. Shared servers and subscriptions are split between the projects using them. Revenue is null when the project does not track it (which is not the same as earning nothing).',
       inputSchema: {
         type: 'object',
-        properties: { status: { type: 'string', description: 'Only projects with this status, e.g. production, beta, archived.' } },
+        properties: {
+          status: { type: 'string', description: 'Only projects with this detailed status, e.g. production, beta.' },
+          stage: { type: 'string', enum: ['idea', 'building', 'launched', 'maintenance', 'paused', 'archived'], description: 'Only projects at this stage.' },
+        },
         additionalProperties: false,
       },
       async run(args) {
         const data = await load()
         const ledger = buildLedger(data, summarizeCosts(data))
         const status = typeof args.status === 'string' ? args.status.toLowerCase() : ''
+        const stage = typeof args.stage === 'string' ? args.stage : ''
         return {
           projects: data.projects
-            .filter((project) => !status || project.status === status)
+            .filter((project) => (!status || project.status === status) && (!stage || project.stage === stage))
             .map((project) => {
               const row = ledger.rows.find((item) => item.projectId === project.id)
               return {
                 id: project.id,
                 name: project.name,
                 status: project.status,
+                stage: project.stage,
+                lastActivity: lastActivity(data, project.id),
                 monthlyCostUsd: round(row?.costMonthlyUsd ?? 0),
                 monthlyRevenueUsd: row?.revenueMonthlyUsd ?? null,
                 monthlyProfitUsd: row?.profitMonthlyUsd === null || row?.profitMonthlyUsd === undefined ? null : round(row.profitMonthlyUsd),
@@ -172,6 +178,8 @@ export function createTools(load: () => Promise<HoldingsData>, { now = () => new
           id: project.id,
           name: project.name,
           status: project.status,
+          stage: stageLabel(project.stage),
+          lastWorkedOn: activityLabel(lastActivity(data, project.id)),
           description: project.description || undefined,
           liveUrl: project.liveUrl || undefined,
           notes: project.notes || undefined,
@@ -252,6 +260,7 @@ export function createTools(load: () => Promise<HoldingsData>, { now = () => new
             items: item.assets.map((asset) => ({ name: asset.name, kind: asset.kind, provider: asset.provider })),
             savingMonthlyUsd: item.savingMonthlyUsd === null ? null : round(item.savingMonthlyUsd),
             ...(item.projects.length ? { projects: item.projects } : {}),
+            ...(item.project ? { lastWorkedOn: item.project.lastActivity.date, daysIdle: item.project.daysIdle } : {}),
           })),
         }
       },

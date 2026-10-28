@@ -37,7 +37,8 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Domains** with subdomains attached to servers, notes, renewal dates, and an optional live DNS + registry (RDAP) check. **Safety checks** then show what to fix and how: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC.
 - **Servers, repos, accounts and subscriptions** with costs, renewal dates and notes.
 - **GitHub import**: fetch your repos by username. An optional token is kept in memory only, never saved.
-- **Clean-up suggestions** on the Insights page: paid items no project uses, items only archived projects use, duplicate subscriptions, with what you could save.
+- **Project stages**: idea, building, launched, maintenance, paused or archived, with a filter on the Projects page. Holdings knows when you last worked on a project from your GitHub pushes, or a date you set with one click.
+- **Clean-up suggestions** on the Insights page: paid items no project uses, items only archived projects use, duplicate subscriptions, and stale projects (still costing money but not worked on for 90 days, or what you choose in Settings), with what you could save.
 - **Attention list**: what is overdue or due soon, and what to tidy up, each with the next step to take.
 - **Timeline** built only from real dates: when you added things, when repos were created, when domains were registered.
 - **Costs in USD**, with an optional second display currency. Its rate is fetched daily from [ExchangeRate-API](https://www.exchangerate-api.com).
@@ -144,6 +145,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **Notifications** (self-hosted, optional): renewals and expiries by email, webhook (Slack, Discord) or ntfy, each switched on separately.
 - ✅ **Dead-man's switch** (self-hosted, optional): if you don't check in for a while, the person you chose gets your locked handover file. Reminders come with a one-click check-in link first.
 - ✅ **Calendar (.ics)**: renewals and expiries in your calendar app, as a download or (self-hosted) a private subscription link.
+- ✅ **Project stages and stale projects**: where each project is in its life, when you last worked on it, and a nudge when an idle project still costs money.
 
 **v0.4: less typing**
 - Read-only importers for Cloudflare, registrars with an API (Porkbun, Namecheap, Spaceship) and Hetzner / DigitalOcean servers.

@@ -39,7 +39,7 @@ import {
   normalizeRepoRecord,
   remapRepoLinks,
 } from './lib/repo-helpers'
-import { emptyProjectRecord, getHoldingsData, normalizeProjectRecord } from './lib/project-helpers'
+import { emptyProjectRecord, getHoldingsData, normalizeProjectRecord, withStage } from './lib/project-helpers'
 import { emptyServerRecord, normalizeServerRecord } from './lib/server-helpers'
 import { getSeedRecords, isRecordsEmpty } from './lib/seed-data'
 import { DashboardView } from './components/dashboard/DashboardView'
@@ -583,15 +583,20 @@ function App({ server = null }) {
             }
     setRecords((current) => {
       const next = { ...current }
+      // A project's stage change is dated (and keeps the older status in step).
+      const previous = modal.mode === 'create' ? null : (current[modal.moduleKey] || []).find((item) => item.id === modal.id)
+      const stamped = modal.moduleKey === 'projects' && (!previous || normalizeProjectRecord(previous).stage !== values.stage)
+        ? withStage({ ...values, stageChangedAt: '' }, values.stage)
+        : values
       if (modal.mode === 'create') {
         const now = new Date().toISOString()
         next[modal.moduleKey] = [
-          withoutCurrency({ ...values, id: `${modal.moduleKey}-${crypto.randomUUID()}`, addedAt: now, editedAt: now }),
+          withoutCurrency({ ...stamped, id: `${modal.moduleKey}-${crypto.randomUUID()}`, addedAt: now, editedAt: now }),
           ...(current[modal.moduleKey] || []),
         ]
       } else {
         next[modal.moduleKey] = (current[modal.moduleKey] || []).map((item) =>
-          item.id === modal.id ? withoutCurrency({ ...item, ...values, editedAt: new Date().toISOString() }) : item,
+          item.id === modal.id ? withoutCurrency({ ...item, ...stamped, editedAt: new Date().toISOString() }) : item,
         )
       }
       persistRecords(next)
@@ -896,6 +901,7 @@ function App({ server = null }) {
             money={money}
             fromUsd={fromUsd}
             toUsd={toUsd}
+            staleDays={appSettings.staleDays ?? 90}
             onKeepWithoutProject={(id) => setRecords((current) => Object.fromEntries(
               Object.entries(current).map(([moduleKey, items]) => [
                 moduleKey,
@@ -930,6 +936,12 @@ function App({ server = null }) {
         {activePage === 'projects' && (
           <ProjectsView
             records={records}
+            onWorkedToday={(id) => setRecords((current) => ({
+              ...current,
+              projects: current.projects.map((project) => (project.id === id
+                ? { ...project, lastWorkedOn: new Date().toLocaleDateString('en-CA'), editedAt: new Date().toISOString() }
+                : project)),
+            }))}
             displayCurrency={displayCurrency}
             money={money}
             toUsd={toUsd}
@@ -1293,6 +1305,21 @@ function SettingsView({
         updateSetting={updateSetting}
         ratesStatus={ratesStatus}
       />
+
+      <div className="panel settings-wide">
+        <div className="panel-heading">
+          <h2>Clean-up suggestions</h2>
+          <p>Insights suggests looking at projects that still cost money but haven&apos;t been worked on for a while.</p>
+        </div>
+        <div className="settings-form">
+          <label>
+            <span>A project is stale after</span>
+            <select value={appSettings.staleDays ?? 90} onChange={(event) => updateSetting('staleDays', Number(event.target.value))}>
+              {[30, 60, 90, 180, 365].map((days) => <option key={days} value={days}>{days} days without activity</option>)}
+            </select>
+          </label>
+        </div>
+      </div>
 
       {!server && (
         <div className="panel settings-wide">

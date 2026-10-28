@@ -1,3 +1,4 @@
+import { activityLabel, lastActivity, stageLabel } from './activity'
 import { summarizeCosts } from './cost'
 import { localDate } from './exit'
 import type { Asset, HoldingsData } from './model'
@@ -91,9 +92,10 @@ export function buildHandover(data: HoldingsData, options: HandoverOptions, now:
       project.monthlyRevenueUsd === null ? 'Revenue not tracked' : `Earns ${usd(project.monthlyRevenueUsd)} a month`,
       `costs ${usd(costs.projects.get(project.id)?.monthlyUsd ?? 0)} a month`,
     ].join(', ')
+    const stage = `Stage: ${stageLabel(project.stage)}. Last worked on: ${activityLabel(lastActivity(data, project.id))}.`
     sections.push({
       heading: `Project: ${project.name}`,
-      paragraphs: [project.description, project.liveUrl ? `Live at ${project.liveUrl}.` : '', `${money}.`, project.notes].filter(Boolean),
+      paragraphs: [project.description, project.liveUrl ? `Live at ${project.liveUrl}.` : '', `${money}.`, stage, project.notes].filter(Boolean),
       items: projectAssets.map((asset) => {
         const facts = [asset.provider, keptIn(asset) ? `kept in ${keptIn(asset)}` : '', asset.notes].filter(Boolean)
         return `${asset.name}${facts.length ? `: ${facts.join('. ')}` : ''}`

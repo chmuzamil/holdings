@@ -53,6 +53,24 @@ export type ProjectStatus =
   | 'maintained'
   | 'archived'
 
+/**
+ * Where a project is in its life. Older data only has the more detailed
+ * status, so the stage is derived from it (see stageFromStatus).
+ */
+export type ProjectStage = 'idea' | 'building' | 'launched' | 'maintenance' | 'paused' | 'archived'
+
+export const PROJECT_STAGES: ProjectStage[] = ['idea', 'building', 'launched', 'maintenance', 'paused', 'archived']
+
+export function stageFromStatus(status: string): ProjectStage {
+  const value = status.toLowerCase()
+  if (value === 'idea' || value === 'planning') return 'idea'
+  if (value === 'building') return 'building'
+  if (value === 'mvp' || value === 'beta' || value === 'production') return 'launched'
+  if (value === 'maintained') return 'maintenance'
+  if (value === 'archived') return 'archived'
+  return 'idea'
+}
+
 export interface Project {
   id: string
   name: string
@@ -63,6 +81,11 @@ export interface Project {
   notes: string
   /** Monthly revenue in USD, or null when it isn't tracked (not the same as earning nothing). */
   monthlyRevenueUsd: number | null
+  stage: ProjectStage
+  /** ISO date-time the stage last changed, or '' when unknown. */
+  stageChangedAt: string
+  /** ISO date the owner last worked on it (set by hand), or ''. */
+  lastWorkedOn: string
   /** Kind-specific fields carried over from earlier versions (priority, category, …). */
   details: Record<string, unknown>
   addedAt: string

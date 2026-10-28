@@ -3,6 +3,9 @@
 ## Unreleased
 
 ### Added
+- **Project stages**: idea, building, launched, maintenance, paused, archived. Older projects get a stage from their status (Archived stays archived). The Projects page shows a stage badge and filters by stage, and the stage and when it changed are saved.
+- **Last worked on**: taken from the newest push to a linked GitHub repo, or a date you set (in the project form, or "Worked on it today" in its details).
+- **Stale project** clean-up suggestion: not archived, no activity for 90 days (change it in Settings), still costing money, with the monthly saving. Stage and last activity also appear in the exit pack, handover pack and MCP output.
 - **Calendar (.ics)**: on the Expiry page, download renewals and expiries (all, or one project's) with an optional reminder N days before (7 by default), or add a single item with "Add to calendar". Events are all-day and keep the same ID, so importing again updates them. Self-hosted: a private subscription link in Settings, with its own token that opens the calendar and nothing else, and can be replaced or turned off.
 - **Clean-up suggestions** on the Insights page: paid items no project uses, items only archived projects use, several subscriptions with the same provider, and items marked cancelled that still show a renewal, with the possible monthly saving. Items that are for everything can be marked so they stop showing up, and shown again later.
 - MCP server: `cleanup_suggestions` tool.
@@ -19,6 +22,7 @@ Bug fixes, and the first v0.3 feature: domain safety checks.
 - The DNS check now also reads the domain's DMARC record and whether the registry says it is signed with DNSSEC.
 
 ### Changed
+- The project form and Projects page use the stage instead of the older status. The status is still saved and kept in step, so older exports and tools read it as before.
 - Demo repos link to the hosted demo instead of a placeholder GitHub organisation.
 
 ### Fixed

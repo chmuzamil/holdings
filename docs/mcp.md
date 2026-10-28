@@ -49,11 +49,11 @@ It is **read-only**: it has no tools that change anything, and it never writes t
 | Tool | What it answers |
 |---|---|
 | `portfolio_overview` | Monthly cost, revenue and profit, cost not in any project, item counts, the next renewals. |
-| `list_projects` | Each project's monthly cost (shared items split), revenue, profit and margin. |
+| `list_projects` | Each project's stage, when it was last worked on, and its monthly cost (shared items split), revenue, profit and margin. Filter by stage. |
 | `get_project` | One project in detail: cost lines, every item it uses, how they depend on each other. |
 | `list_items` | Domains, servers, repos, accounts, subscriptions, keys, certificates and cards, filtered by kind or text. |
 | `upcoming_renewals` | What renews or expires in the next N days, including anything overdue. |
-| `cleanup_suggestions` | Paid items you may not need (no project uses them, only archived projects do, duplicates), with the possible saving. |
+| `cleanup_suggestions` | Paid items you may not need (no project uses them, only archived projects do, duplicates) and stale projects, with the possible saving. |
 | `what_breaks_if` | What stops if one item stops, which projects are affected and the revenue at risk. |
 
 All amounts are in US dollars, the same numbers the app shows. Holdings stores metadata only (names, providers, dates, costs), never passwords, keys or card numbers, so there are none to leak.

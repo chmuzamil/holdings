@@ -16,6 +16,11 @@ const describe = {
     why: `${item.assets.length} subscriptions with ${item.assets[0].provider.trim()}.`,
     action: 'Check whether you need all of them.',
   }),
+  'stale-project': (item) => ({
+    title: item.project.name,
+    why: `No activity for ${item.project.daysIdle} days (since ${item.project.lastActivity.date}), but it still costs money.`,
+    action: 'Archive it and cancel what it uses, or mark it worked on if you are still on it.',
+  }),
   'cancelled-but-renews': (item) => ({
     title: item.assets[0].name,
     why: `Marked cancelled, but it still shows a renewal on ${item.assets[0].renewsAt}.`,
@@ -55,7 +60,7 @@ export function CleanupPanel({ cleanup, show, onKeep, keptCount = 0, onShowKept 
       <ul className="impact-list">
         {cleanup.suggestions.map((item) => {
           const text = describe[item.reason](item)
-          const key = `${item.reason}-${item.assets.map((asset) => asset.id).join('-')}`
+          const key = `${item.reason}-${item.project?.id ?? ''}${item.assets.map((asset) => asset.id).join('-')}`
           return (
             <li key={key}>
               <div className="impact-item cleanup-item">
