@@ -109,6 +109,26 @@ Everything is off until you turn it on in **Settings → Notifications**. Use an
 
 Each channel has a **Send test** button. Messages go only to the addresses you enter.
 
+## Dead-man's switch
+
+If something happens to you, your projects keep running only until the next bill. The dead-man's switch makes sure someone you trust gets your handover file (what you run, where it's registered, what to do) if you stop checking in.
+
+It is off until you turn it on in **Settings → Dead-man's switch**. You need:
+
+1. **Email notifications** turned on, because the file is sent by email through your own mail server.
+2. **The person you trust**: their name and email, and an optional note.
+3. **A locked handover file.** Your browser builds it from your current data and locks it with a passphrase (AES-256-GCM). Only the locked file is uploaded. Give the person the passphrase yourself, in person or on paper: the server never has it, so the file is useless to anyone else.
+
+How it works:
+
+- Choose how often to check in (14, 30, 60 or 90 days) and how long to wait after a missed check-in (7, 14 or 30 days).
+- Signing in, saving changes, or pressing **Check in** all count, so normal use keeps it quiet.
+- When a check-in is due you get reminders on every notification channel you use: when it falls due, halfway through the waiting time, and the day before. Each has a one-click check-in link, so you don't need to sign in.
+- If the waiting time ends without a check-in, your contact gets one email with the locked file and your note, and you are told it was sent. If sending fails, it tries again every hour and tells you.
+- Check in afterwards and the switch is on again from that moment.
+
+Keep the file current: when your data changes, lock and upload it again (Settings shows how old it is).
+
 ## Two-step login
 
 After signing in, turn on two-step login in Settings. Scan the QR code with any authenticator app (1Password, Bitwarden, Google Authenticator, Aegis, and others), then enter a code to confirm.
