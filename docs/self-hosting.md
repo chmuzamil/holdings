@@ -109,6 +109,15 @@ Everything is off until you turn it on in **Settings → Notifications**. Use an
 
 Each channel has a **Send test** button. Messages go only to the addresses you enter.
 
+## Uptime status (Uptime Kuma or Gatus)
+
+If you already run [Uptime Kuma](https://github.com/louislam/uptime-kuma) or [Gatus](https://github.com/TwiN/gatus), Holdings can show **Up** or **Down** next to your servers, domains and projects. It is off until you turn it on in **Settings → Uptime status**.
+
+- **Uptime Kuma**: enter its address and the name of a status page (the part after `/status/`). Only monitors on that status page are shown.
+- **Gatus**: enter its address.
+
+Holdings reads the public status page data (no login or API key), from your server at most once a minute. Then link each monitor to the server, domain or project it watches; monitors with the same name are linked for you.
+
 ## Dead-man's switch
 
 If something happens to you, your projects keep running only until the next bill. The dead-man's switch makes sure someone you trust gets your handover file (what you run, where it's registered, what to do) if you stop checking in.
