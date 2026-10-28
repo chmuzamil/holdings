@@ -890,6 +890,22 @@ function App({ server = null }) {
             money={money}
             fromUsd={fromUsd}
             toUsd={toUsd}
+            onKeepWithoutProject={(id) => setRecords((current) => Object.fromEntries(
+              Object.entries(current).map(([moduleKey, items]) => [
+                moduleKey,
+                items.map((item) => (item.id === id ? { ...item, keepWithoutProject: true } : item)),
+              ]),
+            ))}
+            onShowKept={() => setRecords((current) => Object.fromEntries(
+              Object.entries(current).map(([moduleKey, items]) => [
+                moduleKey,
+                items.map((item) => {
+                  if (!item.keepWithoutProject) return item
+                  const { keepWithoutProject, ...rest } = item
+                  return rest
+                }),
+              ]),
+            ))}
           />
         )}
 

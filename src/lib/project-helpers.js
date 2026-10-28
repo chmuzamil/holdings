@@ -1,4 +1,4 @@
-import { buildLedger, fromV1, impactOf, rankByImpact, summarizeCosts } from '@holdings/core'
+import { buildLedger, cleanupSuggestions, fromV1, impactOf, localDate, rankByImpact, summarizeCosts } from '@holdings/core'
 
 export const projectStatuses = [
   'Idea',
@@ -110,6 +110,11 @@ export function getCostSummary(records, toUsd) {
 
 export function getLedger(records, toUsd) {
   return getPortfolio(records, toUsd).ledger
+}
+
+// Paid items you may not need. See @holdings/core cleanupSuggestions.
+export function getCleanup(records, toUsd, now = new Date()) {
+  return cleanupSuggestions(getPortfolio(records, toUsd).data, localDate(now))
 }
 
 // What stops if one item stops. See @holdings/core impactOf.

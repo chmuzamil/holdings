@@ -3,12 +3,16 @@ import { Progress } from '../ui/Progress'
 import { getFounderInsights } from '../../lib/intelligence-helpers'
 import { getCashForecast, getCostByProvider } from '../../lib/insights-helpers'
 import { percentLabel } from '../../lib/format'
+import { getCleanup } from '../../lib/project-helpers'
+import { CleanupPanel } from './CleanupPanel'
 import './command-center.css'
 
-export function InsightsView({ records, displayCurrency, money, fromUsd, toUsd }) {
+export function InsightsView({ records, displayCurrency, money, fromUsd, toUsd, onKeepWithoutProject, onShowKept }) {
   const insights = getFounderInsights(records, toUsd)
   const providerCosts = getCostByProvider(records, toUsd)
   const forecast = getCashForecast(records, toUsd)
+  const cleanup = getCleanup(records, toUsd)
+  const keptCount = Object.values(records).flat().filter((item) => item.keepWithoutProject).length
   const forecastMax = Math.max(...forecast.map((month) => month.totalUsd), 1)
   const forecastTotal = forecast.reduce((sum, month) => sum + month.totalUsd, 0)
   const show = (usd) => money(fromUsd(usd, displayCurrency), displayCurrency)
@@ -33,6 +37,8 @@ export function InsightsView({ records, displayCurrency, money, fromUsd, toUsd }
           <small>What you&apos;ll actually pay, month by month below</small>
         </Card>
       </div>
+
+      <CleanupPanel cleanup={cleanup} show={show} onKeep={onKeepWithoutProject} keptCount={keptCount} onShowKept={onShowKept} />
 
       <Card className="command-panel">
         <h3 className="section-title">Money due each month</h3>
