@@ -70,6 +70,10 @@ const SCHEMA = `
     created_at TEXT NOT NULL,
     last_used_at TEXT
   );
+  CREATE TABLE IF NOT EXISTS server_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
   CREATE TABLE IF NOT EXISTS audit (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     at TEXT NOT NULL,
@@ -221,6 +225,15 @@ export function openStore(path: string) {
 
     deleteToken(id: string): boolean {
       return db.prepare('DELETE FROM api_tokens WHERE id = ?').run(id).changes === 1
+    },
+
+    getSetting(key: string): string | null {
+      const row = db.prepare('SELECT value FROM server_settings WHERE key = ?').get(key)
+      return row ? String(row.value) : null
+    },
+
+    setSetting(key: string, value: string) {
+      db.prepare('INSERT INTO server_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, value)
     },
 
     audit(event: string, ip: string | null) {

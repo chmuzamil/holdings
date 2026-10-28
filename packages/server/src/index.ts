@@ -4,6 +4,7 @@ import http from 'node:http'
 import { join, resolve } from 'node:path'
 import { createApp } from './app'
 import { openStore } from './db'
+import { createNotifier } from './notify'
 
 // Settings come from environment variables; see docs/self-hosting.md.
 const env = process.env
@@ -32,7 +33,10 @@ if (!store.getOwner()) {
   console.log(`\n  No login yet. Open Holdings and create one with this setup code:\n\n      ${setupCode}\n`)
 }
 
-const server = http.createServer(createApp({ store, secretKey, setupCode, staticDir, secureCookies, trustProxy }))
+// Notifications are off until turned on in Settings; the daily check then sends what is due.
+const notifier = createNotifier({ store, secretKey })
+notifier.start()
+const server = http.createServer(createApp({ store, secretKey, setupCode, staticDir, secureCookies, trustProxy, notifier }))
 server.listen(port, host, () => {
   console.log(`Holdings server listening on http://${host}:${port}${staticDir ? '' : ' (API only)'}`)
   if (!secureCookies) console.log('Warning: HOLDINGS_SECURE_COOKIES=false. Only do this on a trusted network.')
