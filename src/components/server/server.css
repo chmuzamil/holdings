@@ -223,3 +223,67 @@
   font-size: 12px;
   font-weight: 400;
 }
+
+.deadman-body {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.deadman-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px 14px;
+  border: 1px solid rgb(var(--accent-rgb) / 0.3);
+  border-radius: var(--radius-md);
+  background: rgb(var(--accent-rgb) / 0.06);
+}
+
+.deadman-status p {
+  margin: 0;
+  color: var(--text-strong);
+}
+
+.deadman-requirements {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--warning-text);
+  font-size: 14px;
+}
+
+.deadman-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deadman-requirements .deadman-done {
+  color: var(--success-text);
+}
+
+.deadman-note {
+  grid-column: 1 / -1;
+}
+
+.deadman-note textarea {
+  min-height: 72px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.16);
+  padding: 10px 11px;
+  resize: vertical;
+}
+
+.deadman-file {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.deadman-file .settings-status svg {
+  vertical-align: -2px;
+}

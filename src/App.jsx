@@ -39,7 +39,7 @@ import {
   normalizeRepoRecord,
   remapRepoLinks,
 } from './lib/repo-helpers'
-import { emptyProjectRecord, normalizeProjectRecord } from './lib/project-helpers'
+import { emptyProjectRecord, getHoldingsData, normalizeProjectRecord } from './lib/project-helpers'
 import { emptyServerRecord, normalizeServerRecord } from './lib/server-helpers'
 import { getSeedRecords, isRecordsEmpty } from './lib/seed-data'
 import { DashboardView } from './components/dashboard/DashboardView'
@@ -1025,6 +1025,15 @@ function App({ server = null }) {
             transferStatus={transferStatus}
             server={server}
             stripe={stripe}
+            getHandover={() => ({
+              data: getHoldingsData(records, toUsd),
+              options: { owner: '', recipient: '', message: '', ...appSettings.handover },
+              // The newest change, to tell when the locked file is out of date.
+              latestChange: flatRecords.reduce((latest, item) => {
+                const changed = item.editedAt || item.addedAt || ''
+                return changed > latest ? changed : latest
+              }, ''),
+            })}
           />
         )}
         </Suspense>
@@ -1221,6 +1230,7 @@ function SettingsView({
   ratesStatus,
   server,
   stripe,
+  getHandover,
 }) {
   const importInput = useRef(null)
 
@@ -1232,7 +1242,7 @@ function SettingsView({
     <section className="page-content settings-grid">
       {server && (
         <Suspense fallback={null}>
-          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} />
+          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} />
         </Suspense>
       )}
 
@@ -1281,10 +1291,11 @@ function SettingsView({
       {!server && (
         <div className="panel settings-wide">
           <div className="panel-heading">
-            <h2>Notifications</h2>
+            <h2>Notifications and dead-man&apos;s switch</h2>
             <p>
-              Reminders by email, webhook (Slack, Discord) or ntfy before things renew or expire. They need the optional
-              self-hosted server, because a browser tab can&apos;t send anything while it&apos;s closed. See
+              Reminders by email, webhook (Slack, Discord) or ntfy before things renew or expire, and an optional
+              dead-man&apos;s switch that sends your locked handover file to someone you trust if you stop checking in. They
+              need the optional self-hosted server, because a browser tab can&apos;t send anything while it&apos;s closed. See
               docs/self-hosting.md.
             </p>
           </div>

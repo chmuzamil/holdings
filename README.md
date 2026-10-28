@@ -140,7 +140,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **Clean-up suggestions**: what you pay for that no project uses, what only archived projects use, duplicate subscriptions, and things marked cancelled that still renew, with the possible saving.
 - **Uptime Kuma / Gatus status**: up or down next to each server and project, read from your own instance.
 - ✅ **Notifications** (self-hosted, optional): renewals and expiries by email, webhook (Slack, Discord) or ntfy, each switched on separately.
-- **Dead-man's switch**: if you don't check in for a while, the person you chose gets your locked handover file.
+- ✅ **Dead-man's switch** (self-hosted, optional): if you don't check in for a while, the person you chose gets your locked handover file. Reminders come with a one-click check-in link first.
 
 **v0.4: less typing**
 - Read-only importers for Cloudflare, registrars with an API (Porkbun, Namecheap, Spaceship) and Hetzner / DigitalOcean servers.
