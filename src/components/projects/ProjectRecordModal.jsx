@@ -89,6 +89,17 @@ export function ProjectRecordModal({ modal, setModal, saveRecord, records, strip
               <span>Description</span>
               <textarea value={values.description} onChange={(e) => updateField('description', e.target.value)} rows={3} />
             </label>
+            <label className="field-group full-width">
+              <span>If I&apos;m unavailable, do this (optional, Markdown)</span>
+              <textarea
+                value={values.runbook || ''}
+                onChange={(e) => updateField('runbook', e.target.value)}
+                rows={4}
+                aria-describedby="project-runbook-warning"
+                placeholder={'1. Keep the server paid\n2. Tell customers at [the status page](https://status.example)'}
+              />
+              <small id="project-runbook-warning" className="field-hint runbook-warning">Never put passwords, keys or card numbers here: say where they are kept instead. Holdings refuses to save anything that looks like one. It goes into the handover and exit packs.</small>
+            </label>
             <label className="field-group">
               <span>Stage</span>
               <select value={values.stage || 'idea'} onChange={(e) => updateField('stage', e.target.value)}>

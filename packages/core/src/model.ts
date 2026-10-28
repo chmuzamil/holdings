@@ -86,6 +86,8 @@ export interface Project {
   stageChangedAt: string
   /** ISO date the owner last worked on it (set by hand), or ''. */
   lastWorkedOn: string
+  /** Markdown: what to do with this project if the owner is unavailable. Never secrets. */
+  runbook: string
   /** Kind-specific fields carried over from earlier versions (priority, category, …). */
   details: Record<string, unknown>
   addedAt: string

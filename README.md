@@ -42,7 +42,7 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Attention list**: what is overdue or due soon, and what to tidy up, each with the next step to take.
 - **Timeline** built only from real dates: when you added things, when repos were created, when domains were registered.
 - **Costs in USD**, with an optional second display currency. Its rate is fetched daily from [ExchangeRate-API](https://www.exchangerate-api.com).
-- **Handover and exit packs**: a locked "if I'm unavailable" file for someone you trust (opens offline in any browser with a passphrase, never contains passwords or keys), and an asset register with a transfer checklist for selling a project.
+- **Handover and exit packs**: a locked "if I'm unavailable" file for someone you trust (opens offline in any browser with a passphrase, never contains passwords or keys), and an asset register with a transfer checklist for selling a project. Add **runbooks** in Markdown, one for everything and one per project, saying what to do step by step; they go into both packs.
 - **Self-hosting** (optional): one Docker container with a password and two-step login, your data saved on your server and available in every browser.
 - **Revenue from Stripe** (self-hosted): link Stripe products to a project and its monthly revenue fills itself in, with a read-only key.
 - **MCP server** so Claude, Cursor and other agents can answer questions about your portfolio, read-only.
@@ -146,6 +146,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **Notifications** (self-hosted, optional): renewals and expiries by email, webhook (Slack, Discord) or ntfy, each switched on separately.
 - ✅ **Dead-man's switch** (self-hosted, optional): if you don't check in for a while, the person you chose gets your locked handover file. Reminders come with a one-click check-in link first.
 - ✅ **Calendar (.ics)**: renewals and expiries in your calendar app, as a download or (self-hosted) a private subscription link.
+- ✅ **Runbooks**: "if I'm unavailable, do this" steps in Markdown, globally and per project, in the handover and exit packs.
 - ✅ **Domain change watch**: nameserver, registry status, expiry, DNSSEC and transfer-lock changes, on a schedule when self-hosted, sent once to your notification channels.
 - ✅ **Project stages and stale projects**: where each project is in its life, when you last worked on it, and a nudge when an idle project still costs money.
 

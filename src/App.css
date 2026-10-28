@@ -982,3 +982,7 @@ option {
 .csv-invalid div {
   color: var(--danger-text);
 }
+
+.runbook-warning {
+  color: var(--warning-text);
+}

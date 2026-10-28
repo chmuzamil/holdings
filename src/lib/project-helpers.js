@@ -41,6 +41,7 @@ export const emptyProjectRecord = {
   stage: 'idea',
   stageChangedAt: '',
   lastWorkedOn: '',
+  runbook: '',
 }
 
 // Where a project is in its life. Replaces the older status in the UI; the
@@ -94,6 +95,7 @@ export function normalizeProjectRecord(record) {
     stage: STAGE_IDS.includes(record.stage) ? record.stage : stageFromStatus(String(record.status || '')),
     stageChangedAt: record.stageChangedAt || '',
     lastWorkedOn: /^\d{4}-\d{2}-\d{2}$/.test(record.lastWorkedOn || '') ? record.lastWorkedOn : '',
+    runbook: typeof record.runbook === 'string' ? record.runbook : '',
     domainIds: Array.isArray(record.domainIds) ? record.domainIds : [],
     repoIds: Array.isArray(record.repoIds) ? record.repoIds : [],
     serverIds: Array.isArray(record.serverIds) ? record.serverIds : [],

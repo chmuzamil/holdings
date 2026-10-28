@@ -78,6 +78,11 @@ function HandoverCard({ data, handover, setHandover }) {
       setStatus(`Your note looks like it contains a ${secret}. Say where it is kept instead.`)
       return
     }
+    const runbookSecret = findSecret(handover.runbook || '')
+    if (runbookSecret) {
+      setStatus(`Your runbook looks like it contains a ${runbookSecret}. Say where it is kept instead.`)
+      return
+    }
     if (passphrase.length < MIN_PASSPHRASE_LENGTH) {
       setStatus(`Use a passphrase of at least ${MIN_PASSPHRASE_LENGTH} characters. A few random words work well.`)
       return
@@ -123,6 +128,17 @@ function HandoverCard({ data, handover, setHandover }) {
             onChange={update('message')}
             placeholder="Who to call first, where the password manager's emergency kit is, what you would want done."
           />
+        </label>
+        <label className="full-span">
+          <span>If I&apos;m unavailable, do this (optional, Markdown)</span>
+          <textarea
+            rows={6}
+            value={handover.runbook || ''}
+            onChange={update('runbook')}
+            aria-describedby="runbook-warning"
+            placeholder={'1. Call Sara at the accountant\n2. Renew anything due in the next 30 days\n3. [Registrar login help](https://registrar.example/help)'}
+          />
+          <small id="runbook-warning" className="field-hint runbook-warning">Never put passwords, keys or card numbers here: say where they are kept instead. Holdings refuses to save anything that looks like one. Each project can have its own runbook too (in its form).</small>
         </label>
         <label>
           <span>Passphrase</span>

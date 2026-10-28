@@ -177,6 +177,7 @@ export function exitPackMarkdown(pack: ExitPack): string {
   if (project.description) lines.push(project.description, '')
   if (project.liveUrl) lines.push(`Live: ${project.liveUrl}`, '')
   lines.push(`- Stage: ${stageLabel(project.stage)}`, `- Last worked on: ${activityLabel(pack.lastActivity)}`, '')
+  if (project.runbook.trim()) lines.push('## Runbook', '', project.runbook.trim(), '')
   lines.push(
     '## Money',
     '',

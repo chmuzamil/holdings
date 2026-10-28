@@ -318,6 +318,12 @@ export function getSeedRecords(now = new Date()) {
       repoIds: ['repo_shopfront'],
       serverIds: ['server_main'],
       subscriptionIds: ['subscription_postmark', 'subscription_sentry'],
+      runbook: [
+        '1. Keep **Main VPS** and **shopfront.example** paid: both renew from the Business Visa.',
+        '2. Customers email support@ through Postmark; reply from the shared inbox in the password manager.',
+        '3. If the site is down, check [the status page](https://status.shopfront.example) and the host\u2019s console.',
+        '4. To wind it down, give customers 30 days\u2019 notice and export their data first.',
+      ].join('\n'),
       notes: '',
       ...added(-420),
     },

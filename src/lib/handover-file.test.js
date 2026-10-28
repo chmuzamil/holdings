@@ -63,3 +63,19 @@ describe('lockedHandoverFile', () => {
     expect(html).not.toContain('secret-plan.example')
   })
 })
+
+describe('the locked file with runbooks', () => {
+  it('still uses the same encryption and opens with its own embedded code', async () => {
+    const { fromV1 } = await import('@holdings/core')
+    const data = fromV1({ projects: [{ id: 'p1', name: 'Shop', runbook: '1. Renew [the domain](https://registrar.example)\n\n<script>alert(1)</script>' }] })
+    const html = await lockedHandoverFile(data, { owner: 'Sam', recipient: 'Sara', message: '', runbook: '# First\n\nCall Sara.' }, passphrase)
+    const payload = JSON.parse(html.match(/const payload = (\{[\s\S]*?\});\n/)[1])
+    expect(payload).toMatchObject({ v: 1, kdf: 'PBKDF2-SHA256', iterations: 600000 })
+    const source = html.match(/const decryptHandover = ([\s\S]*?);\ndocument\.getElementById/)[1]
+    const opened = await new Function(`return (${source})`)()(payload, passphrase)
+    expect(opened).toContain('<h3>First</h3>')
+    expect(opened).toContain('<a href="https://registrar.example" rel="noopener noreferrer">the domain</a>')
+    expect(opened).not.toContain('<script>')
+    expect(html).not.toContain('registrar.example')
+  })
+})
