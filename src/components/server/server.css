@@ -192,3 +192,34 @@
     grid-template-columns: 1fr;
   }
 }
+
+.notify-channels {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.notify-channel {
+  display: grid;
+  gap: 12px;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.notify-channel:last-child {
+  border-bottom: 0;
+}
+
+.notify-actions {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+
+.notify-schedule {
+  margin-top: var(--space-3);
+}
+
+.field-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}

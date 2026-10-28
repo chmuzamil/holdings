@@ -1281,6 +1281,19 @@ function SettingsView({
       {!server && (
         <div className="panel settings-wide">
           <div className="panel-heading">
+            <h2>Notifications</h2>
+            <p>
+              Reminders by email, webhook (Slack, Discord) or ntfy before things renew or expire. They need the optional
+              self-hosted server, because a browser tab can&apos;t send anything while it&apos;s closed. See
+              docs/self-hosting.md.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!server && (
+        <div className="panel settings-wide">
+          <div className="panel-heading">
             <h2>Where your data lives</h2>
             <p>
               Everything is saved in this browser only. Nothing is sent to a server. Clearing site data deletes it, so export a
