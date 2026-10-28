@@ -29,4 +29,4 @@ Values Holdings reads:
 
 ## From a Holdings export (JSON)
 
-**Settings → Import JSON** loads a file from **Export JSON**, including exports from older versions of Holdings. It replaces everything in the browser, after asking. A file that contains anything looking like a real key, token or card number is refused as a whole, with where the problem is, and nothing is changed.
+**Settings → Import JSON** loads a file from **Export JSON**, including exports from older versions of Holdings. It replaces everything in the browser, after asking. Exports also carry your handover pack settings (your name, who it is for, the note and the global runbook), and importing restores them; older exports without them still import. A file that contains anything looking like a real key, token or card number is refused as a whole, with where the problem is, and nothing is changed.

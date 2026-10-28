@@ -56,7 +56,7 @@ import { statusTone } from './lib/status'
 import { findSecretsInRecord } from './lib/secrets'
 import { Badge } from './components/ui/Badge'
 import { useDialog } from './components/ui/use-dialog'
-import { buildExport, exportFileName, findImportSecrets, parseImport } from './lib/data-transfer'
+import { buildExport, exportFileName, findImportSecrets, parseImportFile } from './lib/data-transfer'
 import { RECORDS_KEY, SETTINGS_KEY, migrateLegacyStorage } from './lib/storage'
 import {
   RATES_ATTRIBUTION_URL,
@@ -687,7 +687,7 @@ function App({ server = null }) {
   }
 
   function exportRecords() {
-    const blob = new Blob([JSON.stringify(buildExport(records), null, 2)], { type: 'application/json' })
+    const blob = new Blob([JSON.stringify(buildExport(records, new Date(), { handover: appSettings.handover }), null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -700,9 +700,9 @@ function App({ server = null }) {
   async function importRecords(file) {
     if (!file) return
     try {
-      const imported = parseImport(await file.text())
+      const { records: imported, handover } = parseImportFile(await file.text())
       // Never load anything that looks like a real key, token or card number.
-      const secrets = findImportSecrets(imported, findSecretsInRecord)
+      const secrets = findImportSecrets(imported, findSecretsInRecord, handover)
       if (secrets.length) {
         const first = secrets[0]
         setTransferStatus(`Couldn't import that file: ${secrets.length === 1 ? 'one record has' : `${secrets.length} records have`} something that looks like a ${first.kind} (first: ${first.module} "${first.name}", ${first.field}). Holdings never stores secrets. Remove them and import again. Nothing was changed.`)
@@ -711,7 +711,8 @@ function App({ server = null }) {
       const total = Object.values(imported).reduce((sum, items) => sum + items.length, 0)
       if (!window.confirm(`Replace everything here with ${total} records from ${file.name}?`)) return
       setRecords(normalizeRecordsByModule(imported))
-      setTransferStatus(`Imported ${total} records.`)
+      if (handover) setAppSettings((current) => ({ ...current, handover }))
+      setTransferStatus(`Imported ${total} records${handover ? ' and your handover pack settings' : ''}.`)
     } catch (error) {
       setTransferStatus(`Couldn't import that file: ${error.message} Nothing was changed.`)
     }
