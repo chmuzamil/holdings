@@ -3,6 +3,8 @@
 // and repos link to the hosted demo. Dates are relative to today so the demo
 // never goes stale.
 
+import { snapshotFromLookup } from '@holdings/core'
+
 export const DEMO_HOST = 'holdings.chaudhery.com'
 const DEMO_REPOS_URL = `https://${DEMO_HOST}/#repos`
 
@@ -525,6 +527,33 @@ export function getSeedRecords(now = new Date()) {
       ...added(-300),
     },
   ]
+
+  // Domain watch history for the demo: a recent nameserver move (shown on
+  // the Attention page) and an older renewal.
+  const newsbite = domains.find((domain) => domain.id === 'domain_newsbite')
+  newsbite.watch = {
+    snapshot: snapshotFromLookup(newsbite.lookup),
+    changes: [
+      {
+        id: 'demo-newsbite-ns',
+        field: 'nameservers',
+        before: 'ns1.oldhost.example, ns2.oldhost.example',
+        after: ns.join(', '),
+        severity: 'high',
+        at: stamp(-5, now),
+        message: `Nameservers changed from ns1.oldhost.example, ns2.oldhost.example to ${ns.join(', ')}.`,
+      },
+      {
+        id: 'demo-newsbite-renewed',
+        field: 'expires',
+        before: d(-175),
+        after: d(190),
+        severity: 'normal',
+        at: stamp(-40, now),
+        message: `Renewed: now expires ${d(190)} (was ${d(-175)}).`,
+      },
+    ],
+  }
 
   return { domains, servers, repos, projects, accounts, subscriptions, keys }
 }

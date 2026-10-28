@@ -5,6 +5,7 @@ import { buildCalendar } from '@holdings/core'
 import { createNotifier, readHoldings, SettingsError, type Notifier } from './notify'
 import { createDeadman, type Deadman } from './deadman'
 import { createUptime } from './uptime'
+import { createDomainWatch, type DomainWatch } from './domain-watch'
 import { SECURITY_HEADERS, serveStatic } from './static'
 import { checkStripeKey, fetchStripeRevenue, keyHint, StripeError, type FetchLike, type StripeRevenue } from './stripe'
 import { newTotpSecret, otpauthUri, verifyTotp } from './totp'
@@ -50,6 +51,8 @@ export interface AppOptions {
   deadman?: Deadman
   /** fetch() used for Uptime Kuma / Gatus; replaced in tests. */
   uptimeFetch?: FetchLike
+  /** Scheduled domain change watch; made here unless given (index.ts runs it). */
+  domainWatch?: DomainWatch
 }
 
 class HttpError extends Error {
@@ -77,6 +80,7 @@ export function createApp(options: AppOptions) {
   const failures = createFailureCounter(now)
   const notifier = options.notifier ?? createNotifier({ store, secretKey, now: () => new Date(now()) })
   const deadman = options.deadman ?? createDeadman({ store, notifier, now: () => new Date(now()) })
+  const domainWatch = options.domainWatch ?? createDomainWatch({ store, notifier, lookup, now })
   const uptime = createUptime({ store, now, ...(options.uptimeFetch ? { fetch: options.uptimeFetch } : {}) })
   const settingsError = async <T>(work: () => T | Promise<T>): Promise<T> => {
     try {
@@ -545,6 +549,24 @@ export function createApp(options: AppOptions) {
         'X-Content-Type-Options': 'nosniff',
       })
       response.end(ics)
+    },
+
+    'GET /api/domain-watch': (context) => {
+      requireSession(context)
+      return domainWatch.view()
+    },
+
+    'PUT /api/domain-watch': async (context) => {
+      requireSession(context)
+      const input = await context.body()
+      const result = await settingsError(() => domainWatch.save(input))
+      if (input.enabled !== undefined) store.audit(input.enabled ? 'domain_watch_on' : 'domain_watch_off', context.ip)
+      return result
+    },
+
+    'POST /api/domain-watch/run': async (context) => {
+      requireSession(context)
+      return { ...(await domainWatch.run()), ...domainWatch.view() }
     },
 
     'GET /api/domain-lookup': async (context) => {

@@ -109,6 +109,15 @@ Everything is off until you turn it on in **Settings → Notifications**. Use an
 
 Each channel has a **Send test** button. Messages go only to the addresses you enter.
 
+## Domain watch
+
+Every DNS check (the button on a domain) already compares the result with the previous one and lists what changed in the domain's details. With the server you can also run it on a schedule:
+
+1. Open **Settings → Domain watch** and turn it on.
+2. Choose how often: every 6 or 12 hours, once a day, every 3 days or once a week.
+
+The server checks every domain that isn't cancelled, keeps its own history (it doesn't change your saved data), and sends new changes to the notification channels you turned on. Each change is sent once. Nameserver changes, registry status changes, a removed transfer lock and an expiry date moving earlier are marked as important and also appear on the Attention page. If a registry doesn't answer, nothing is reported for it: a missing answer never looks like a removed lock.
+
 ## Calendar subscription
 
 The Expiry page can always download a calendar file. With the server you can also **subscribe**, so your calendar app picks up new renewals by itself:

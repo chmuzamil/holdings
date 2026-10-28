@@ -1,3 +1,4 @@
+import { normalizeWatch } from './domain-watch'
 import { normalizeDomainHealth } from './domain-health-helpers'
 
 export function normalizeSubdomains(record) {
@@ -123,6 +124,7 @@ export function normalizeDomainRecord(record) {
   const { serverId, subdomains, ...rest } = record
   return {
     ...rest,
+    watch: normalizeWatch(record.watch),
     subdomains: normalizeSubdomains(record),
     health: normalizeDomainHealth(record),
     connectedProjectIds: Array.isArray(record.connectedProjectIds) ? record.connectedProjectIds : [],

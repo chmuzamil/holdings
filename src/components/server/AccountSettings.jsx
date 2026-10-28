@@ -4,6 +4,7 @@ import { LogOut, ShieldCheck } from 'lucide-react'
 import { api } from '../../lib/server-api'
 import { AccessTokens } from './AccessTokens'
 import { CalendarFeed } from './CalendarFeed'
+import { DomainWatchSettings } from './DomainWatchSettings'
 import { DeadmanSettings } from './DeadmanSettings'
 import { NotificationSettings } from './NotificationSettings'
 import { StripeSettings } from './StripeSettings'
@@ -62,7 +63,7 @@ function Status({ status }) {
   )
 }
 
-export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, projects }) {
+export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, projects, onDomainChanges }) {
   const totpEnabled = Boolean(server.session?.totpEnabled)
 
   return (
@@ -85,6 +86,7 @@ export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, proj
       <TwoStepSettings server={server} enabled={totpEnabled} />
       <PasswordSettings totpEnabled={totpEnabled} />
       <NotificationSettings />
+      <DomainWatchSettings onChanges={onDomainChanges} />
       <DeadmanSettings getHandover={getHandover} />
       <CalendarFeed projects={projects} />
       <StripeSettings stripe={stripe} ratesPerUsd={ratesPerUsd} />

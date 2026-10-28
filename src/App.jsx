@@ -48,6 +48,8 @@ import { BrandMark } from './components/shared/BrandMark'
 import { SyncStatus, SyncProblem } from './components/server/SyncStatus'
 import { useStripe } from './components/server/use-stripe'
 import { applyStripeRevenue, missingRates } from './lib/stripe-revenue'
+import { applyLookup } from './lib/domain-watch'
+import { api } from './lib/server-api'
 import { isRenewableModule } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
 import { statusTone } from './lib/status'
@@ -432,6 +434,14 @@ function App({ server = null }) {
   }, [])
   const stripe = useStripe(server, applyStripe)
 
+  // Self-hosted: changes found by the server's scheduled domain watch.
+  const [serverChanges, setServerChanges] = useState({})
+  const hasServer = Boolean(server)
+  useEffect(() => {
+    if (!hasServer) return
+    api('GET', '/api/domain-watch').then((view) => setServerChanges(view.changes ?? {})).catch(() => {})
+  }, [hasServer])
+
   // Fetch the second currency's rate when it is chosen, and refresh it daily.
   const ratesStale = ratesAreStale(appSettings.ratesFetchedAt)
   useEffect(() => {
@@ -724,13 +734,17 @@ function App({ server = null }) {
         throw new Error(result.error || `Lookup returned ${response.status}`)
       }
 
-      setRecords((current) => ({
-        ...current,
-        domains: current.domains.map((domain) =>
-          domain.id === record.id ? { ...domain, lookup: result } : domain,
-        ),
+      const current = records.domains.find((domain) => domain.id === record.id) ?? record
+      const applied = applyLookup(current, result)
+      setRecords((latest) => ({
+        ...latest,
+        domains: latest.domains.map((domain) => (domain.id === record.id ? applyLookup(domain, result).domain : domain)),
       }))
-      setDomainLookupStatus(`Checked ${record.name}.`)
+      setDomainLookupStatus(applied.firstCheck
+        ? `Checked ${record.name}. Future checks will show what changed.`
+        : applied.changes.length
+          ? `Checked ${record.name}. Changed since the last check: ${applied.changes.map((change) => change.message).join(' ')}`
+          : `Checked ${record.name}. Nothing changed since the last check.`)
     } catch (error) {
       setDomainLookupStatus(`Couldn't check ${record.name} (${error.message}). Try again in a minute.`)
     }
@@ -849,6 +863,7 @@ function App({ server = null }) {
           <DashboardView
             records={records}
             flatRecords={flatRecords}
+            serverChanges={serverChanges}
             displayCurrency={displayCurrency}
             money={money}
             fromUsd={fromUsd}
@@ -925,6 +940,7 @@ function App({ server = null }) {
           <AttentionCenterView
             records={records}
             flatRecords={flatRecords}
+            serverChanges={serverChanges}
             setActivePage={setActivePage}
           />
         )}
@@ -954,6 +970,7 @@ function App({ server = null }) {
 
         {activePage === 'domains' && (
           <DomainsView
+            serverChanges={serverChanges}
             onWhatIf={showImpact}
             records={visibleRecords}
             allRecords={records}
@@ -1043,6 +1060,7 @@ function App({ server = null }) {
             transferStatus={transferStatus}
             server={server}
             stripe={stripe}
+            onDomainChanges={setServerChanges}
             getHandover={() => ({
               data: getHoldingsData(records, toUsd),
               options: { owner: '', recipient: '', message: '', ...appSettings.handover },
@@ -1249,6 +1267,7 @@ function SettingsView({
   server,
   stripe,
   getHandover,
+  onDomainChanges,
 }) {
   const importInput = useRef(null)
 
@@ -1260,7 +1279,7 @@ function SettingsView({
     <section className="page-content settings-grid">
       {server && (
         <Suspense fallback={null}>
-          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} projects={getHandover().data.projects} />
+          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} projects={getHandover().data.projects} onDomainChanges={onDomainChanges} />
         </Suspense>
       )}
 

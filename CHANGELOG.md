@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- **Domain change watch**: each DNS/registry check is compared with the last one, and changes to nameservers, registry status, expiry, DNSSEC and the transfer lock are kept (last 20 per domain) and shown in the domain's details. Nameserver changes, status changes, a removed transfer lock and an earlier expiry are marked important and appear on the Attention page for two weeks. Self-hosted: optional scheduled checks (every 6 hours to once a week) that send new changes once to the notification channels you turned on.
 - **Project stages**: idea, building, launched, maintenance, paused, archived. Older projects get a stage from their status (Archived stays archived). The Projects page shows a stage badge and filters by stage, and the stage and when it changed are saved.
 - **Last worked on**: taken from the newest push to a linked GitHub repo, or a date you set (in the project form, or "Worked on it today" in its details).
 - **Stale project** clean-up suggestion: not archived, no activity for 90 days (change it in Settings), still costing money, with the monthly saving. Stage and last activity also appear in the exit pack, handover pack and MCP output.

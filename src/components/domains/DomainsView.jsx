@@ -30,6 +30,7 @@ export function DomainsView({
   refreshDomainLookup,
   setDeleteTarget,
   onCheckHealth,
+  serverChanges,
 }) {
   const [selectedDomain, setSelectedDomain] = useState(null)
 
@@ -104,6 +105,7 @@ export function DomainsView({
         toUsd={toUsd}
         fromUsd={fromUsd}
         onCheckHealth={onCheckHealth}
+        serverChanges={serverChanges}
       />
     </section>
   )
