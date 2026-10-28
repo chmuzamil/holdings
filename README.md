@@ -33,6 +33,7 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Projects as the centre.** Link domains, servers, repos and subscriptions to a project and see what it costs and earns each month. A server shared by two projects is split between them, and anything not in a project is shown separately, so the numbers always add up.
 - **"What breaks if…"**: pick a server, domain, service or payment card and see which projects it affects, how much revenue they earn, and what else stops with it (including subdomains that point at it).
 - **Keys & cards, and an expiry radar**: track API keys, tokens, OAuth apps, TLS certificates and cards by name, where they are kept and when they expire or need rotating. Never the secret itself: Holdings refuses to save anything that looks like a real key or card number. Mark which card pays for what, and see everything that renews or expires on one page, soonest first.
+- **Calendar (.ics)**: download your renewals and expiries for Google Calendar, Apple Calendar or Outlook, for everything or one project, with a reminder a few days before. Importing it again updates the same events. Self-hosted, you can subscribe with a private link instead.
 - **Domains** with subdomains attached to servers, notes, renewal dates, and an optional live DNS + registry (RDAP) check. **Safety checks** then show what to fix and how: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC.
 - **Servers, repos, accounts and subscriptions** with costs, renewal dates and notes.
 - **GitHub import**: fetch your repos by username. An optional token is kept in memory only, never saved.
@@ -104,6 +105,7 @@ Open http://localhost:8080, enter the setup code and pick a password. You can ad
   - `open.er-api.com`, once a day, if you picked a second currency or Stripe reports revenue in a currency other than USD
   - `api.stripe.com`, from your server only, if you connect Stripe (read-only key)
   - your own server (or `npm run api`), when you run a DNS check. It queries DNS, IANA's registry directory and the domain's public registry (RDAP).
+- With the self-hosted server, a calendar subscription link (if you make one) lets your calendar app read your renewal dates from your server. It can read nothing else, and you can turn it off at any time.
 - No analytics, no telemetry, no third-party scripts, fonts or icons.
 
 ## Why not…
@@ -141,6 +143,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - **Uptime Kuma / Gatus status**: up or down next to each server and project, read from your own instance.
 - ✅ **Notifications** (self-hosted, optional): renewals and expiries by email, webhook (Slack, Discord) or ntfy, each switched on separately.
 - ✅ **Dead-man's switch** (self-hosted, optional): if you don't check in for a while, the person you chose gets your locked handover file. Reminders come with a one-click check-in link first.
+- ✅ **Calendar (.ics)**: renewals and expiries in your calendar app, as a download or (self-hosted) a private subscription link.
 
 **v0.4: less typing**
 - Read-only importers for Cloudflare, registrars with an API (Porkbun, Namecheap, Spaceship) and Hetzner / DigitalOcean servers.

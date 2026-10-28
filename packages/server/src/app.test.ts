@@ -502,3 +502,55 @@ describe('dead-man’s switch routes', () => {
     expect((await browser.call('PUT', '/api/deadman/file', { html: 'plain' })).status).toBe(400)
   })
 })
+
+describe('calendar feed', () => {
+  async function withData() {
+    const owner = await signedIn()
+    await owner.call('PUT', '/api/data', {
+      version: 0,
+      data: { records: { domains: [{ id: 'd1', name: 'shop.example', renewalDate: '2026-11-05', status: 'Active' }], projects: [] } },
+    })
+    return owner
+  }
+  const feed = (token: string, query = '') => fetch(`${base}/api/calendar.ics?token=${encodeURIComponent(token)}${query}`)
+
+  it('serves the calendar only with the current calendar token', async () => {
+    const owner = await withData()
+    expect((await owner.call('GET', '/api/calendar/token')).body).toEqual({ exists: false })
+    expect((await feed('hcal_nothing')).status).toBe(404)
+
+    const { token } = (await owner.call('POST', '/api/calendar/token')).body as { token: string }
+    expect(token).toMatch(/^hcal_/)
+    const response = await feed(token, '&alarm=3')
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toContain('text/calendar')
+    const ics = await response.text()
+    expect(ics).toContain('UID:d1-renews@holdings.local')
+    expect(ics).toContain('TRIGGER:-P3D')
+    expect(JSON.stringify((await owner.call('GET', '/api/calendar/token')).body)).not.toContain(token)
+  })
+
+  it('gives access to nothing else', async () => {
+    const owner = await withData()
+    const { token } = (await owner.call('POST', '/api/calendar/token')).body as { token: string }
+    const asBearer = await fetch(`${base}/api/data`, { headers: { Authorization: `Bearer ${token}` } })
+    expect(asBearer.status).toBe(401)
+    expect((await fetch(`${base}/api/data?token=${token}`)).status).toBe(401)
+  })
+
+  it('stops the old link when rotated, and every link when revoked', async () => {
+    const owner = await withData()
+    const first = ((await owner.call('POST', '/api/calendar/token')).body as { token: string }).token
+    const second = ((await owner.call('POST', '/api/calendar/token')).body as { token: string }).token
+    expect((await feed(first)).status).toBe(404)
+    expect((await feed(second)).status).toBe(200)
+    await owner.call('DELETE', '/api/calendar/token')
+    expect((await feed(second)).status).toBe(404)
+  })
+
+  it('needs a login to make, change or check the token', async () => {
+    expect((await client().call('POST', '/api/calendar/token')).status).toBe(401)
+    expect((await client().call('DELETE', '/api/calendar/token')).status).toBe(401)
+    expect((await client().call('GET', '/api/calendar/token')).status).toBe(401)
+  })
+})

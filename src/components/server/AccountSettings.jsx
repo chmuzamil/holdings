@@ -3,6 +3,7 @@ import qrcode from 'qrcode-generator'
 import { LogOut, ShieldCheck } from 'lucide-react'
 import { api } from '../../lib/server-api'
 import { AccessTokens } from './AccessTokens'
+import { CalendarFeed } from './CalendarFeed'
 import { DeadmanSettings } from './DeadmanSettings'
 import { NotificationSettings } from './NotificationSettings'
 import { StripeSettings } from './StripeSettings'
@@ -61,7 +62,7 @@ function Status({ status }) {
   )
 }
 
-export function AccountSettings({ server, stripe, ratesPerUsd, getHandover }) {
+export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, projects }) {
   const totpEnabled = Boolean(server.session?.totpEnabled)
 
   return (
@@ -85,6 +86,7 @@ export function AccountSettings({ server, stripe, ratesPerUsd, getHandover }) {
       <PasswordSettings totpEnabled={totpEnabled} />
       <NotificationSettings />
       <DeadmanSettings getHandover={getHandover} />
+      <CalendarFeed projects={projects} />
       <StripeSettings stripe={stripe} ratesPerUsd={ratesPerUsd} />
       <AccessTokens />
     </>

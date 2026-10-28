@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- **Calendar (.ics)**: on the Expiry page, download renewals and expiries (all, or one project's) with an optional reminder N days before (7 by default), or add a single item with "Add to calendar". Events are all-day and keep the same ID, so importing again updates them. Self-hosted: a private subscription link in Settings, with its own token that opens the calendar and nothing else, and can be replaced or turned off.
 - **Clean-up suggestions** on the Insights page: paid items no project uses, items only archived projects use, several subscriptions with the same provider, and items marked cancelled that still show a renewal, with the possible monthly saving. Items that are for everything can be marked so they stop showing up, and shown again later.
 - MCP server: `cleanup_suggestions` tool.
 - **Notifications** (self-hosted, all optional): email through your own SMTP, a webhook (Slack, Discord or JSON) and ntfy. Each has its own switch in Settings, and its fields appear when you turn it on. A daily check sends reminders when something reaches 30, 7 or 1 day before renewing or expiring, or is overdue, each once.

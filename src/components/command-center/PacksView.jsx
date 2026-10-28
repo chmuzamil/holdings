@@ -6,16 +6,8 @@ import { EmptyState } from '../EmptyState'
 import { getHoldingsData } from '../../lib/project-helpers'
 import { MIN_PASSPHRASE_LENGTH, encryptHandover, handoverFileHtml } from '../../lib/handover-file'
 import { findSecret } from '../../lib/secrets'
+import { download } from '../../lib/download'
 import './command-center.css'
-
-function download(name, content, type) {
-  const url = URL.createObjectURL(new Blob([content], { type }))
-  const link = document.createElement('a')
-  link.href = url
-  link.download = name
-  link.click()
-  URL.revokeObjectURL(url)
-}
 
 const slug = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'project'
 const today = () => new Date().toLocaleDateString('en-CA')

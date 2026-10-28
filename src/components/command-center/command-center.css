@@ -466,3 +466,63 @@ button.impact-item:hover strong {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+.calendar-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.calendar-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+
+.calendar-controls-row label {
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.calendar-controls-row label span {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.calendar-controls-row select {
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.16);
+  padding: 0 10px;
+}
+
+.expiry-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.expiry-row .impact-item {
+  border-bottom: 0;
+}
+
+.expiry-add {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .expiry-add span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+}

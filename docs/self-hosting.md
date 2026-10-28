@@ -109,6 +109,15 @@ Everything is off until you turn it on in **Settings → Notifications**. Use an
 
 Each channel has a **Send test** button. Messages go only to the addresses you enter.
 
+## Calendar subscription
+
+The Expiry page can always download a calendar file. With the server you can also **subscribe**, so your calendar app picks up new renewals by itself:
+
+1. Open **Settings → Calendar subscription**, choose a project (or all) and how many days ahead to be reminded, and press **Make a link**.
+2. Copy the link (it is shown only once) and add it in your calendar app as a subscription ("Add from URL" in Google Calendar, "New Calendar Subscription" in Apple Calendar, "Subscribe from web" in Outlook).
+
+The link carries its own token. It can read the calendar and nothing else: not your data, not your settings. Only its hash is stored. **Make a new link** replaces it (the old one stops working) and **Turn off** removes it. Your calendar app needs to reach your server for this, so it only works if Holdings is reachable from where the app runs.
+
 ## Uptime status (Uptime Kuma or Gatus)
 
 If you already run [Uptime Kuma](https://github.com/louislam/uptime-kuma) or [Gatus](https://github.com/TwiN/gatus), Holdings can show **Up** or **Down** next to your servers, domains and projects. It is off until you turn it on in **Settings → Uptime status**.

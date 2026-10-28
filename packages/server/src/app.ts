@@ -1,7 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { hashPassword, hashToken, newToken, sameString, seal, unseal, verifyPassword } from './crypto'
 import type { Store } from './db'
-import { createNotifier, SettingsError, type Notifier } from './notify'
+import { buildCalendar } from '@holdings/core'
+import { createNotifier, readHoldings, SettingsError, type Notifier } from './notify'
 import { createDeadman, type Deadman } from './deadman'
 import { createUptime } from './uptime'
 import { SECURITY_HEADERS, serveStatic } from './static'
@@ -22,6 +23,9 @@ const FAILURE_WINDOW_MS = 15 * 60 * 1000
 const FAILURES_PER_IP = 10
 const REVENUE_CACHE_MS = 10 * 60 * 1000
 const TOKEN_PREFIX = 'hld_'
+// The calendar feed has its own token, which works on /api/calendar.ics only.
+const CALENDAR_PREFIX = 'hcal_'
+const CALENDAR_KEY = 'calendar_token'
 const MAX_TOKENS = 20
 
 export interface AppOptions {
@@ -492,6 +496,55 @@ export function createApp(options: AppOptions) {
       const result = await settingsError(() => uptime.save(input))
       if (input.enabled !== undefined) store.audit(input.enabled ? 'uptime_on' : 'uptime_off', context.ip)
       return result
+    },
+
+    'GET /api/calendar/token': (context) => {
+      requireSession(context)
+      const saved = JSON.parse(store.getSetting(CALENDAR_KEY) ?? 'null') as { createdAt: string; lastUsedAt: string | null } | null
+      return saved ? { exists: true, createdAt: saved.createdAt, lastUsedAt: saved.lastUsedAt } : { exists: false }
+    },
+
+    // Creates the calendar link's token, or replaces it (the old link stops working).
+    'POST /api/calendar/token': (context) => {
+      requireSession(context)
+      const token = CALENDAR_PREFIX + newToken()
+      store.setSetting(CALENDAR_KEY, JSON.stringify({ hash: hashToken(token), createdAt: new Date(now()).toISOString(), lastUsedAt: null }))
+      store.audit('calendar_token_created', context.ip)
+      // The only time the token is shown.
+      return { token }
+    },
+
+    'DELETE /api/calendar/token': (context) => {
+      requireSession(context)
+      store.setSetting(CALENDAR_KEY, 'null')
+      store.audit('calendar_token_revoked', context.ip)
+      return { exists: false }
+    },
+
+    // The subscribe URL for calendar apps. Read-only, renewals and expiries only.
+    'GET /api/calendar.ics': ({ url, ip, response }) => {
+      checkNotLocked(ip)
+      const token = url.searchParams.get('token') ?? ''
+      const saved = JSON.parse(store.getSetting(CALENDAR_KEY) ?? 'null') as { hash: string; createdAt: string; lastUsedAt: string | null } | null
+      if (!saved || !token.startsWith(CALENDAR_PREFIX) || !sameString(hashToken(token), saved.hash)) {
+        failures.add(ip)
+        throw new HttpError(404, 'Not found')
+      }
+      store.setSetting(CALENDAR_KEY, JSON.stringify({ ...saved, lastUsedAt: new Date(now()).toISOString() }))
+      const data = readHoldings(store.getData()?.body)
+      const alarm = Number(url.searchParams.get('alarm') ?? 7)
+      const ics = buildCalendar(data ?? { version: 2, projects: [], assets: [], projectAssets: [], links: [] }, {
+        projectId: url.searchParams.get('project') || undefined,
+        alarmDays: Number.isFinite(alarm) ? Math.min(Math.max(alarm, 0), 60) : 7,
+        now: new Date(now()),
+      })
+      response.writeHead(200, {
+        'Content-Type': 'text/calendar; charset=utf-8',
+        'Content-Disposition': 'inline; filename="holdings.ics"',
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+      })
+      response.end(ics)
     },
 
     'GET /api/domain-lookup': async (context) => {

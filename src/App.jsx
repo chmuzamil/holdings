@@ -866,7 +866,13 @@ function App({ server = null }) {
         )}
 
         {activePage === 'expiring' && (
-          <ExpiryView flatRecords={flatRecords} prettyDate={prettyDate} setActivePage={setActivePage} />
+          <ExpiryView
+            flatRecords={flatRecords}
+            prettyDate={prettyDate}
+            setActivePage={setActivePage}
+            getData={() => getHoldingsData(records, toUsd)}
+            projects={records.projects}
+          />
         )}
 
         {activePage === 'impact' && (
@@ -1242,7 +1248,7 @@ function SettingsView({
     <section className="page-content settings-grid">
       {server && (
         <Suspense fallback={null}>
-          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} />
+          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} projects={getHandover().data.projects} />
         </Suspense>
       )}
 
