@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decryptHandover, encryptHandover, handoverFileHtml } from './handover-file'
+import { decryptHandover, encryptHandover, handoverFileHtml, lockedHandoverFile } from './handover-file'
 
 const secretText = '<h1>If Sam is unavailable</h1><p>The Main VPS renews on 2026-10-30.</p>'
 const passphrase = 'correct horse battery staple'
@@ -50,5 +50,16 @@ describe('handoverFileHtml', () => {
     const source = html.match(/const decryptHandover = ([\s\S]*?);\ndocument\.getElementById/)[1]
     const embedded = new Function(`return (${source})`)()
     expect(await embedded(payload, passphrase)).toBe(secretText)
+  })
+})
+
+describe('lockedHandoverFile', () => {
+  it('builds the locked file the server accepts, without the plain text', async () => {
+    const { fromV1 } = await import('@holdings/core')
+    const data = fromV1({ domains: [{ id: 'd1', name: 'secret-plan.example', renewalDate: '2026-12-01', status: 'Active' }] })
+    const html = await lockedHandoverFile(data, { owner: 'Sam', recipient: 'Sara', message: '' }, passphrase)
+    expect(html.startsWith('<!doctype html>')).toBe(true)
+    expect(html).toContain('decryptHandover')
+    expect(html).not.toContain('secret-plan.example')
   })
 })

@@ -6,6 +6,7 @@
 - **Clean-up suggestions** on the Insights page: paid items no project uses, items only archived projects use, several subscriptions with the same provider, and items marked cancelled that still show a renewal, with the possible monthly saving. Items that are for everything can be marked so they stop showing up, and shown again later.
 - MCP server: `cleanup_suggestions` tool.
 - **Notifications** (self-hosted, all optional): email through your own SMTP, a webhook (Slack, Discord or JSON) and ntfy. Each has its own switch in Settings, and its fields appear when you turn it on. A daily check sends reminders when something reaches 30, 7 or 1 day before renewing or expiring, or is overdue, each once.
+- **Dead-man's switch** (self-hosted, optional): if you stop checking in, the person you trust gets your locked handover file by email. Signing in or saving counts as a check-in; reminders come with a one-click check-in link. The file is locked in your browser and the server never has the passphrase.
 - Settings shows the installed version and build, with links to what is new and the source.
 
 ## 0.2.1 (2026-10-29)

@@ -1,3 +1,5 @@
+import { buildHandover, handoverHtml } from '@holdings/core'
+
 // Encrypted handover files. The passphrase is never stored; without it the
 // file can't be read, and AES-GCM rejects any file that was tampered with.
 
@@ -106,4 +108,14 @@ document.getElementById('unlock').addEventListener('submit', async (event) => {
 </body>
 </html>
 `
+}
+
+/**
+ * The same locked file the Handover page downloads, as a string, for the
+ * dead-man's switch to upload. Locked here, in the browser: only the
+ * locked file leaves it.
+ */
+export async function lockedHandoverFile(data, options, passphrase) {
+  const doc = buildHandover(data, options)
+  return handoverFileHtml(await encryptHandover(handoverHtml(doc), passphrase), { owner: options.owner })
 }
