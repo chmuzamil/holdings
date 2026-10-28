@@ -56,7 +56,7 @@ import { statusTone } from './lib/status'
 import { findSecretsInRecord } from './lib/secrets'
 import { Badge } from './components/ui/Badge'
 import { useDialog } from './components/ui/use-dialog'
-import { buildExport, exportFileName, parseImport } from './lib/data-transfer'
+import { buildExport, exportFileName, findImportSecrets, parseImport } from './lib/data-transfer'
 import { RECORDS_KEY, SETTINGS_KEY, migrateLegacyStorage } from './lib/storage'
 import {
   RATES_ATTRIBUTION_URL,
@@ -86,6 +86,7 @@ const TimelineView = named(() => import('./components/command-center/TimelineVie
 const ImpactView = named(() => import('./components/command-center/ImpactView'), 'ImpactView')
 const ExpiryView = named(() => import('./components/command-center/ExpiryView'), 'ExpiryView')
 const AccountSettings = named(() => import('./components/server/AccountSettings'), 'AccountSettings')
+const CsvImport = named(() => import('./components/shared/CsvImport'), 'CsvImport')
 const PacksView = named(() => import('./components/command-center/PacksView'), 'PacksView')
 const CommandPalette = named(() => import('./components/command-palette/CommandPalette'), 'CommandPalette')
 
@@ -700,6 +701,13 @@ function App({ server = null }) {
     if (!file) return
     try {
       const imported = parseImport(await file.text())
+      // Never load anything that looks like a real key, token or card number.
+      const secrets = findImportSecrets(imported, findSecretsInRecord)
+      if (secrets.length) {
+        const first = secrets[0]
+        setTransferStatus(`Couldn't import that file: ${secrets.length === 1 ? 'one record has' : `${secrets.length} records have`} something that looks like a ${first.kind} (first: ${first.module} "${first.name}", ${first.field}). Holdings never stores secrets. Remove them and import again. Nothing was changed.`)
+        return
+      }
       const total = Object.values(imported).reduce((sum, items) => sum + items.length, 0)
       if (!window.confirm(`Replace everything here with ${total} records from ${file.name}?`)) return
       setRecords(normalizeRecordsByModule(imported))
@@ -707,6 +715,15 @@ function App({ server = null }) {
     } catch (error) {
       setTransferStatus(`Couldn't import that file: ${error.message} Nothing was changed.`)
     }
+  }
+
+  // Rows from the CSV import, already checked (see CsvImport).
+  function importCsvRecords(moduleKey, rows) {
+    const now = new Date().toISOString()
+    const base = moduleKey === 'servers' ? emptyServerRecord : emptyRecord
+    const normalize = moduleKey === 'domains' ? normalizeDomainRecord : moduleKey === 'servers' ? normalizeServerRecord : (record) => record
+    const added = rows.map((row) => normalize({ ...base, ...row, id: `${moduleKey}-${crypto.randomUUID()}`, addedAt: now, editedAt: now }))
+    setRecords((current) => ({ ...current, [moduleKey]: [...added, ...(current[moduleKey] || [])] }))
   }
 
   function updateRepoStats(results) {
@@ -1061,6 +1078,7 @@ function App({ server = null }) {
             server={server}
             stripe={stripe}
             onDomainChanges={setServerChanges}
+            csvImport={<CsvImport records={records} onImport={importCsvRecords} />}
             getHandover={() => ({
               data: getHoldingsData(records, toUsd),
               options: { owner: '', recipient: '', message: '', ...appSettings.handover },
@@ -1268,6 +1286,7 @@ function SettingsView({
   stripe,
   getHandover,
   onDomainChanges,
+  csvImport,
 }) {
   const importInput = useRef(null)
 
@@ -1318,6 +1337,8 @@ function SettingsView({
           <p className="settings-status" role="status" aria-live="polite">{transferStatus}</p>
         </div>
       </div>
+
+      {csvImport}
 
       <CurrencySettings
         appSettings={appSettings}

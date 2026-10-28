@@ -45,3 +45,15 @@ export function parseImport(text) {
 export function exportFileName(now = new Date()) {
   return `holdings-export-${now.toISOString().slice(0, 10)}.json`
 }
+
+const MODULE_LABELS = { domains: 'Domain', servers: 'Server', repos: 'Repo', projects: 'Project', accounts: 'Account', subscriptions: 'Subscription', keys: 'Key or card' }
+
+/**
+ * Anything in an import that looks like a real key, token or card number.
+ * Holdings never stores secrets, so such a file is refused, not cleaned up
+ * silently.
+ */
+export function findImportSecrets(records, findSecretsInRecord) {
+  return MODULE_KEYS.flatMap((key) => (records[key] ?? []).flatMap((record) =>
+    findSecretsInRecord(record).map((hit) => ({ module: MODULE_LABELS[key], name: String(record.name ?? record.id), field: hit.field, kind: hit.kind }))))
+}

@@ -926,3 +926,59 @@ option {
   color: var(--danger-text);
   font-size: 14px;
 }
+
+/* CSV import */
+.csv-wizard {
+  display: grid;
+  gap: 12px;
+  margin-top: var(--space-3);
+}
+
+.csv-table-wrap {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.csv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.csv-table th,
+.csv-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.csv-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+}
+
+.csv-table td:first-child {
+  width: 48px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.csv-add strong {
+  color: var(--success-text);
+}
+
+.csv-duplicate strong,
+.csv-duplicate-in-file strong {
+  color: var(--text-muted);
+}
+
+.csv-invalid strong,
+.csv-invalid div {
+  color: var(--danger-text);
+}

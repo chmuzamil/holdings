@@ -47,7 +47,7 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Revenue from Stripe** (self-hosted): link Stripe products to a project and its monthly revenue fills itself in, with a read-only key.
 - **MCP server** so Claude, Cursor and other agents can answer questions about your portfolio, read-only.
 - **Command palette** (Ctrl/Cmd + K) to jump to anything.
-- **Export and import** everything as JSON.
+- **Export and import** everything as JSON, and **import from a spreadsheet** (CSV) for domains, subscriptions and servers, with a preview of every row before anything is added. See [docs/importing.md](docs/importing.md).
 - **Demo mode** with a made-up portfolio, to look around before adding your own data.
 
 | Projects | What breaks if… |
@@ -152,7 +152,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 **v0.4: less typing**
 - Read-only importers for Cloudflare, registrars with an API (Porkbun, Namecheap, Spaceship) and Hetzner / DigitalOcean servers.
 - Lemon Squeezy and Paddle revenue, next to Stripe.
-- CSV import for the spreadsheet you already keep.
+- ✅ CSV import for the spreadsheet you already keep (done early, in v0.3).
 
 **v0.5: sharing**
 - A read-only second user: a co-founder, an accountant, or a buyer during a sale.

@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- **CSV import** (Settings) for domains, subscriptions and servers: works out the delimiter, matches columns (remembered for the session), shows every row as will add, already here or problem (with the reason), and adds nothing until you confirm. Duplicates: domain name for domains; name, cost and renewal date for subscriptions; name and IP for servers. Templates to download. Parsed in the browser; handles quoted cells, line breaks inside quotes, BOM and CRLF. Rows with anything that looks like a key, token or card number are left out.
 - **Domain change watch**: each DNS/registry check is compared with the last one, and changes to nameservers, registry status, expiry, DNSSEC and the transfer lock are kept (last 20 per domain) and shown in the domain's details. Nameserver changes, status changes, a removed transfer lock and an earlier expiry are marked important and appear on the Attention page for two weeks. Self-hosted: optional scheduled checks (every 6 hours to once a week) that send new changes once to the notification channels you turned on.
 - **Project stages**: idea, building, launched, maintenance, paused, archived. Older projects get a stage from their status (Archived stays archived). The Projects page shows a stage badge and filters by stage, and the stage and when it changed are saved.
 - **Last worked on**: taken from the newest push to a linked GitHub repo, or a date you set (in the project form, or "Worked on it today" in its details).
@@ -27,6 +28,7 @@ Bug fixes, and the first v0.3 feature: domain safety checks.
 - Demo repos link to the hosted demo instead of a placeholder GitHub organisation.
 
 ### Fixed
+- JSON import now refuses a file that contains anything looking like a real key, token or card number, instead of loading it.
 - A repo could disappear from its project when an imported GitHub repo and a hand-added record for the same URL were merged. Links now move to the record that is kept, and links from both copies are kept.
 - The Import JSON button could not be reached with the keyboard, and its icon sat above the text.
 
