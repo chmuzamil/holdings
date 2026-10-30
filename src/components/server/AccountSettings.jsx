@@ -5,6 +5,7 @@ import { api } from '../../lib/server-api'
 import { AccessTokens } from './AccessTokens'
 import { CalendarFeed } from './CalendarFeed'
 import { CloudflareImport } from './CloudflareImport'
+import { RegistrarImport } from './RegistrarImport'
 import { DomainWatchSettings } from './DomainWatchSettings'
 import { UptimeSettings } from './UptimeSettings'
 import { DeadmanSettings } from './DeadmanSettings'
@@ -65,7 +66,7 @@ function Status({ status }) {
   )
 }
 
-export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, projects, onDomainChanges, uptime, records, onCloudflareImport }) {
+export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, projects, onDomainChanges, uptime, records, onDomainImport }) {
   const totpEnabled = Boolean(server.session?.totpEnabled)
 
   return (
@@ -102,7 +103,8 @@ export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, proj
       <DeadmanSettings getHandover={getHandover} />
       <CalendarFeed projects={projects} />
       <StripeSettings stripe={stripe} ratesPerUsd={ratesPerUsd} />
-      {records && <CloudflareImport records={records} onApply={onCloudflareImport} />}
+      {records && <CloudflareImport records={records} onApply={onDomainImport} />}
+      {records && <RegistrarImport records={records} onApply={onDomainImport} />}
       <AccessTokens />
     </>
   )

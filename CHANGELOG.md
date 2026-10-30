@@ -3,7 +3,8 @@
 ## Unreleased
 
 ### Added
-- **Import from Cloudflare** (self-hosted, optional): connect a read-only API token in Settings and your zones come in as domains, with subdomains from your DNS records (linked to your servers by IP) and, for domains registered at Cloudflare, the expiry date and whether auto-renew is on. Every zone is shown first as will add, will fill in or up to date; only empty fields are filled, and nothing is added until you confirm. The Global API Key is refused, and the token is stored encrypted on your server.
+- **Import from Cloudflare** (self-hosted, optional): connect a read-only API token in Settings and your zones come in as domains, with subdomains from your DNS records (linked to your servers by IP) and, for domains registered at Cloudflare, the expiry date and whether auto-renew is on. Every zone is shown first as will add, will update or up to date; only empty fields are filled, and nothing is added until you confirm. The Global API Key is refused, and the token is stored encrypted on your server.
+- **Import from your registrar** (self-hosted, optional): connect Porkbun (read-only key), Spaceship (domains:read key) or Namecheap in Settings and import your domains with their expiry dates. An expiry date in Holdings that differs from the registrar's is offered as a change (old → new); everything else is only filled in when empty. Auto-renew off and transfer lock off are pointed out. Nothing changes until you confirm, and keys are stored encrypted on your server.
 
 ## 0.3.0 (2026-10-29)
 

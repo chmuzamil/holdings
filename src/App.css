@@ -927,6 +927,11 @@ option {
   font-size: 14px;
 }
 
+/* Registrar import */
+.registrar-connect {
+  margin-top: var(--space-4);
+}
+
 /* CSV import */
 .csv-wizard {
   display: grid;

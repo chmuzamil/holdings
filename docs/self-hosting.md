@@ -103,9 +103,21 @@ The server can read your Cloudflare zones and bring them in as domains: subdomai
 2. Add the permissions **Zone → Zone → Read** and **Zone → DNS → Read**. For expiry dates, also add **Account → Registrar → Read** (only useful for domains registered at Cloudflare).
 3. Paste the token in Holdings under **Settings → Import from Cloudflare**. The Global API Key is refused: it can change everything in your account.
 
-Press **Check Cloudflare** to see each zone as "Will add", "Will fill in" (only empty fields: registrar, dates, new subdomains, server links) or "Up to date". Untick what you don't want, then import. Nothing you entered is overwritten, and cost is left for you because Cloudflare's API doesn't say what a domain costs. Anything that looks like a key or card number is left out.
+Press **Check Cloudflare** to see each zone as "Will add", "Will update" (only empty fields: registrar, dates, new subdomains, server links) or "Up to date". Untick what you don't want, then import. Nothing you entered is overwritten, and cost is left for you because Cloudflare's API doesn't say what a domain costs. Anything that looks like a key or card number is left out.
 
 The token is encrypted on your server and never sent back to the browser. Only your server talks to `api.cloudflare.com`, and only when you press Check Cloudflare. Disconnect deletes the token.
+
+## Import from your registrar
+
+The server can read the domains in your Porkbun, Namecheap or Spaceship account, with their expiry dates. Connect as many as you use; each has its own keys.
+
+- **Porkbun:** in **Account → API Access**, create an API key and choose the **Read-only** preset. Paste the API key (`pk1_…`) and the secret API key (`sk1_…`).
+- **Spaceship:** in **API Manager**, create a key with only the **domains:read** scope. Paste the key and the secret.
+- **Namecheap:** in **Profile → Tools → Namecheap API Access**, turn the API on and add your server's public IPv4 address to the whitelist. Enter your username, the API key and that IP. Namecheap only turns the API on for accounts with 20 or more domains, $50 in the balance, or $50 spent in the last two years. Its keys can't be limited to reading: Holdings only reads, but the key could change your domains, so think about whether you want it on your server.
+
+Press **Check** next to a registrar to see each domain as "Will add", "Will update" or "Up to date". The registrar knows best when a domain expires, so a different expiry date in Holdings is offered as a change, shown as old → new; a renewal date that was the same as the old expiry moves with it. Everything else is only filled in when empty. Domains with auto-renew off or the transfer lock off say so. Untick what you don't want, then import.
+
+Keys are encrypted on your server and never sent back to the browser. Only your server talks to the registrar, and only when you press Check. Disconnect deletes the keys.
 
 ## Notifications
 
