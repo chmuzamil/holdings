@@ -48,6 +48,7 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Revenue from Stripe** (self-hosted): link Stripe products to a project and its monthly revenue fills itself in, with a read-only key.
 - **Import from Cloudflare** (self-hosted): your zones become domains, with subdomains from your DNS records linked to your servers by IP, and expiry dates for domains registered at Cloudflare. Read-only token; you see every domain before anything is added, and nothing you typed is overwritten.
 - **Import from your registrar** (self-hosted): Porkbun, Namecheap and Spaceship. Your domains come in with their expiry dates, and out-of-date expiry dates in Holdings are corrected, after you've seen every change.
+- **Import servers** (self-hosted): from Hetzner Cloud, DigitalOcean, or any other host through a JSON URL you control. Specs, IP, location and monthly price (converted to USD), matched to servers you already track by IP or name.
 - **MCP server** so Claude, Cursor and other agents can answer questions about your portfolio, read-only.
 - **Command palette** (Ctrl/Cmd + K) to jump to anything.
 - **Export and import** everything as JSON, and **import from a spreadsheet** (CSV) for domains, subscriptions and servers, with a preview of every row before anything is added. See [docs/importing.md](docs/importing.md).
@@ -108,10 +109,11 @@ Open http://localhost:8080, enter the setup code and pick a password. You can ad
 - Clearing site data deletes it, so use **Settings → Export JSON** for backups.
 - The app only contacts other services when you ask it to:
   - `api.github.com`, when you fetch or refresh GitHub repos
-  - `open.er-api.com`, once a day, if you picked a second currency or Stripe reports revenue in a currency other than USD
+  - `open.er-api.com`, once a day, if you picked a second currency, Stripe reports revenue in a currency other than USD, or an imported server is billed in another currency
   - `api.stripe.com`, from your server only, if you connect Stripe (read-only key)
   - `api.cloudflare.com`, from your server only, when you press Check Cloudflare (read-only token)
   - `api.porkbun.com`, `api.namecheap.com` or `spaceship.dev`, from your server only, when you press Check for a registrar you connected
+  - `api.hetzner.cloud`, `api.digitalocean.com` or your own custom URL, from your server only, when you press Check for a server host you connected
   - your own server (or `npm run api`), when you run a DNS check. It queries DNS, IANA's registry directory and the domain's public registry (RDAP).
 - With the self-hosted server and uptime status turned on, your server reads your own Uptime Kuma or Gatus status page once a minute while Holdings is open.
 - With the self-hosted server and domain watch turned on, your server runs the same DNS and registry lookups for your domains on the schedule you choose.
@@ -161,7 +163,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 **v0.4: less typing**
 - ✅ Read-only import from Cloudflare: zones, DNS records as subdomains, and registrar expiry dates.
 - ✅ Read-only import from Porkbun, Namecheap and Spaceship: domains and expiry dates.
-- Read-only import of Hetzner / DigitalOcean servers.
+- ✅ Read-only import of Hetzner Cloud and DigitalOcean servers, and of any other host through a custom JSON URL.
 - Lemon Squeezy and Paddle revenue, next to Stripe.
 - ✅ CSV import for the spreadsheet you already keep (done early, in v0.3).
 

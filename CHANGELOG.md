@@ -5,6 +5,7 @@
 ### Added
 - **Import from Cloudflare** (self-hosted, optional): connect a read-only API token in Settings and your zones come in as domains, with subdomains from your DNS records (linked to your servers by IP) and, for domains registered at Cloudflare, the expiry date and whether auto-renew is on. Every zone is shown first as will add, will update or up to date; only empty fields are filled, and nothing is added until you confirm. The Global API Key is refused, and the token is stored encrypted on your server.
 - **Import from your registrar** (self-hosted, optional): connect Porkbun (read-only key), Spaceship (domains:read key) or Namecheap in Settings and import your domains with their expiry dates. An expiry date in Holdings that differs from the registrar's is offered as a change (old → new); everything else is only filled in when empty. Auto-renew off and transfer lock off are pointed out. Nothing changes until you confirm, and keys are stored encrypted on your server.
+- **Import servers** (self-hosted, optional): connect Hetzner Cloud (Read token), DigitalOcean (droplet:read token) or a custom JSON URL for any other host, and import servers with specs, IP, location and monthly price. Servers you already track are matched by IP or name; only empty details are filled in, and a different price is pointed out but your cost is kept. Euro and other prices are converted to USD with the daily rate. The custom URL format is in docs/self-hosting.md.
 
 ## 0.3.0 (2026-10-29)
 
