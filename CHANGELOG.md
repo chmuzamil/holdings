@@ -2,7 +2,11 @@
 
 ## Unreleased
 
+### Changed
+- Projects link revenue products in one list (`revenueProductIds`) for every source. Links saved as `stripeProductIds` are moved over when the data loads, so older exports keep their revenue.
+
 ### Added
+- **More revenue sources** (self-hosted, optional): Lemon Squeezy, Paddle Billing (subscription.read key) and a custom JSON URL, next to Stripe. A project can link products from any of them, and its monthly revenue adds them up, in USD. The custom URL is the way in for App Store, Google Play, RevenueCat or anything else; docs/self-hosting.md has the format and how to build it. A project's revenue only updates once every source it uses has answered.
 - **Import from Cloudflare** (self-hosted, optional): connect a read-only API token in Settings and your zones come in as domains, with subdomains from your DNS records (linked to your servers by IP) and, for domains registered at Cloudflare, the expiry date and whether auto-renew is on. Every zone is shown first as will add, will update or up to date; only empty fields are filled, and nothing is added until you confirm. The Global API Key is refused, and the token is stored encrypted on your server.
 - **Import from your registrar** (self-hosted, optional): connect Porkbun (read-only key), Spaceship (domains:read key) or Namecheap in Settings and import your domains with their expiry dates. An expiry date in Holdings that differs from the registrar's is offered as a change (old → new); everything else is only filled in when empty. Auto-renew off and transfer lock off are pointed out. Nothing changes until you confirm, and keys are stored encrypted on your server.
 - **Import servers** (self-hosted, optional): connect Hetzner Cloud (Read token), DigitalOcean (droplet:read token) or a custom JSON URL for any other host, and import servers with specs, IP, location and monthly price. Servers you already track are matched by IP or name; only empty details are filled in, and a different price is pointed out but your cost is kept. Euro and other prices are converted to USD with the daily rate. The custom URL format is in docs/self-hosting.md.

@@ -95,6 +95,39 @@ The server can read each product's monthly recurring revenue from Stripe, so you
 
 What it counts: active subscriptions, turned into a monthly amount (a yearly plan counts a twelfth each month), before discounts and tax. One-off payments, and metered or tiered prices, aren't included. The key is encrypted on your server and is never sent back to the browser. Only your server talks to `api.stripe.com`, and at most once every 10 minutes unless you press refresh.
 
+## More revenue sources
+
+Next to Stripe, connect Lemon Squeezy, Paddle or a URL you control under **Settings → More revenue sources**. Then edit a project and tick its products under **Products with revenue**; products from every source are listed together, and a project can mix them. Like Stripe: active subscriptions as a monthly amount, before discounts and tax, refreshed at most every 10 minutes; amounts in other currencies are converted with the daily rate.
+
+- **Lemon Squeezy:** in **Settings → API**, create an API key (a test-mode key shows test data). Lemon Squeezy keys can't be limited to reading. Holdings only reads, but the key could change your store (for example refund or cancel), so keep your server locked down. Usage-based and tiered prices aren't counted.
+- **Paddle:** Paddle Billing only, not Paddle Classic. In **Developer tools → Authentication**, create an API key with only **subscription.read**, plus **product.read** if you want products nobody subscribes to yet to show up. A sandbox key (`pdl_sdbx_…`) reads your sandbox.
+- **Custom URL:** see below.
+
+Keys are encrypted on your server and never sent back to the browser. Disconnect deletes them; the revenue already written into your projects stays.
+
+### Custom revenue URL format
+
+For anything without a built-in connection: point Holdings at a URL that answers a GET with JSON like this. If you set a token, it is sent as `Authorization: Bearer <token>`.
+
+```json
+{
+  "products": [
+    { "id": "ios-pro", "name": "Notes Pro (iOS)", "monthlyRevenue": 120.5, "currency": "USD", "subscriptions": 40 },
+    { "id": "android-pro", "name": "Notes Pro (Android)", "monthlyRevenue": 80, "currency": "EUR" }
+  ]
+}
+```
+
+`id` and `monthlyRevenue` (in normal units, so 120.5 means $120.50) are required; `name` defaults to the id, `currency` to USD, and `subscriptions` is optional. Keep each `id` the same over time, since projects link to it. The answer must be JSON and at most 1 MB.
+
+**App Store and Google Play.** Neither store offers a simple read-only key for "monthly revenue", so Holdings doesn't connect to them directly:
+
+- If you use **RevenueCat**, a small script can read its overview (MRR per app) and serve it in this format.
+- **App Store Connect** has a Sales and Trends API (a `.p8` key, daily or monthly reports); a script can sum proceeds per app for the last month.
+- **Google Play** puts earnings reports in a Cloud Storage bucket, monthly and a few days late; a script with a service account can read the latest one.
+
+Run the script on a schedule, write the JSON to a file your web server serves (or serve it directly), and point Holdings at it.
+
 ## Import from Cloudflare
 
 The server can read your Cloudflare zones and bring them in as domains: subdomains from your A, AAAA and CNAME records (linked to a server when the IP matches one you track), and the expiry date and whether auto-renew is on for domains registered at Cloudflare. It is read-only.

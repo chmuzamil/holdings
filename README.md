@@ -45,7 +45,7 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Handover and exit packs**: a locked "if I'm unavailable" file for someone you trust (opens offline in any browser with a passphrase, never contains passwords or keys), and an asset register with a transfer checklist for selling a project. Add **runbooks** in Markdown, one for everything and one per project, saying what to do step by step; they go into both packs.
 - **Uptime status** (self-hosted, optional): already run Uptime Kuma or Gatus? See Up or Down next to your servers, domains and projects, and down items on the Attention page.
 - **Self-hosting** (optional): one Docker container with a password and two-step login, your data saved on your server and available in every browser.
-- **Revenue from Stripe** (self-hosted): link Stripe products to a project and its monthly revenue fills itself in, with a read-only key.
+- **Revenue from Stripe, Lemon Squeezy and Paddle** (self-hosted): link products to a project and its monthly revenue fills itself in. For App Store, Google Play or anything else, point Holdings at a JSON URL you control.
 - **Import from Cloudflare** (self-hosted): your zones become domains, with subdomains from your DNS records linked to your servers by IP, and expiry dates for domains registered at Cloudflare. Read-only token; you see every domain before anything is added, and nothing you typed is overwritten.
 - **Import from your registrar** (self-hosted): Porkbun, Namecheap and Spaceship. Your domains come in with their expiry dates, and out-of-date expiry dates in Holdings are corrected, after you've seen every change.
 - **Import servers** (self-hosted): from Hetzner Cloud, DigitalOcean, or any other host through a JSON URL you control. Specs, IP, location and monthly price (converted to USD), matched to servers you already track by IP or name.
@@ -111,6 +111,7 @@ Open http://localhost:8080, enter the setup code and pick a password. You can ad
   - `api.github.com`, when you fetch or refresh GitHub repos
   - `open.er-api.com`, once a day, if you picked a second currency, Stripe reports revenue in a currency other than USD, or an imported server is billed in another currency
   - `api.stripe.com`, from your server only, if you connect Stripe (read-only key)
+  - `api.lemonsqueezy.com`, `api.paddle.com` or your own revenue URL, from your server only, if you connect them
   - `api.cloudflare.com`, from your server only, when you press Check Cloudflare (read-only token)
   - `api.porkbun.com`, `api.namecheap.com` or `spaceship.dev`, from your server only, when you press Check for a registrar you connected
   - `api.hetzner.cloud`, `api.digitalocean.com` or your own custom URL, from your server only, when you press Check for a server host you connected
@@ -129,7 +130,7 @@ Open http://localhost:8080, enter the setup code and pick a password. You can ad
 | Renewal and expiry tracking | ✅ | ✅ | ✅ | domain expiry | – | – |
 | Live DNS / registry check | ✅ | – | ✅ | – | – | – |
 | Uptime monitoring | – | – | – | ✅ | status widgets | app health checks |
-| Revenue per project | ✅ (typed in; Stripe etc. planned) | – | – | – | – | – |
+| Revenue per project | ✅ (typed in, or from Stripe, Lemon Squeezy, Paddle or your own URL) | – | – | – | – | – |
 | "What breaks if…" impact view | ✅ | – | – | – | – | – |
 | Handover and sale (due-diligence) packs | ✅ | – | – | – | – | – |
 | API key, certificate and card expiry (metadata only) | ✅ | – | SSL | certs | – | – |
@@ -141,7 +142,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 ## Roadmap
 
 **v0.2: the founder's asset register**
-- ✅ **Project ledger**: monthly cost against revenue for each project, with shared servers split fairly. With the self-hosted server, revenue can come straight from Stripe (read-only). Lemon Squeezy and Paddle are next.
+- ✅ **Project ledger**: monthly cost against revenue for each project, with shared servers split fairly. With the self-hosted server, revenue can come straight from Stripe, Lemon Squeezy, Paddle or a URL you control.
 - ✅ **"What breaks if…"**: pick a domain, server, service or card and see what it affects and the revenue involved.
 - ✅ **Expiry radar**: domains, TLS certificates, API keys, tokens, OAuth apps and payment cards in one list, soonest first. Metadata only: Holdings refuses to save anything that looks like a real key or card number.
 - ✅ **Exit pack**: a one-click asset register and transfer checklist for selling a project (Markdown, JSON or print).
@@ -164,7 +165,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ Read-only import from Cloudflare: zones, DNS records as subdomains, and registrar expiry dates.
 - ✅ Read-only import from Porkbun, Namecheap and Spaceship: domains and expiry dates.
 - ✅ Read-only import of Hetzner Cloud and DigitalOcean servers, and of any other host through a custom JSON URL.
-- Lemon Squeezy and Paddle revenue, next to Stripe.
+- ✅ Lemon Squeezy and Paddle revenue next to Stripe, and a custom revenue URL (for App Store, Google Play or anything else).
 - ✅ CSV import for the spreadsheet you already keep (done early, in v0.3).
 
 **v0.5: sharing**
