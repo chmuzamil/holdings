@@ -42,6 +42,7 @@ export const emptyProjectRecord = {
   stageChangedAt: '',
   lastWorkedOn: '',
   runbook: '',
+  revenueProductIds: [],
 }
 
 // Where a project is in its life. Replaces the older status in the UI; the
@@ -88,9 +89,11 @@ function slugify(value) {
 }
 
 export function normalizeProjectRecord(record) {
+  // Before other revenue sources, links to Stripe products were kept as stripeProductIds.
+  const { stripeProductIds, ...rest } = record
   return {
     ...emptyProjectRecord,
-    ...record,
+    ...rest,
     monthlyRevenueUsd: parseRevenue(record.monthlyRevenueUsd),
     stage: STAGE_IDS.includes(record.stage) ? record.stage : stageFromStatus(String(record.status || '')),
     stageChangedAt: record.stageChangedAt || '',
@@ -100,6 +103,7 @@ export function normalizeProjectRecord(record) {
     repoIds: Array.isArray(record.repoIds) ? record.repoIds : [],
     serverIds: Array.isArray(record.serverIds) ? record.serverIds : [],
     subscriptionIds: Array.isArray(record.subscriptionIds) ? record.subscriptionIds : [],
+    revenueProductIds: Array.isArray(record.revenueProductIds) ? record.revenueProductIds : Array.isArray(stripeProductIds) ? stripeProductIds : [],
     slug: record.slug || slugify(record.name),
   }
 }

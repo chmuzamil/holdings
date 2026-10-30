@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { RefreshCw, Unplug } from 'lucide-react'
 import { formatMoney } from '../../lib/currency'
-import { productMonthlyUsd } from '../../lib/stripe-revenue'
+import { productMonthlyUsd } from '../../lib/revenue'
 
 const STRIPE_KEYS_URL = 'https://dashboard.stripe.com/apikeys'
 

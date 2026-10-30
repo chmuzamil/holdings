@@ -10,6 +10,7 @@ import { openStore, type Store } from './db'
 import { CF_TOKEN, fakeCloudflare } from './cloudflare-fake'
 import { fakePorkbun, fakeSpaceship, PORKBUN_KEYS, SPACESHIP_KEYS } from './registrars-fake'
 import { CUSTOM_TOKEN, CUSTOM_URL, fakeCustom, fakeHetzner, HETZNER_TOKEN } from './hosts-fake'
+import { fakePaddle, fakeRevenueUrl, PADDLE_KEY, REVENUE_TOKEN, REVENUE_URL } from './revenue-fake'
 import { fakeStripe, TEST_KEY } from './stripe-fake'
 import { totpCode } from './totp'
 
@@ -669,5 +670,45 @@ describe('Server host import', () => {
     await browser.call('DELETE', '/api/integrations/hosts?host=hetzner')
     expect((await browser.call('GET', '/api/import/host?host=hetzner')).status).toBe(404)
     expect((await browser.call('GET', '/api/import/host?host=custom')).status).toBe(200)
+  })
+})
+
+describe('Revenue sources', () => {
+  async function withSources() {
+    await new Promise((resolve) => server.close(resolve))
+    store.close()
+    const paddle = fakePaddle()
+    const custom = fakeRevenueUrl()
+    await start({ revenueFetch: (url, init) => (url.includes('paddle') ? paddle(url, init) : custom(url, init)) })
+    return { browser: await signedIn(), paddle }
+  }
+
+  it('needs a login and a known source', async () => {
+    expect((await client().call('GET', '/api/integrations/revenue')).status).toBe(401)
+    const { browser } = await withSources()
+    expect((await browser.call('GET', '/api/revenue/source?source=gumroad')).body.error).toMatch(/Lemon Squeezy, Paddle or a custom URL/)
+    expect((await browser.call('GET', '/api/revenue/source?source=paddle')).status).toBe(404)
+  })
+
+  it('connects, keeps keys encrypted, returns revenue, and caches it', async () => {
+    const { browser, paddle } = await withSources()
+    expect((await browser.call('PUT', '/api/integrations/revenue', { source: 'paddle', credentials: { apiKey: 'x'.repeat(40) } })).status).toBe(400)
+    const connect = await browser.call('PUT', '/api/integrations/revenue', { source: 'paddle', credentials: { apiKey: PADDLE_KEY } })
+    expect(connect.body).toMatchObject({ connected: true, hint: `key ending ${PADDLE_KEY.slice(-4)}`, revenue: { label: 'Paddle' } })
+    await browser.call('PUT', '/api/integrations/revenue', { source: 'custom', credentials: { url: REVENUE_URL, token: REVENUE_TOKEN } })
+    expect(store.getIntegration('revenue-paddle')?.sealedKey).not.toContain(PADDLE_KEY)
+    const status = JSON.stringify((await browser.call('GET', '/api/integrations/revenue')).body)
+    expect(status).not.toContain(PADDLE_KEY)
+    expect(status).not.toContain(REVENUE_TOKEN)
+
+    const calls = paddle.mock.calls.length
+    expect(((await browser.call('GET', '/api/revenue/source?source=paddle')).body.products as { id: string }[])[0]?.id).toBe('paddle:pro_app')
+    expect(paddle.mock.calls.length).toBe(calls)
+    await browser.call('GET', '/api/revenue/source?source=paddle&refresh=1')
+    expect(paddle.mock.calls.length).toBeGreaterThan(calls)
+
+    await browser.call('DELETE', '/api/integrations/revenue?source=paddle')
+    expect((await browser.call('GET', '/api/revenue/source?source=paddle')).status).toBe(404)
+    expect((await browser.call('GET', '/api/revenue/source?source=custom')).body.products).toHaveLength(3)
   })
 })

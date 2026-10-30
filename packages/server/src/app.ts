@@ -6,6 +6,7 @@ import { createNotifier, readHoldings, SettingsError, type Notifier } from './no
 import { createDeadman, type Deadman } from './deadman'
 import { createUptime } from './uptime'
 import { checkCloudflareToken, CloudflareError, fetchCloudflare, tokenHint, verifyToken } from './cloudflare'
+import { cleanRevenueCredentials, fetchSourceRevenue, isRevenueSource, REVENUE_SOURCES, RevenueError, type RevenueSourceId, type SourceRevenue } from './revenue-sources'
 import { cleanHostCredentials, fetchHost, HostError, HOSTS, isHost, type HostId } from './hosts'
 import { cleanCredentials, credentialsHint, fetchRegistrar, isRegistrar, REGISTRARS, RegistrarError, type RegistrarId } from './registrars'
 import { createDomainWatch, type DomainWatch } from './domain-watch'
@@ -60,6 +61,8 @@ export interface AppOptions {
   registrarFetch?: FetchLike
   /** fetch() used for server hosts (Hetzner, DigitalOcean, custom URL); replaced in tests. */
   hostFetch?: FetchLike
+  /** fetch() used for Lemon Squeezy, Paddle and custom revenue URLs; replaced in tests. */
+  revenueFetch?: FetchLike
   /** Scheduled domain change watch; made here unless given (index.ts runs it). */
   domainWatch?: DomainWatch
 }
@@ -146,6 +149,25 @@ export function createApp(options: AppOptions) {
       if (error instanceof StripeError) throw new HttpError(error.status, error.message)
       throw error
     }
+  }
+
+  // Lemon Squeezy, Paddle and custom URLs, cached like Stripe.
+  const sourceCache = new Map<RevenueSourceId, { at: number; revenue: SourceRevenue }>()
+  async function sourceRevenue(id: RevenueSourceId, credentials: Record<string, string>, refresh: boolean) {
+    const cached = sourceCache.get(id)
+    if (!refresh && cached && now() - cached.at < REVENUE_CACHE_MS) return cached.revenue
+    try {
+      const revenue = await fetchSourceRevenue(id, credentials, options.revenueFetch, now())
+      sourceCache.set(id, { at: now(), revenue })
+      return revenue
+    } catch (error) {
+      if (error instanceof RevenueError) throw new HttpError(error.status, error.message)
+      throw error
+    }
+  }
+  const sourceParam = (value: unknown): RevenueSourceId => {
+    if (!isRevenueSource(value)) throw new HttpError(400, 'Pick Lemon Squeezy, Paddle or a custom URL.')
+    return value
   }
 
   // --- helpers -------------------------------------------------------------
@@ -439,6 +461,46 @@ export function createApp(options: AppOptions) {
       const stripe = store.getIntegration('stripe')
       if (!stripe) throw new HttpError(404, 'Stripe isn’t connected.')
       return stripeRevenue(unseal(stripe.sealedKey, secretKey), context.url.searchParams.get('refresh') === '1')
+    },
+
+    'GET /api/integrations/revenue': (context) => {
+      requireSession(context)
+      return Object.fromEntries(Object.keys(REVENUE_SOURCES).map((id) => {
+        const saved = store.getIntegration(`revenue-${id}`)
+        return [id, saved ? { connected: true, hint: saved.hint, connectedAt: saved.connectedAt } : { connected: false }]
+      }))
+    },
+
+    'PUT /api/integrations/revenue': async (context) => {
+      requireSession(context)
+      const input = await context.body()
+      const id = sourceParam(input.source)
+      const credentials = cleanRevenueCredentials(id, input.credentials)
+      const invalid = REVENUE_SOURCES[id].check(credentials)
+      if (invalid) throw new HttpError(400, invalid)
+      // Check it can be read before keeping it.
+      const revenue = await sourceRevenue(id, credentials, true)
+      const hint = REVENUE_SOURCES[id].hint(credentials)
+      store.setIntegration(`revenue-${id}`, seal(JSON.stringify(credentials), secretKey), hint)
+      store.audit(`revenue_connected:${id}`, context.ip)
+      return { connected: true, hint, revenue }
+    },
+
+    'DELETE /api/integrations/revenue': (context) => {
+      requireSession(context)
+      const id = sourceParam(context.url.searchParams.get('source'))
+      store.deleteIntegration(`revenue-${id}`)
+      sourceCache.delete(id)
+      store.audit(`revenue_disconnected:${id}`, context.ip)
+      return { connected: false }
+    },
+
+    'GET /api/revenue/source': async (context) => {
+      requireSession(context)
+      const id = sourceParam(context.url.searchParams.get('source'))
+      const saved = store.getIntegration(`revenue-${id}`)
+      if (!saved) throw new HttpError(404, `${REVENUE_SOURCES[id].label} isn’t connected.`)
+      return sourceRevenue(id, JSON.parse(unseal(saved.sealedKey, secretKey)), context.url.searchParams.get('refresh') === '1')
     },
 
     'GET /api/tokens': (context) => {
