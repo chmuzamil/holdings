@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, SESSION_COOKIE } from './app'
 import { openStore, type Store } from './db'
+import { CF_TOKEN, fakeCloudflare } from './cloudflare-fake'
 import { fakeStripe, TEST_KEY } from './stripe-fake'
 import { totpCode } from './totp'
 
@@ -552,5 +553,40 @@ describe('calendar feed', () => {
     expect((await client().call('POST', '/api/calendar/token')).status).toBe(401)
     expect((await client().call('DELETE', '/api/calendar/token')).status).toBe(401)
     expect((await client().call('GET', '/api/calendar/token')).status).toBe(401)
+  })
+})
+
+describe('Cloudflare import', () => {
+  async function withCloudflare() {
+    await new Promise((resolve) => server.close(resolve))
+    store.close()
+    await start({ cloudflareFetch: fakeCloudflare() })
+    return signedIn()
+  }
+
+  it('needs a login', async () => {
+    expect((await client().call('GET', '/api/integrations/cloudflare')).status).toBe(401)
+    expect((await client().call('GET', '/api/import/cloudflare')).status).toBe(401)
+  })
+
+  it('refuses the Global API Key and tokens Cloudflare rejects, keeping nothing', async () => {
+    const browser = await withCloudflare()
+    expect((await browser.call('PUT', '/api/integrations/cloudflare', { token: '0123456789abcdef0123456789abcdef01234' })).body.error).toMatch(/Global API Key/)
+    expect((await browser.call('PUT', '/api/integrations/cloudflare', { token: 'z'.repeat(40) })).status).toBe(400)
+    expect((await browser.call('GET', '/api/integrations/cloudflare')).body).toEqual({ connected: false })
+  })
+
+  it('connects, stores the token encrypted, never returns it, and reads the import', async () => {
+    const browser = await withCloudflare()
+    const connect = await browser.call('PUT', '/api/integrations/cloudflare', { token: CF_TOKEN })
+    expect(connect.body).toEqual({ connected: true, hint: `token ending ${CF_TOKEN.slice(-4)}` })
+    expect(store.getIntegration('cloudflare')?.sealedKey).not.toContain(CF_TOKEN)
+    expect(JSON.stringify((await browser.call('GET', '/api/integrations/cloudflare')).body)).not.toContain(CF_TOKEN)
+
+    const preview = await browser.call('GET', '/api/import/cloudflare')
+    expect((preview.body.domains as { name: string }[]).map((domain) => domain.name)).toEqual(['shop.example', 'news.example', 'old.example'])
+
+    await browser.call('DELETE', '/api/integrations/cloudflare')
+    expect((await browser.call('GET', '/api/import/cloudflare')).status).toBe(404)
   })
 })
