@@ -8,7 +8,7 @@ import {
   projectStages,
 } from '../../lib/project-helpers'
 import { formatMoney } from '../../lib/currency'
-import { productMonthlyUsd, projectStripeRevenueUsd } from '../../lib/stripe-revenue'
+import { productMonthlyUsd, projectRevenueUsd, sourceNames } from '../../lib/revenue'
 
 function AssetCheckboxList({ items, selectedIds, onToggle, emptyText }) {
   if (!items.length) {
@@ -31,10 +31,10 @@ function AssetCheckboxList({ items, selectedIds, onToggle, emptyText }) {
   )
 }
 
-export function ProjectRecordModal({ modal, setModal, saveRecord, records, stripeProducts = null, ratesPerUsd = {} }) {
+export function ProjectRecordModal({ modal, setModal, saveRecord, records, revenueProducts = null, ratesPerUsd = {} }) {
   const values = modal.values || emptyProjectRecord
-  const linkedToStripe = Boolean(stripeProducts && values.stripeProductIds?.length)
-  const stripeRevenueUsd = linkedToStripe ? projectStripeRevenueUsd(values, { products: stripeProducts }, ratesPerUsd) : null
+  const linkedToRevenue = Boolean(revenueProducts && values.revenueProductIds?.length)
+  const linkedRevenueUsd = linkedToRevenue ? projectRevenueUsd(values, { products: revenueProducts }, ratesPerUsd) : null
 
   function updateField(key, value) {
     setModal((current) => ({
@@ -134,25 +134,26 @@ export function ProjectRecordModal({ modal, setModal, saveRecord, records, strip
                 min="0"
                 step="0.01"
                 inputMode="decimal"
-                value={linkedToStripe ? (stripeRevenueUsd ?? values.monthlyRevenueUsd ?? '') : (values.monthlyRevenueUsd ?? '')}
+                value={linkedToRevenue ? (linkedRevenueUsd ?? values.monthlyRevenueUsd ?? '') : (values.monthlyRevenueUsd ?? '')}
                 onChange={(e) => updateField('monthlyRevenueUsd', e.target.value)}
                 placeholder="Leave empty if you don't track it"
-                disabled={linkedToStripe}
-                aria-describedby={linkedToStripe ? 'revenue-from-stripe' : undefined}
+                disabled={linkedToRevenue}
+                aria-describedby={linkedToRevenue ? 'revenue-linked' : undefined}
               />
-              {linkedToStripe && <small id="revenue-from-stripe">Filled in from Stripe.</small>}
+              {linkedToRevenue && <small id="revenue-linked">Filled in from {sourceNames(values.revenueProductIds)}.</small>}
             </label>
-            {stripeProducts && (
+            {revenueProducts && (
               <fieldset className="field-group full-width form-fieldset">
-                <legend>Stripe products</legend>
+                <legend>Products with revenue</legend>
                 <AssetCheckboxList
-                  items={stripeProducts.map((product) => {
+                  items={revenueProducts.map((product) => {
                     const usd = productMonthlyUsd(product, ratesPerUsd)
-                    return { id: product.id, name: usd === null ? product.name : `${product.name} (${formatMoney(usd)}/mo)` }
+                    const name = `${product.source}: ${product.name}`
+                    return { id: product.id, name: usd === null ? name : `${name} (${formatMoney(usd)}/mo)` }
                   })}
-                  selectedIds={values.stripeProductIds || []}
-                  onToggle={(id) => toggleId('stripeProductIds', id)}
-                  emptyText="No products in Stripe yet."
+                  selectedIds={values.revenueProductIds || []}
+                  onToggle={(id) => toggleId('revenueProductIds', id)}
+                  emptyText="No products yet."
                 />
               </fieldset>
             )}

@@ -11,6 +11,7 @@ import { getProjectCostAnalytics } from '../../lib/intelligence-helpers'
 import { percentLabel } from '../../lib/format'
 import { Progress } from '../ui/Progress'
 import { resolveProjectAssets } from '../../lib/asset-helpers'
+import { sourceNames } from '../../lib/revenue'
 
 
 
@@ -61,7 +62,7 @@ function OverviewTab({ project, records, toUsd, money, fromUsd, displayCurrency,
           {normalized.monthlyRevenueUsd === null
             ? 'Not tracked'
             : money(fromUsd(normalized.monthlyRevenueUsd, displayCurrency), displayCurrency)}
-          {normalized.stripeProductIds?.length > 0 && normalized.revenueSyncedAt && ' (from Stripe)'}
+          {normalized.revenueProductIds.length > 0 && normalized.revenueSyncedAt && ` (from ${sourceNames(normalized.revenueProductIds)})`}
         </span>
       </div>
       {normalized.monthlyRevenueUsd !== null && (

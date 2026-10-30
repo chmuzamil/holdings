@@ -22,3 +22,13 @@ describe('project stage in the app', () => {
     expect(['idea', 'maintenance', 'nonsense'].map(stageName)).toEqual(['Idea', 'Maintenance', 'Idea'])
   })
 })
+
+describe('revenue links in old data', () => {
+  it('moves Stripe product links to revenueProductIds, so old exports keep their revenue', () => {
+    const old = normalizeProjectRecord({ id: 'p', name: 'Old', stripeProductIds: ['prod_app'] })
+    expect(old.revenueProductIds).toEqual(['prod_app'])
+    expect(old).not.toHaveProperty('stripeProductIds')
+    expect(normalizeProjectRecord({ id: 'p', name: 'New', revenueProductIds: ['paddle:pro_x'], stripeProductIds: ['prod_old'] }).revenueProductIds).toEqual(['paddle:pro_x'])
+    expect(normalizeProjectRecord({ id: 'p', name: 'None' }).revenueProductIds).toEqual([])
+  })
+})

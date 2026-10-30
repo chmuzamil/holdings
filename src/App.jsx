@@ -47,8 +47,9 @@ import { AddAssetDropdown } from './components/shared/AddAssetDropdown'
 import { BrandMark } from './components/shared/BrandMark'
 import { SyncStatus, SyncProblem } from './components/server/SyncStatus'
 import { useStripe } from './components/server/use-stripe'
+import { useRevenueSources } from './components/server/use-revenue-sources'
 import { UptimeContext, useUptime } from './components/server/use-uptime'
-import { applyStripeRevenue, missingRates } from './lib/stripe-revenue'
+import { applyRevenue, combineRevenue, missingRates } from './lib/revenue'
 import { applyLookup } from './lib/domain-watch'
 import { applyDomainImport, applyImport } from './lib/domain-import'
 import { api } from './lib/server-api'
@@ -414,20 +415,21 @@ function App({ server = null }) {
   const money = formatMoney
   const unconverted = useMemo(() => unconvertedRecords(records), [records])
 
-  // Stripe revenue (self-hosted server only) fills in linked projects' revenue.
+  // Revenue (self-hosted server only) from Stripe, Lemon Squeezy, Paddle or a
+  // custom URL fills in linked projects' revenue.
   const ratesRef = useRef(rates)
   useEffect(() => {
     ratesRef.current = rates
   }, [rates])
-  const applyStripe = useCallback((revenue) => {
+  const applyAllRevenue = useCallback((revenue) => {
     if (!revenue) return
     const write = (ratesPerUsd) => setRecords((current) => {
-      const projects = applyStripeRevenue(current.projects, revenue, ratesPerUsd)
+      const projects = applyRevenue(current.projects, revenue, ratesPerUsd)
       return projects === current.projects ? current : { ...current, projects }
     })
     write(ratesRef.current)
     if (!missingRates(revenue, ratesRef.current).length) return
-    // Stripe reported a currency we have no rate for yet.
+    // A source reported a currency we have no rate for yet.
     fetchLatestRates()
       .then((ratesPerUsd) => {
         setAppSettings((current) => ({ ...current, ratesPerUsd, ratesFetchedAt: new Date().toISOString() }))
@@ -435,7 +437,12 @@ function App({ server = null }) {
       })
       .catch(() => {})
   }, [])
-  const stripe = useStripe(server, applyStripe)
+  const stripe = useStripe(server)
+  const revenueSources = useRevenueSources(server)
+  const revenue = useMemo(() => combineRevenue(stripe.revenue, Object.values(revenueSources.reports)), [stripe.revenue, revenueSources.reports])
+  useEffect(() => {
+    applyAllRevenue(revenue)
+  }, [revenue, applyAllRevenue])
 
   // Self-hosted: Up/Down from Uptime Kuma or Gatus, linked to items.
   const uptime = useUptime(server)
@@ -1086,6 +1093,7 @@ function App({ server = null }) {
             transferStatus={transferStatus}
             server={server}
             stripe={stripe}
+            revenueSources={revenueSources}
             onDomainChanges={setServerChanges}
             uptime={uptime}
             records={records}
@@ -1122,10 +1130,10 @@ function App({ server = null }) {
           setModal={setModal}
           saveRecord={(event) => {
             saveRecord(event)
-            applyStripe(stripe.revenue)
+            applyAllRevenue(revenue)
           }}
           records={records}
-          stripeProducts={stripe.revenue?.products ?? null}
+          revenueProducts={revenue?.products ?? null}
           ratesPerUsd={rates}
         />
       )}
@@ -1298,6 +1306,7 @@ function SettingsView({
   ratesStatus,
   server,
   stripe,
+  revenueSources,
   getHandover,
   onDomainChanges,
   csvImport,
@@ -1316,7 +1325,7 @@ function SettingsView({
     <section className="page-content settings-grid">
       {server && (
         <Suspense fallback={null}>
-          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} projects={getHandover().data.projects} onDomainChanges={onDomainChanges} uptime={uptime} records={records} onDomainImport={onDomainImport} onServerImport={onServerImport} />
+          <AccountSettings server={server} stripe={stripe} revenueSources={revenueSources} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} projects={getHandover().data.projects} onDomainChanges={onDomainChanges} uptime={uptime} records={records} onDomainImport={onDomainImport} onServerImport={onServerImport} />
         </Suspense>
       )}
 
