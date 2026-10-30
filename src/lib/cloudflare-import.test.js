@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { applyCloudflare, dnsDetails, previewCloudflare } from './cloudflare-import'
+import { dnsDetails, previewCloudflare } from './cloudflare-import'
+import { applyDomainImport } from './domain-import'
 
 const cloudflare = {
   checkedAt: '2026-10-30T10:00:00.000Z',
@@ -68,10 +69,10 @@ describe('previewCloudflare', () => {
   })
 })
 
-describe('applyCloudflare', () => {
+describe('applyDomainImport', () => {
   it('adds new domains and fills in existing ones, leaving the rest alone', () => {
     const rows = previewCloudflare(cloudflare, records)
-    const domains = applyCloudflare(records.domains, rows, new Date('2026-10-30T10:00:00Z'))
+    const domains = applyDomainImport(records.domains, rows, new Date('2026-10-30T10:00:00Z'))
     expect(domains.map((domain) => domain.name)).toEqual(['shop.example', 'news.example', 'same.example'])
     expect(domains[0].id).toMatch(/^domains-/)
     expect(domains[1]).toMatchObject({ provider: 'Namecheap', editedAt: '2026-10-30T10:00:00.000Z' })
@@ -80,6 +81,6 @@ describe('applyCloudflare', () => {
 
   it('applies only the rows that were chosen', () => {
     const rows = previewCloudflare(cloudflare, records).filter((row) => row.name === 'news.example')
-    expect(applyCloudflare(records.domains, rows).map((domain) => domain.name)).toEqual(['news.example', 'same.example'])
+    expect(applyDomainImport(records.domains, rows).map((domain) => domain.name)).toEqual(['news.example', 'same.example'])
   })
 })

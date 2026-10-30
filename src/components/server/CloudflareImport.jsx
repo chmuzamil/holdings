@@ -2,16 +2,15 @@ import { useEffect, useState } from 'react'
 import { RefreshCw, Unplug } from 'lucide-react'
 import { api } from '../../lib/server-api'
 import { previewCloudflare } from '../../lib/cloudflare-import'
+import { importedMessage } from '../../lib/domain-import'
+import { ImportPreview } from './ImportPreview'
 
-const RESULT = { add: 'Will add', update: 'Will fill in', same: 'Up to date', invalid: 'Left out' }
 const TOKENS_URL = 'https://dash.cloudflare.com/profile/api-tokens'
 
 /** Import domains, DNS and registrar details from Cloudflare (self-hosted only). */
 export function CloudflareImport({ records, onApply }) {
   const [state, setState] = useState(null)
-  const [rows, setRows] = useState(null)
-  const [warnings, setWarnings] = useState([])
-  const [chosen, setChosen] = useState({})
+  const [preview, setPreview] = useState(null)
   const [message, setMessage] = useState({ tone: '', text: '' })
   const [busy, setBusy] = useState(false)
 
@@ -36,24 +35,16 @@ export function CloudflareImport({ records, onApply }) {
 
   const check = () => run(async () => {
     const result = await api('GET', '/api/import/cloudflare')
-    const preview = previewCloudflare(result, records)
-    setRows(preview)
-    setWarnings(result.warnings)
-    setChosen(Object.fromEntries(preview.map((row) => [row.name, row.status === 'add' || row.status === 'update'])))
+    setPreview({ key: result.checkedAt, rows: previewCloudflare(result, records), warnings: result.warnings })
   })
 
-  function confirm() {
-    const selected = rows.filter((row) => chosen[row.name] && (row.status === 'add' || row.status === 'update'))
+  function confirm(selected) {
     onApply(selected)
-    const added = selected.filter((row) => row.status === 'add').length
-    const filled = selected.length - added
-    setRows(null)
-    const done = [added && `added ${added} ${added === 1 ? 'domain' : 'domains'}`, filled && `filled in details on ${filled}`].filter(Boolean).join(' and ')
-    setMessage({ tone: 'ok', text: `Done: ${done}.${added ? ' Add what each one costs on the Domains page.' : ''}` })
+    setPreview(null)
+    setMessage({ tone: 'ok', text: importedMessage(selected) })
   }
 
   if (!state) return message.text ? <p className="auth-error" role="alert">{message.text}</p> : null
-  const count = rows ? rows.filter((row) => chosen[row.name] && (row.status === 'add' || row.status === 'update')).length : 0
   const status = message.text && <p className={message.tone === 'error' ? 'auth-error' : 'settings-status'} role={message.tone === 'error' ? 'alert' : 'status'}>{message.text}</p>
 
   return (
@@ -101,55 +92,14 @@ export function CloudflareImport({ records, onApply }) {
             </button>
             <button className="ghost-button" type="button" disabled={busy} onClick={() => run(async () => {
               setState(await api('DELETE', '/api/integrations/cloudflare'))
-              setRows(null)
+              setPreview(null)
             }, 'Disconnected. The token was deleted from your server.')}>
               <Unplug size={16} />
               Disconnect
             </button>
           </div>
-          {warnings.map((warning) => <p key={warning} className="settings-status runbook-warning">{warning}</p>)}
-          {rows && (
-            <div className="csv-wizard">
-              {rows.length === 0 ? <p className="settings-status">No zones found in Cloudflare.</p> : (
-                <div className="csv-table-wrap">
-                  <table className="csv-table">
-                    <thead>
-                      <tr>
-                        <th scope="col"><span className="sr-only">Include</span></th>
-                        <th scope="col">Domain</th>
-                        <th scope="col">Result</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((row) => {
-                        const actionable = row.status === 'add' || row.status === 'update'
-                        return (
-                          <tr key={row.name} className={`csv-${row.status === 'invalid' ? 'invalid' : actionable ? 'add' : 'duplicate'}`}>
-                            <td>
-                              {actionable && (
-                                <input
-                                  type="checkbox"
-                                  checked={Boolean(chosen[row.name])}
-                                  onChange={(event) => setChosen((current) => ({ ...current, [row.name]: event.target.checked }))}
-                                  aria-label={`Include ${row.name}`}
-                                />
-                              )}
-                            </td>
-                            <td>{row.name}</td>
-                            <td><strong>{RESULT[row.status]}</strong>{row.changes.length > 0 && <div>{row.changes.join(', ')}</div>}</td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-              <div className="settings-actions">
-                <button className="primary-button" type="button" disabled={!count} onClick={confirm}>{count ? `Import ${count}` : 'Nothing to import'}</button>
-                <button className="ghost-button" type="button" onClick={() => setRows(null)}>Cancel</button>
-              </div>
-            </div>
-          )}
+          {preview?.warnings.map((warning) => <p key={warning} className="settings-status runbook-warning">{warning}</p>)}
+          {preview && <ImportPreview key={preview.key} rows={preview.rows} emptyText="No zones found in Cloudflare." onConfirm={confirm} onCancel={() => setPreview(null)} />}
           {status}
         </>
       )}

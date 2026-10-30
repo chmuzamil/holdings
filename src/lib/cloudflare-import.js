@@ -1,3 +1,4 @@
+import { domainsByName } from './domain-import'
 import { findSecretsInRecord } from './secrets'
 
 // Turns what Cloudflare has (from the self-hosted server) into a preview
@@ -42,7 +43,7 @@ export function dnsDetails(domain, servers) {
  */
 export function previewCloudflare(result, records) {
   const servers = records.servers ?? []
-  const byName = new Map((records.domains ?? []).map((domain) => [String(domain.name).toLowerCase().replace(/^www\./, ''), domain]))
+  const byName = domainsByName(records.domains)
   return result.domains.map((cf) => {
     const { subdomains, serverIds } = dnsDetails(cf, servers)
     const existing = byName.get(cf.name)
@@ -100,15 +101,4 @@ export function previewCloudflare(result, records) {
     if (secrets.length) return { ...row, status: 'invalid', changes: [`Looks like it contains a ${secrets[0].kind}, so it was left out.`] }
     return row
   })
-}
-
-/** Applies the chosen rows. New domains get ids and dates; updates only fill in. */
-export function applyCloudflare(domains, rows, now = new Date()) {
-  const stamp = now.toISOString()
-  const updates = new Map(rows.filter((row) => row.status === 'update').map((row) => [row.id, row.patch]))
-  const updated = domains.map((domain) => (updates.has(domain.id) ? { ...domain, ...updates.get(domain.id), editedAt: stamp } : domain))
-  const added = rows
-    .filter((row) => row.status === 'add')
-    .map((row) => ({ ...row.record, id: `domains-${crypto.randomUUID()}`, addedAt: stamp, editedAt: stamp }))
-  return [...added, ...updated]
 }
