@@ -3,10 +3,10 @@ import { useState } from 'react'
 const RESULT = { add: 'Will add', update: 'Will update', same: 'Up to date', invalid: 'Left out' }
 const actionable = (row) => row.status === 'add' || row.status === 'update'
 
-/** The preview table for a domain import: one row per domain, with a checkbox for each change. */
-export function ImportPreview({ rows, emptyText, onConfirm, onCancel }) {
-  const [chosen, setChosen] = useState(() => Object.fromEntries(rows.map((row) => [row.name, actionable(row)])))
-  const selected = rows.filter((row) => chosen[row.name] && actionable(row))
+/** The preview table for an import: one row per domain or server, with a checkbox for each change. */
+export function ImportPreview({ rows, emptyText, nameLabel = 'Domain', onConfirm, onCancel }) {
+  const [chosen, setChosen] = useState(() => Object.fromEntries(rows.map((row) => [row.key ?? row.name, actionable(row)])))
+  const selected = rows.filter((row) => chosen[row.key ?? row.name] && actionable(row))
 
   return (
     <div className="csv-wizard">
@@ -16,19 +16,19 @@ export function ImportPreview({ rows, emptyText, onConfirm, onCancel }) {
             <thead>
               <tr>
                 <th scope="col"><span className="sr-only">Include</span></th>
-                <th scope="col">Domain</th>
+                <th scope="col">{nameLabel}</th>
                 <th scope="col">Result</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.name} className={`csv-${row.status === 'invalid' ? 'invalid' : actionable(row) ? 'add' : 'duplicate'}`}>
+                <tr key={row.key ?? row.name} className={`csv-${row.status === 'invalid' ? 'invalid' : actionable(row) ? 'add' : 'duplicate'}`}>
                   <td>
                     {actionable(row) && (
                       <input
                         type="checkbox"
-                        checked={Boolean(chosen[row.name])}
-                        onChange={(event) => setChosen((current) => ({ ...current, [row.name]: event.target.checked }))}
+                        checked={Boolean(chosen[row.key ?? row.name])}
+                        onChange={(event) => setChosen((current) => ({ ...current, [row.key ?? row.name]: event.target.checked }))}
                         aria-label={`Include ${row.name}`}
                       />
                     )}
