@@ -50,6 +50,7 @@ import { useStripe } from './components/server/use-stripe'
 import { UptimeContext, useUptime } from './components/server/use-uptime'
 import { applyStripeRevenue, missingRates } from './lib/stripe-revenue'
 import { applyLookup } from './lib/domain-watch'
+import { applyCloudflare } from './lib/cloudflare-import'
 import { api } from './lib/server-api'
 import { isRenewableModule } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
@@ -1087,6 +1088,8 @@ function App({ server = null }) {
             stripe={stripe}
             onDomainChanges={setServerChanges}
             uptime={uptime}
+            records={records}
+            onCloudflareImport={(rows) => setRecords((current) => ({ ...current, domains: applyCloudflare(current.domains, rows).map(normalizeDomainRecord) }))}
             csvImport={<CsvImport records={records} onImport={importCsvRecords} />}
             getHandover={() => ({
               data: getHoldingsData(records, toUsd),
@@ -1298,6 +1301,8 @@ function SettingsView({
   onDomainChanges,
   csvImport,
   uptime,
+  records,
+  onCloudflareImport,
 }) {
   const importInput = useRef(null)
 
@@ -1309,7 +1314,7 @@ function SettingsView({
     <section className="page-content settings-grid">
       {server && (
         <Suspense fallback={null}>
-          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} projects={getHandover().data.projects} onDomainChanges={onDomainChanges} uptime={uptime} />
+          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} projects={getHandover().data.projects} onDomainChanges={onDomainChanges} uptime={uptime} records={records} onCloudflareImport={onCloudflareImport} />
         </Suspense>
       )}
 

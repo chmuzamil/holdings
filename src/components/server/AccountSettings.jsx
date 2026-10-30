@@ -4,6 +4,7 @@ import { LogOut, ShieldCheck } from 'lucide-react'
 import { api } from '../../lib/server-api'
 import { AccessTokens } from './AccessTokens'
 import { CalendarFeed } from './CalendarFeed'
+import { CloudflareImport } from './CloudflareImport'
 import { DomainWatchSettings } from './DomainWatchSettings'
 import { UptimeSettings } from './UptimeSettings'
 import { DeadmanSettings } from './DeadmanSettings'
@@ -64,7 +65,7 @@ function Status({ status }) {
   )
 }
 
-export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, projects, onDomainChanges, uptime }) {
+export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, projects, onDomainChanges, uptime, records, onCloudflareImport }) {
   const totpEnabled = Boolean(server.session?.totpEnabled)
 
   return (
@@ -101,6 +102,7 @@ export function AccountSettings({ server, stripe, ratesPerUsd, getHandover, proj
       <DeadmanSettings getHandover={getHandover} />
       <CalendarFeed projects={projects} />
       <StripeSettings stripe={stripe} ratesPerUsd={ratesPerUsd} />
+      {records && <CloudflareImport records={records} onApply={onCloudflareImport} />}
       <AccessTokens />
     </>
   )
