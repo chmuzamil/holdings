@@ -95,6 +95,18 @@ The server can read each product's monthly recurring revenue from Stripe, so you
 
 What it counts: active subscriptions, turned into a monthly amount (a yearly plan counts a twelfth each month), before discounts and tax. One-off payments, and metered or tiered prices, aren't included. The key is encrypted on your server and is never sent back to the browser. Only your server talks to `api.stripe.com`, and at most once every 10 minutes unless you press refresh.
 
+## Import from Cloudflare
+
+The server can read your Cloudflare zones and bring them in as domains: subdomains from your A, AAAA and CNAME records (linked to a server when the IP matches one you track), and the expiry date and whether auto-renew is on for domains registered at Cloudflare. It is read-only.
+
+1. In Cloudflare, open **My Profile → API Tokens → Create Token → Custom token**.
+2. Add the permissions **Zone → Zone → Read** and **Zone → DNS → Read**. For expiry dates, also add **Account → Registrar → Read** (only useful for domains registered at Cloudflare).
+3. Paste the token in Holdings under **Settings → Import from Cloudflare**. The Global API Key is refused: it can change everything in your account.
+
+Press **Check Cloudflare** to see each zone as "Will add", "Will fill in" (only empty fields: registrar, dates, new subdomains, server links) or "Up to date". Untick what you don't want, then import. Nothing you entered is overwritten, and cost is left for you because Cloudflare's API doesn't say what a domain costs. Anything that looks like a key or card number is left out.
+
+The token is encrypted on your server and never sent back to the browser. Only your server talks to `api.cloudflare.com`, and only when you press Check Cloudflare. Disconnect deletes the token.
+
 ## Notifications
 
 The server can tell you when something is about to renew or expire: domains, servers, subscriptions, certificates, API keys and payment cards. It checks once a day (from 8:00 server time) and sends one message listing what reached a milestone: 30, 14 or 7 days ahead (you choose), then 7 days, 1 day, and overdue. Each milestone is sent once.
