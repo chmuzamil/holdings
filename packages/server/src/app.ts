@@ -5,6 +5,7 @@ import { buildCalendar } from '@holdings/core'
 import { createNotifier, readHoldings, SettingsError, type Notifier } from './notify'
 import { createDeadman, type Deadman } from './deadman'
 import { createUptime } from './uptime'
+import { checkCloudflareToken, CloudflareError, fetchCloudflare, tokenHint, verifyToken } from './cloudflare'
 import { createDomainWatch, type DomainWatch } from './domain-watch'
 import { SECURITY_HEADERS, serveStatic } from './static'
 import { checkStripeKey, fetchStripeRevenue, keyHint, StripeError, type FetchLike, type StripeRevenue } from './stripe'
@@ -51,6 +52,8 @@ export interface AppOptions {
   deadman?: Deadman
   /** fetch() used for Uptime Kuma / Gatus; replaced in tests. */
   uptimeFetch?: FetchLike
+  /** fetch() used for Cloudflare; replaced in tests. */
+  cloudflareFetch?: FetchLike
   /** Scheduled domain change watch; made here unless given (index.ts runs it). */
   domainWatch?: DomainWatch
 }
@@ -82,6 +85,15 @@ export function createApp(options: AppOptions) {
   const deadman = options.deadman ?? createDeadman({ store, notifier, now: () => new Date(now()) })
   const domainWatch = options.domainWatch ?? createDomainWatch({ store, notifier, lookup, now })
   const uptime = createUptime({ store, now, ...(options.uptimeFetch ? { fetch: options.uptimeFetch } : {}) })
+  const cloudflareFetch = options.cloudflareFetch ?? fetch
+  const cloudflareError = async <T>(work: () => Promise<T>): Promise<T> => {
+    try {
+      return await work()
+    } catch (error) {
+      if (error instanceof CloudflareError) throw new HttpError(error.status === 403 ? 400 : error.status, error.message)
+      throw error
+    }
+  }
   const settingsError = async <T>(work: () => T | Promise<T>): Promise<T> => {
     try {
       return await work()
@@ -567,6 +579,41 @@ export function createApp(options: AppOptions) {
     'POST /api/domain-watch/run': async (context) => {
       requireSession(context)
       return { ...(await domainWatch.run()), ...domainWatch.view() }
+    },
+
+    'GET /api/integrations/cloudflare': (context) => {
+      requireSession(context)
+      const cloudflare = store.getIntegration('cloudflare')
+      return cloudflare ? { connected: true, hint: cloudflare.hint, connectedAt: cloudflare.connectedAt } : { connected: false }
+    },
+
+    'PUT /api/integrations/cloudflare': async (context) => {
+      requireSession(context)
+      const input = await context.body()
+      const token = typeof input.token === 'string' ? input.token.trim() : ''
+      const invalid = checkCloudflareToken(token)
+      if (invalid) throw new HttpError(400, invalid)
+      // Check the token works before keeping it.
+      await cloudflareError(() => verifyToken(token, cloudflareFetch))
+      store.setIntegration('cloudflare', seal(token, secretKey), tokenHint(token))
+      store.audit('cloudflare_connected', context.ip)
+      return { connected: true, hint: tokenHint(token) }
+    },
+
+    'DELETE /api/integrations/cloudflare': (context) => {
+      requireSession(context)
+      store.deleteIntegration('cloudflare')
+      store.audit('cloudflare_disconnected', context.ip)
+      return { connected: false }
+    },
+
+    // What Cloudflare has, for the import preview. Nothing is saved here:
+    // the browser shows the preview and adds what the owner confirms.
+    'GET /api/import/cloudflare': async (context) => {
+      requireSession(context)
+      const cloudflare = store.getIntegration('cloudflare')
+      if (!cloudflare) throw new HttpError(404, 'Cloudflare isn\u2019t connected.')
+      return cloudflareError(() => fetchCloudflare(unseal(cloudflare.sealedKey, secretKey), cloudflareFetch, now()))
     },
 
     'GET /api/domain-lookup': async (context) => {

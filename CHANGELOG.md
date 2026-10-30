@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Import from Cloudflare** (self-hosted, optional): connect a read-only API token in Settings and your zones come in as domains, with subdomains from your DNS records (linked to your servers by IP) and, for domains registered at Cloudflare, the expiry date and whether auto-renew is on. Every zone is shown first as will add, will fill in or up to date; only empty fields are filled, and nothing is added until you confirm. The Global API Key is refused, and the token is stored encrypted on your server.
+
 ## 0.3.0 (2026-10-29)
 
 Holdings watches for you: it tells you what needs doing, what changed and what you could stop paying for, and can hand over if you can't.

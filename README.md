@@ -46,6 +46,7 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 - **Uptime status** (self-hosted, optional): already run Uptime Kuma or Gatus? See Up or Down next to your servers, domains and projects, and down items on the Attention page.
 - **Self-hosting** (optional): one Docker container with a password and two-step login, your data saved on your server and available in every browser.
 - **Revenue from Stripe** (self-hosted): link Stripe products to a project and its monthly revenue fills itself in, with a read-only key.
+- **Import from Cloudflare** (self-hosted): your zones become domains, with subdomains from your DNS records linked to your servers by IP, and expiry dates for domains registered at Cloudflare. Read-only token; you see every domain before anything is added, and nothing you typed is overwritten.
 - **MCP server** so Claude, Cursor and other agents can answer questions about your portfolio, read-only.
 - **Command palette** (Ctrl/Cmd + K) to jump to anything.
 - **Export and import** everything as JSON, and **import from a spreadsheet** (CSV) for domains, subscriptions and servers, with a preview of every row before anything is added. See [docs/importing.md](docs/importing.md).
@@ -108,6 +109,7 @@ Open http://localhost:8080, enter the setup code and pick a password. You can ad
   - `api.github.com`, when you fetch or refresh GitHub repos
   - `open.er-api.com`, once a day, if you picked a second currency or Stripe reports revenue in a currency other than USD
   - `api.stripe.com`, from your server only, if you connect Stripe (read-only key)
+  - `api.cloudflare.com`, from your server only, when you press Check Cloudflare (read-only token)
   - your own server (or `npm run api`), when you run a DNS check. It queries DNS, IANA's registry directory and the domain's public registry (RDAP).
 - With the self-hosted server and uptime status turned on, your server reads your own Uptime Kuma or Gatus status page once a minute while Holdings is open.
 - With the self-hosted server and domain watch turned on, your server runs the same DNS and registry lookups for your domains on the schedule you choose.
@@ -155,7 +157,8 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **Project stages and stale projects**: where each project is in its life, when you last worked on it, and a nudge when an idle project still costs money.
 
 **v0.4: less typing**
-- Read-only importers for Cloudflare, registrars with an API (Porkbun, Namecheap, Spaceship) and Hetzner / DigitalOcean servers.
+- ✅ Read-only import from Cloudflare: zones, DNS records as subdomains, and registrar expiry dates.
+- Read-only importers for registrars with an API (Porkbun, Namecheap, Spaceship) and Hetzner / DigitalOcean servers.
 - Lemon Squeezy and Paddle revenue, next to Stripe.
 - ✅ CSV import for the spreadsheet you already keep (done early, in v0.3).
 
