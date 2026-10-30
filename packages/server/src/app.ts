@@ -6,6 +6,7 @@ import { createNotifier, readHoldings, SettingsError, type Notifier } from './no
 import { createDeadman, type Deadman } from './deadman'
 import { createUptime } from './uptime'
 import { checkCloudflareToken, CloudflareError, fetchCloudflare, tokenHint, verifyToken } from './cloudflare'
+import { cleanHostCredentials, fetchHost, HostError, HOSTS, isHost, type HostId } from './hosts'
 import { cleanCredentials, credentialsHint, fetchRegistrar, isRegistrar, REGISTRARS, RegistrarError, type RegistrarId } from './registrars'
 import { createDomainWatch, type DomainWatch } from './domain-watch'
 import { SECURITY_HEADERS, serveStatic } from './static'
@@ -57,6 +58,8 @@ export interface AppOptions {
   cloudflareFetch?: FetchLike
   /** fetch() used for registrar APIs; replaced in tests. */
   registrarFetch?: FetchLike
+  /** fetch() used for server hosts (Hetzner, DigitalOcean, custom URL); replaced in tests. */
+  hostFetch?: FetchLike
   /** Scheduled domain change watch; made here unless given (index.ts runs it). */
   domainWatch?: DomainWatch
 }
@@ -108,6 +111,19 @@ export function createApp(options: AppOptions) {
   }
   const registrarParam = (value: unknown): RegistrarId => {
     if (!isRegistrar(value)) throw new HttpError(400, 'Pick Porkbun, Namecheap or Spaceship.')
+    return value
+  }
+  const hostFetch = options.hostFetch ?? fetch
+  const hostError = async <T>(work: () => Promise<T>): Promise<T> => {
+    try {
+      return await work()
+    } catch (error) {
+      if (error instanceof HostError) throw new HttpError(error.status, error.message)
+      throw error
+    }
+  }
+  const hostParam = (value: unknown): HostId => {
+    if (!isHost(value)) throw new HttpError(400, 'Pick Hetzner, DigitalOcean or a custom URL.')
     return value
   }
   const settingsError = async <T>(work: () => T | Promise<T>): Promise<T> => {
@@ -670,6 +686,47 @@ export function createApp(options: AppOptions) {
       if (!saved) throw new HttpError(404, `${REGISTRARS[id].label} isn’t connected.`)
       const credentials = JSON.parse(unseal(saved.sealedKey, secretKey))
       return registrarError(() => fetchRegistrar(id, credentials, registrarFetch, now()))
+    },
+
+    'GET /api/integrations/hosts': (context) => {
+      requireSession(context)
+      return Object.fromEntries(Object.keys(HOSTS).map((id) => {
+        const saved = store.getIntegration(`host-${id}`)
+        return [id, saved ? { connected: true, hint: saved.hint, connectedAt: saved.connectedAt } : { connected: false }]
+      }))
+    },
+
+    'PUT /api/integrations/hosts': async (context) => {
+      requireSession(context)
+      const input = await context.body()
+      const id = hostParam(input.host)
+      const credentials = cleanHostCredentials(id, input.credentials)
+      const invalid = HOSTS[id].check(credentials)
+      if (invalid) throw new HttpError(400, invalid)
+      // Check the host answers before keeping the token.
+      await hostError(() => HOSTS[id].verify(credentials, hostFetch))
+      const hint = HOSTS[id].hint(credentials)
+      store.setIntegration(`host-${id}`, seal(JSON.stringify(credentials), secretKey), hint)
+      store.audit(`host_connected:${id}`, context.ip)
+      return { connected: true, hint }
+    },
+
+    'DELETE /api/integrations/hosts': (context) => {
+      requireSession(context)
+      const id = hostParam(context.url.searchParams.get('host'))
+      store.deleteIntegration(`host-${id}`)
+      store.audit(`host_disconnected:${id}`, context.ip)
+      return { connected: false }
+    },
+
+    // The host's servers, for the import preview. Nothing is saved here.
+    'GET /api/import/host': async (context) => {
+      requireSession(context)
+      const id = hostParam(context.url.searchParams.get('host'))
+      const saved = store.getIntegration(`host-${id}`)
+      if (!saved) throw new HttpError(404, `${HOSTS[id].label} isn’t connected.`)
+      const credentials = JSON.parse(unseal(saved.sealedKey, secretKey))
+      return hostError(() => fetchHost(id, credentials, hostFetch, now()))
     },
 
     'GET /api/domain-lookup': async (context) => {

@@ -9,6 +9,7 @@ import { createApp, SESSION_COOKIE } from './app'
 import { openStore, type Store } from './db'
 import { CF_TOKEN, fakeCloudflare } from './cloudflare-fake'
 import { fakePorkbun, fakeSpaceship, PORKBUN_KEYS, SPACESHIP_KEYS } from './registrars-fake'
+import { CUSTOM_TOKEN, CUSTOM_URL, fakeCustom, fakeHetzner, HETZNER_TOKEN } from './hosts-fake'
 import { fakeStripe, TEST_KEY } from './stripe-fake'
 import { totpCode } from './totp'
 
@@ -632,5 +633,41 @@ describe('Registrar import', () => {
     await browser.call('DELETE', '/api/integrations/registrars?registrar=porkbun')
     expect((await browser.call('GET', '/api/import/registrar?registrar=porkbun')).status).toBe(404)
     expect((await browser.call('GET', '/api/import/registrar?registrar=spaceship')).status).toBe(200)
+  })
+})
+
+describe('Server host import', () => {
+  async function withHosts() {
+    await new Promise((resolve) => server.close(resolve))
+    store.close()
+    const hetzner = fakeHetzner()
+    const custom = fakeCustom()
+    await start({ hostFetch: (url, init) => (url.includes('hetzner') ? hetzner(url, init) : custom(url, init)) })
+    return signedIn()
+  }
+
+  it('needs a login and a known host', async () => {
+    expect((await client().call('GET', '/api/integrations/hosts')).status).toBe(401)
+    const browser = await withHosts()
+    expect((await browser.call('GET', '/api/import/host?host=linode')).body.error).toMatch(/Hetzner, DigitalOcean or a custom URL/)
+    expect((await browser.call('GET', '/api/import/host?host=hetzner')).status).toBe(404)
+  })
+
+  it('connects Hetzner and a custom URL, keeps tokens encrypted, and reads the import', async () => {
+    const browser = await withHosts()
+    expect((await browser.call('PUT', '/api/integrations/hosts', { host: 'hetzner', credentials: { token: 'x'.repeat(64) } })).status).toBe(400)
+    expect((await browser.call('PUT', '/api/integrations/hosts', { host: 'hetzner', credentials: { token: HETZNER_TOKEN } })).body).toEqual({ connected: true, hint: `token ending ${HETZNER_TOKEN.slice(-4)}` })
+    expect((await browser.call('PUT', '/api/integrations/hosts', { host: 'custom', credentials: { url: CUSTOM_URL, token: CUSTOM_TOKEN } })).body).toEqual({ connected: true, hint: 'URL on inventory.example' })
+    expect(store.getIntegration('host-custom')?.sealedKey).not.toContain(CUSTOM_TOKEN)
+    const status = JSON.stringify((await browser.call('GET', '/api/integrations/hosts')).body)
+    expect(status).not.toContain(HETZNER_TOKEN)
+    expect(status).not.toContain(CUSTOM_TOKEN)
+
+    const preview = await browser.call('GET', '/api/import/host?host=hetzner')
+    expect((preview.body.servers as { name: string }[]).map((item) => item.name)).toEqual(['web-1', 'worker'])
+
+    await browser.call('DELETE', '/api/integrations/hosts?host=hetzner')
+    expect((await browser.call('GET', '/api/import/host?host=hetzner')).status).toBe(404)
+    expect((await browser.call('GET', '/api/import/host?host=custom')).status).toBe(200)
   })
 })
