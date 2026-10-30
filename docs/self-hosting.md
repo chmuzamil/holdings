@@ -119,6 +119,45 @@ Press **Check** next to a registrar to see each domain as "Will add", "Will upda
 
 Keys are encrypted on your server and never sent back to the browser. Only your server talks to the registrar, and only when you press Check. Disconnect deletes the keys.
 
+## Import servers
+
+The server can read your servers from Hetzner Cloud or DigitalOcean, or from a URL you control for any other host. It is read-only.
+
+- **Hetzner Cloud:** in the Cloud Console, open the project, then **Security → API tokens**, and create a token with **Read** permission. Tokens belong to one project, so connect the project that has your servers. Hetzner Robot (dedicated servers) isn't covered; use a custom URL for those.
+- **DigitalOcean:** in **API → Tokens**, generate a token with **Custom scopes** and tick only **droplet: read**.
+- **Custom URL:** see below.
+
+Press **Check** next to a host to see each server as "Will add", "Will update" or "Up to date". A server matches one you already track by public IP, or else by name. Only empty details are filled in (provider, IP, plan, CPU, RAM, storage, OS, location, and the cost if it is 0). If the host's price differs from the cost you entered, the preview says so but keeps yours, since your number may include backups or extra IPs. Costs are stored in USD: Hetzner's euro prices (before VAT) and other currencies are converted with the daily rate from `open.er-api.com`. Without a rate, the cost is left at 0 and the original price goes in the notes.
+
+Tokens are encrypted on your server and never sent back to the browser. Only your server talks to the host, and only when you press Check. Disconnect deletes the token.
+
+### Custom URL format
+
+For Vultr, Linode, OVH, a home lab, or anything else: point Holdings at a URL that answers a GET with JSON like this. Your own script, a cron job writing a file, or an inventory tool can produce it.
+
+```json
+{
+  "servers": [
+    {
+      "name": "web-1",
+      "ip": "192.0.2.10",
+      "provider": "Vultr",
+      "monthlyCost": 6,
+      "currency": "USD",
+      "location": "Amsterdam",
+      "plan": "vc2-1c-1gb",
+      "cpu": 1,
+      "ramGb": 1,
+      "storage": "25 GB SSD",
+      "os": "Debian 12",
+      "notes": "Backups on"
+    }
+  ]
+}
+```
+
+Only `name` is required; servers without one are skipped. A bare array of servers works too. `currency` is a three-letter code and defaults to USD. If you set a token, it is sent as `Authorization: Bearer <token>`. The answer must be JSON and at most 1 MB, and at most 500 servers are read. Your server fetches the URL, so it can be on your private network.
+
 ## Notifications
 
 The server can tell you when something is about to renew or expire: domains, servers, subscriptions, certificates, API keys and payment cards. It checks once a day (from 8:00 server time) and sends one message listing what reached a milestone: 30, 14 or 7 days ahead (you choose), then 7 days, 1 day, and overdue. Each milestone is sent once.

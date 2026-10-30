@@ -50,7 +50,7 @@ import { useStripe } from './components/server/use-stripe'
 import { UptimeContext, useUptime } from './components/server/use-uptime'
 import { applyStripeRevenue, missingRates } from './lib/stripe-revenue'
 import { applyLookup } from './lib/domain-watch'
-import { applyDomainImport } from './lib/domain-import'
+import { applyDomainImport, applyImport } from './lib/domain-import'
 import { api } from './lib/server-api'
 import { isRenewableModule } from './lib/renewal-helpers'
 import { getPageMeta } from './lib/page-config'
@@ -1090,6 +1090,7 @@ function App({ server = null }) {
             uptime={uptime}
             records={records}
             onDomainImport={(rows) => setRecords((current) => ({ ...current, domains: applyDomainImport(current.domains, rows).map(normalizeDomainRecord) }))}
+            onServerImport={(rows) => setRecords((current) => ({ ...current, servers: applyImport(current.servers, rows, 'servers').map(normalizeServerRecord) }))}
             csvImport={<CsvImport records={records} onImport={importCsvRecords} />}
             getHandover={() => ({
               data: getHoldingsData(records, toUsd),
@@ -1303,6 +1304,7 @@ function SettingsView({
   uptime,
   records,
   onDomainImport,
+  onServerImport,
 }) {
   const importInput = useRef(null)
 
@@ -1314,7 +1316,7 @@ function SettingsView({
     <section className="page-content settings-grid">
       {server && (
         <Suspense fallback={null}>
-          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} projects={getHandover().data.projects} onDomainChanges={onDomainChanges} uptime={uptime} records={records} onDomainImport={onDomainImport} />
+          <AccountSettings server={server} stripe={stripe} ratesPerUsd={appSettings.ratesPerUsd} getHandover={getHandover} projects={getHandover().data.projects} onDomainChanges={onDomainChanges} uptime={uptime} records={records} onDomainImport={onDomainImport} onServerImport={onServerImport} />
         </Suspense>
       )}
 
