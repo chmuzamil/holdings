@@ -6,6 +6,7 @@ import { createNotifier, readHoldings, SettingsError, type Notifier } from './no
 import { createDeadman, type Deadman } from './deadman'
 import { createUptime } from './uptime'
 import { checkCloudflareToken, CloudflareError, fetchCloudflare, tokenHint, verifyToken } from './cloudflare'
+import { cleanCredentials, credentialsHint, fetchRegistrar, isRegistrar, REGISTRARS, RegistrarError, type RegistrarId } from './registrars'
 import { createDomainWatch, type DomainWatch } from './domain-watch'
 import { SECURITY_HEADERS, serveStatic } from './static'
 import { checkStripeKey, fetchStripeRevenue, keyHint, StripeError, type FetchLike, type StripeRevenue } from './stripe'
@@ -54,6 +55,8 @@ export interface AppOptions {
   uptimeFetch?: FetchLike
   /** fetch() used for Cloudflare; replaced in tests. */
   cloudflareFetch?: FetchLike
+  /** fetch() used for registrar APIs; replaced in tests. */
+  registrarFetch?: FetchLike
   /** Scheduled domain change watch; made here unless given (index.ts runs it). */
   domainWatch?: DomainWatch
 }
@@ -93,6 +96,19 @@ export function createApp(options: AppOptions) {
       if (error instanceof CloudflareError) throw new HttpError(error.status === 403 ? 400 : error.status, error.message)
       throw error
     }
+  }
+  const registrarFetch = options.registrarFetch ?? fetch
+  const registrarError = async <T>(work: () => Promise<T>): Promise<T> => {
+    try {
+      return await work()
+    } catch (error) {
+      if (error instanceof RegistrarError) throw new HttpError(error.status, error.message)
+      throw error
+    }
+  }
+  const registrarParam = (value: unknown): RegistrarId => {
+    if (!isRegistrar(value)) throw new HttpError(400, 'Pick Porkbun, Namecheap or Spaceship.')
+    return value
   }
   const settingsError = async <T>(work: () => T | Promise<T>): Promise<T> => {
     try {
@@ -614,6 +630,46 @@ export function createApp(options: AppOptions) {
       const cloudflare = store.getIntegration('cloudflare')
       if (!cloudflare) throw new HttpError(404, 'Cloudflare isn\u2019t connected.')
       return cloudflareError(() => fetchCloudflare(unseal(cloudflare.sealedKey, secretKey), cloudflareFetch, now()))
+    },
+
+    'GET /api/integrations/registrars': (context) => {
+      requireSession(context)
+      return Object.fromEntries(Object.keys(REGISTRARS).map((id) => {
+        const saved = store.getIntegration(`registrar-${id}`)
+        return [id, saved ? { connected: true, hint: saved.hint, connectedAt: saved.connectedAt } : { connected: false }]
+      }))
+    },
+
+    'PUT /api/integrations/registrars': async (context) => {
+      requireSession(context)
+      const input = await context.body()
+      const id = registrarParam(input.registrar)
+      const credentials = cleanCredentials(id, input.credentials)
+      const invalid = REGISTRARS[id].check(credentials)
+      if (invalid) throw new HttpError(400, invalid)
+      // Check the registrar accepts them before keeping them.
+      await registrarError(() => REGISTRARS[id].verify(credentials, registrarFetch))
+      store.setIntegration(`registrar-${id}`, seal(JSON.stringify(credentials), secretKey), credentialsHint(credentials))
+      store.audit(`registrar_connected:${id}`, context.ip)
+      return { connected: true, hint: credentialsHint(credentials) }
+    },
+
+    'DELETE /api/integrations/registrars': (context) => {
+      requireSession(context)
+      const id = registrarParam(context.url.searchParams.get('registrar'))
+      store.deleteIntegration(`registrar-${id}`)
+      store.audit(`registrar_disconnected:${id}`, context.ip)
+      return { connected: false }
+    },
+
+    // What the registrar has, for the import preview. Nothing is saved here.
+    'GET /api/import/registrar': async (context) => {
+      requireSession(context)
+      const id = registrarParam(context.url.searchParams.get('registrar'))
+      const saved = store.getIntegration(`registrar-${id}`)
+      if (!saved) throw new HttpError(404, `${REGISTRARS[id].label} isn’t connected.`)
+      const credentials = JSON.parse(unseal(saved.sealedKey, secretKey))
+      return registrarError(() => fetchRegistrar(id, credentials, registrarFetch, now()))
     },
 
     'GET /api/domain-lookup': async (context) => {

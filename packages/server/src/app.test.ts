@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, SESSION_COOKIE } from './app'
 import { openStore, type Store } from './db'
 import { CF_TOKEN, fakeCloudflare } from './cloudflare-fake'
+import { fakePorkbun, fakeSpaceship, PORKBUN_KEYS, SPACESHIP_KEYS } from './registrars-fake'
 import { fakeStripe, TEST_KEY } from './stripe-fake'
 import { totpCode } from './totp'
 
@@ -588,5 +589,48 @@ describe('Cloudflare import', () => {
 
     await browser.call('DELETE', '/api/integrations/cloudflare')
     expect((await browser.call('GET', '/api/import/cloudflare')).status).toBe(404)
+  })
+})
+
+describe('Registrar import', () => {
+  async function withRegistrars() {
+    await new Promise((resolve) => server.close(resolve))
+    store.close()
+    const porkbun = fakePorkbun()
+    const spaceship = fakeSpaceship()
+    await start({ registrarFetch: (url, init) => (url.includes('porkbun') ? porkbun(url, init) : spaceship(url, init)) })
+    return signedIn()
+  }
+
+  it('needs a login and a known registrar', async () => {
+    expect((await client().call('GET', '/api/integrations/registrars')).status).toBe(401)
+    const browser = await withRegistrars()
+    expect((await browser.call('GET', '/api/import/registrar?registrar=godaddy')).body.error).toMatch(/Porkbun, Namecheap or Spaceship/)
+    expect((await browser.call('GET', '/api/import/registrar?registrar=porkbun')).status).toBe(404)
+  })
+
+  it('refuses keys the registrar rejects, keeping nothing', async () => {
+    const browser = await withRegistrars()
+    const refused = await browser.call('PUT', '/api/integrations/registrars', { registrar: 'porkbun', credentials: { ...PORKBUN_KEYS, secretKey: 'sk1_wrongwrongwrongwrong' } })
+    expect(refused.body.error).toMatch(/Porkbun says/)
+    expect((await browser.call('GET', '/api/integrations/registrars')).body).toEqual({ porkbun: { connected: false }, namecheap: { connected: false }, spaceship: { connected: false } })
+  })
+
+  it('connects each registrar separately, keeps keys encrypted, and reads the import', async () => {
+    const browser = await withRegistrars()
+    expect((await browser.call('PUT', '/api/integrations/registrars', { registrar: 'porkbun', credentials: PORKBUN_KEYS })).body).toEqual({ connected: true, hint: `key ending ${PORKBUN_KEYS.apiKey.slice(-4)}` })
+    await browser.call('PUT', '/api/integrations/registrars', { registrar: 'spaceship', credentials: SPACESHIP_KEYS })
+    expect(store.getIntegration('registrar-porkbun')?.sealedKey).not.toContain(PORKBUN_KEYS.secretKey)
+    const status = JSON.stringify((await browser.call('GET', '/api/integrations/registrars')).body)
+    expect(status).not.toContain(PORKBUN_KEYS.secretKey)
+    expect(status).not.toContain(SPACESHIP_KEYS.apiSecret)
+
+    const preview = await browser.call('GET', '/api/import/registrar?registrar=spaceship')
+    expect(preview.body).toMatchObject({ registrar: 'Spaceship' })
+    expect((preview.body.domains as { name: string }[]).map((domain) => domain.name)).toEqual(['shop.example', 'app.example'])
+
+    await browser.call('DELETE', '/api/integrations/registrars?registrar=porkbun')
+    expect((await browser.call('GET', '/api/import/registrar?registrar=porkbun')).status).toBe(404)
+    expect((await browser.call('GET', '/api/import/registrar?registrar=spaceship')).status).toBe(200)
   })
 })
