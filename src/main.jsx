@@ -10,9 +10,12 @@ import './polish.css'
 import App from './App.jsx'
 import { ServerGate } from './components/server/ServerGate'
 import { handlePreloadError } from './lib/reload-on-update'
+import { track } from './lib/analytics'
 
 // A tab opened before an update reloads once instead of going blank.
 window.addEventListener('vite:preloadError', (event) => handlePreloadError(event))
+
+if (import.meta.env.VITE_DEMO === 'true') track('demo_open')
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

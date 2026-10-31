@@ -7,7 +7,7 @@
 [![Release](https://img.shields.io/github/v/release/chmuzamil/holdings?color=0ea5e9&cacheSeconds=1800)](https://github.com/chmuzamil/holdings/releases/latest)
 [![Live demo](https://img.shields.io/badge/demo-holdings.chaudhery.com-7dd3fc)](https://holdings.chaudhery.com)
 
-**[Try the live demo →](https://holdings.chaudhery.com)** It uses made-up data, and anything you change stays in your browser.
+**[Try the live demo →](https://holdings.chaudhery.com)** It uses made-up data, and anything you change stays in your browser. The demo counts visits with a self-hosted Umami; the app you run yourself has no tracking.
 
 [![Holdings overview with a made-up demo portfolio](docs/screenshots/dashboard.png)](https://holdings.chaudhery.com)
 
@@ -125,7 +125,8 @@ Open http://localhost:8080, enter the setup code and pick a password. You can ad
 - With the self-hosted server and uptime status turned on, your server reads your own Uptime Kuma or Gatus status page once a minute while Holdings is open.
 - With the self-hosted server and domain watch turned on, your server runs the same DNS and registry lookups for your domains on the schedule you choose.
 - With the self-hosted server, a calendar subscription link (if you make one) lets your calendar app read your renewal dates from your server. It can read nothing else, and you can turn it off at any time.
-- No analytics, no telemetry, no third-party scripts, fonts or icons.
+- No analytics, no telemetry, no third-party scripts, fonts or icons in the app you build or run yourself.
+- The public demo at holdings.chaudhery.com is the one exception: it counts visits, the demo opening, and clicks on its GitHub and self-hosting guide links with a self-hosted [Umami](https://umami.is), which uses no cookies. Nothing you type or change in the demo is sent. The tracker is only added when `VITE_UMAMI_SCRIPT_URL` and `VITE_UMAMI_WEBSITE_ID` are set, which only `.env.demo` does.
 
 ## Why not…
 
