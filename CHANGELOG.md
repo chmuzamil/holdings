@@ -6,12 +6,14 @@
 - **Published Docker image**: `ghcr.io/chmuzamil/holdings`, for amd64 and arm64, for every release. `docker-compose.yml` uses it, so self-hosting no longer needs a clone and a build; building from source still works.
 - **Auto-renew on domains**: On, Off or Not sure, in the domain form and details. The Cloudflare and registrar imports fill it in (the registrar's answer wins, shown as a change before it is applied) instead of writing it into the notes. A domain with auto-renew off that expires within 60 days appears on the Attention page (urgent within 30 days) instead of a plain renewal reminder. In the AI agent connection it is part of the domain's details.
 - A browser smoke test (Playwright) opens every page of the demo build, a domain's details and edit form, and the command palette, and fails on any error. It runs in CI.
+- README screenshots of the Attention page, the registrar import and revenue sources; scripts/screenshots.mjs retakes the demo screenshots.
 
 ### Changed
 - The Import guide (docs/importing.md) now covers the imports from Cloudflare, registrars, server hosts and revenue sources.
 - Dependencies: nodemailer 10.1.7 (fixes how it reads unusual email addresses) and newer Vite and build tools, with security fixes. None of the remaining audit warnings are in what Holdings ships.
 
 ### Fixed
+- Items on the Attention page used the browser's default font instead of the app's.
 - The Attention page showed "DNS not checked yet" as "dNS not checked yet".
 
 ## 0.4.0 (2026-10-31)

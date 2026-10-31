@@ -61,6 +61,10 @@ If you want a homelab start page, [Homepage](https://github.com/gethomepage/home
 | ![Domains with renewal dates and DNS checks](docs/screenshots/domains.png) | ![Map of what each project runs on](docs/screenshots/infrastructure-map.png) |
 | **Insights** | **Expiring** |
 | ![Clean-up suggestions: unused items and a stale project](docs/screenshots/insights.png) | ![Renewals and expiries with a calendar download](docs/screenshots/expiring.png) |
+| **Attention** | **Import from your registrar** (self-hosted) |
+| ![Attention: auto-renew off, a nameserver change and renewals due](docs/screenshots/attention.png) | ![Registrar import preview: domains to add with expiry and auto-renew](docs/screenshots/registrar-import.png) |
+| **More revenue sources** (self-hosted) | |
+| ![Revenue per product from Paddle](docs/screenshots/revenue-sources.png) | |
 
 ## Quick start
 
