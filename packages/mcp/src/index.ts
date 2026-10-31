@@ -7,7 +7,7 @@ import { createTools } from './tools'
 // (stdio). Read-only. Usage: node holdings-mcp.js --file holdings-export.json
 // stdout carries protocol messages only; everything else goes to stderr.
 
-const VERSION = '0.4.0'
+const VERSION = '0.4.1'
 const { values } = parseArgs({ options: { file: { type: 'string' }, url: { type: 'string' }, help: { type: 'boolean' } }, strict: true })
 const file = values.file || process.env.HOLDINGS_EXPORT_FILE
 const url = values.url || process.env.HOLDINGS_URL
