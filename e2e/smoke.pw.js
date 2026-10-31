@@ -34,6 +34,12 @@ function watchErrors(page) {
 }
 
 test.beforeEach(async ({ page }) => {
+  // The demo build loads the Umami tracker. Swap it for a stub that records
+  // events, so tests never send visits to the real stats server.
+  await page.route('https://t.chaudhery.com/**', (route) => route.fulfill({
+    contentType: 'text/javascript',
+    body: 'window.umamiEvents = []; window.umami = { track: (name, data) => window.umamiEvents.push([name, data]) }',
+  }))
   // Start from the demo's own made-up data every time.
   await page.addInitScript(() => {
     if (!sessionStorage.getItem('smoke-started')) {
@@ -74,4 +80,12 @@ test('the command palette finds a domain', async ({ page }) => {
   await page.getByRole('combobox').fill('cityguide')
   await expect(page.getByRole('option', { name: /cityguide\.example/ }).first()).toBeVisible()
   expect(errors).toEqual([])
+})
+
+test('the demo counts its opening and tags its links for Umami', async ({ page }) => {
+  await page.goto('/#dashboard')
+  await expect.poll(() => page.evaluate(() => window.umamiEvents)).toEqual([['demo_open', undefined]])
+  const banner = page.getByRole('note')
+  await expect(banner.getByRole('link', { name: /GitHub/ })).toHaveAttribute('data-umami-event', 'github_click')
+  await expect(banner.getByRole('link', { name: 'Run your own' })).toHaveAttribute('data-umami-event', 'self_host_docs_click')
 })

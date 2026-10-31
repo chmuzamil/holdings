@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- The public demo counts visits with a self-hosted Umami, plus three events: the demo opening and clicks on the GitHub and self-hosting guide links. Nothing typed or changed in the demo is sent. Only `.env.demo` turns it on; other builds, including the Docker image, have no tracker. The demo banner now also links to the self-hosting guide.
+
 ## 0.4.2 (2026-10-31)
 
 Two fixes for after an update.

@@ -2,6 +2,8 @@
 
 The demo is the normal app built with `VITE_DEMO=true` (see `.env.demo`). It opens with a made-up portfolio, shows a "this is a demo" banner with a link to the repo, and turns off DNS checks. Because `.env.demo` also sets `VITE_SITE_URL`, the demo build gets link-preview tags (`og.png`), a canonical URL, a sitemap and a robots.txt that allows indexing. Set it to your own address if you host a public copy. Other builds get a robots.txt that keeps search engines out. It is plain static files: no server code, no database. Each visitor's changes stay in their own browser.
 
+The last two lines of `.env.demo` add the Umami tracker that counts visits to holdings.chaudhery.com, plus three events: `demo_open`, and `github_click` and `self_host_docs_click` for the links in the banner and About. Remove them, or point them at your own Umami, if you host a public copy. Without them the build has no tracker. If you keep a tracker, add its origin to `script-src` and `connect-src` in the policy below, for example `script-src 'self' https://t.chaudhery.com` and `connect-src 'self' https://open.er-api.com https://api.github.com https://t.chaudhery.com`.
+
 ## Build
 
 ```bash

@@ -210,6 +210,8 @@ const statuses = ['Active', 'Expiring Soon', 'Expired', 'Cancelled']
 migrateLegacyStorage(window.localStorage)
 
 const recordModules = ['domains', 'servers', 'repos', 'projects', 'accounts', 'subscriptions', 'keys']
+const REPO_URL = 'https://github.com/chmuzamil/holdings'
+const SELF_HOSTING_URL = `${REPO_URL}/blob/main/docs/self-hosting.md`
 // Demo builds (e.g. the public GitHub Pages site) open with the fictional portfolio.
 const isDemoBuild = import.meta.env.VITE_DEMO === 'true'
 
@@ -871,8 +873,26 @@ function App({ server = null }) {
               This is a demo with made-up data. Anything you change stays in your browser only.{' '}
               <button type="button" className="link-button" onClick={loadDemoData}>Reset the demo</button>
               {' · '}
-              <a className="link-button" href="https://github.com/chmuzamil/holdings" target="_blank" rel="noopener">
+              <a
+                className="link-button"
+                href={REPO_URL}
+                target="_blank"
+                rel="noopener"
+                data-umami-event="github_click"
+                data-umami-event-source="demo_banner"
+              >
                 Free and open source: get it on GitHub
+              </a>
+              {' · '}
+              <a
+                className="link-button"
+                href={SELF_HOSTING_URL}
+                target="_blank"
+                rel="noopener"
+                data-umami-event="self_host_docs_click"
+                data-umami-event-source="demo_banner"
+              >
+                Run your own
               </a>
             </p>
           </div>
@@ -1479,7 +1499,6 @@ function SettingsView({
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION
 const APP_COMMIT = import.meta.env.VITE_APP_COMMIT
-const REPO_URL = 'https://github.com/chmuzamil/holdings'
 
 function AboutPanel() {
   return (
@@ -1497,7 +1516,9 @@ function AboutPanel() {
           {' · '}
           <a href={`${REPO_URL}/releases/tag/v${APP_VERSION}`} target="_blank" rel="noopener">What&apos;s new</a>
           {' · '}
-          <a href={REPO_URL} target="_blank" rel="noopener">Source on GitHub</a>
+          <a href={REPO_URL} target="_blank" rel="noopener" data-umami-event="github_click" data-umami-event-source="about">
+            Source on GitHub
+          </a>
         </p>
       </div>
     </div>

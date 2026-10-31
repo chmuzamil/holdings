@@ -80,9 +80,25 @@ function siteMeta(mode) {
   }
 }
 
+// The public demo counts visits with Umami (see .env.demo). Builds without
+// both variables, including every self-hosted one, get no tracker at all.
+function umamiTag(mode) {
+  const env = loadEnv(mode, process.cwd(), '')
+  const src = env.VITE_UMAMI_SCRIPT_URL
+  const websiteId = env.VITE_UMAMI_WEBSITE_ID
+
+  return {
+    name: 'holdings-umami',
+    transformIndexHtml() {
+      if (!src || !websiteId) return []
+      return [{ tag: 'script', attrs: { defer: true, src, 'data-website-id': websiteId }, injectTo: 'head' }]
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), siteMeta(mode)],
+  plugins: [react(), siteMeta(mode), umamiTag(mode)],
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION),
     'import.meta.env.VITE_APP_COMMIT': JSON.stringify(gitCommit()),
