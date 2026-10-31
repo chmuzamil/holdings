@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Auto-renew on domains**: On, Off or Not sure, in the domain form and details. The Cloudflare and registrar imports fill it in (the registrar's answer wins, shown as a change before it is applied) instead of writing it into the notes. A domain with auto-renew off that expires within 60 days appears on the Attention page (urgent within 30 days) instead of a plain renewal reminder. In the AI agent connection it is part of the domain's details.
+
+### Fixed
+- The Attention page showed "DNS not checked yet" as "dNS not checked yet".
+
 ## 0.4.0 (2026-10-31)
 
 Less typing: bring in what you already have from Cloudflare, your registrar, your server host and your payment provider, read-only and only after you have seen every change.

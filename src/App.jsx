@@ -30,7 +30,7 @@ import {
 } from 'lucide-react'
 import './App.css'
 import { EmptyState } from './components/EmptyState'
-import { normalizeDomainRecord, normalizeSubdomains } from './lib/domain-helpers'
+import { AUTO_RENEW_OPTIONS, normalizeDomainRecord, normalizeSubdomains } from './lib/domain-helpers'
 import {
   dedupeRepoRecords,
   emptyRepoRecord,
@@ -111,6 +111,7 @@ const moduleConfig = {
       { key: 'paidWithId', label: 'Paid with', type: 'cardLink' },
       { key: 'renewalDate', label: 'Renewal date', type: 'date' },
       { key: 'expiryDate', label: 'Expiry date', type: 'date' },
+      { key: 'autoRenew', label: 'Auto-renew', type: 'select', options: AUTO_RENEW_OPTIONS },
       { key: 'status', label: 'Status', type: 'status' },
     ],
   },
@@ -1618,6 +1619,10 @@ function SubdomainListField({ subdomains, servers, onChange }) {
   )
 }
 
+// Select options are plain strings, or [value, label] pairs.
+const optionValue = (option) => (Array.isArray(option) ? option[0] : option)
+const optionLabel = (option) => (Array.isArray(option) ? option[1] : option)
+
 function RecordModal({ modal, config, servers, projects, cards, setModal, saveRecord }) {
   const titleId = useId()
   const dialogRef = useDialog({ onClose: () => setModal(null), initialFocus: 'input, select, textarea' })
@@ -1660,13 +1665,13 @@ function RecordModal({ modal, config, servers, projects, cards, setModal, saveRe
                 </select>
               ) : field.type === 'select' ? (
                 <select
-                  value={modal.values[field.key] || field.options[0]}
+                  value={modal.values[field.key] || optionValue(field.options[0])}
                   onChange={(event) => setModal((current) => ({
                     ...current,
                     values: { ...current.values, [field.key]: event.target.value },
                   }))}
                 >
-                  {field.options.map((option) => <option key={option}>{option}</option>)}
+                  {field.options.map((option) => <option key={optionValue(option)} value={optionValue(option)}>{optionLabel(option)}</option>)}
                 </select>
               ) : field.type === 'projectLink' || field.type === 'cardLink' ? (
                 <select
