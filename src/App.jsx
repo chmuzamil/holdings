@@ -60,7 +60,7 @@ import { findSecretsInRecord } from './lib/secrets'
 import { Badge } from './components/ui/Badge'
 import { useDialog } from './components/ui/use-dialog'
 import { buildExport, exportFileName, findImportSecrets, parseImportFile } from './lib/data-transfer'
-import { RECORDS_KEY, SETTINGS_KEY, migrateLegacyStorage } from './lib/storage'
+import { RECORDS_KEY, SETTINGS_KEY, isDemoDataStale, migrateLegacyStorage } from './lib/storage'
 import {
   RATES_ATTRIBUTION_URL,
   currencyOptions,
@@ -286,10 +286,20 @@ function persistableSettings(settings) {
   return persistable
 }
 
+// Checked once, when the app loads: the demo's made-up data is replaced when
+// it was saved by an older version, so returning visitors see what is new.
+const demoDataStale = (() => {
+  try {
+    return isDemoBuild && isDemoDataStale(window.localStorage, import.meta.env.VITE_APP_VERSION)
+  } catch {
+    return false
+  }
+})()
+
 function loadSavedRecords() {
   try {
     const saved = window.localStorage.getItem(RECORDS_KEY)
-    if (!saved) return normalizeRecordsByModule(isDemoBuild ? getSeedRecords() : {})
+    if (!saved || demoDataStale) return normalizeRecordsByModule(isDemoBuild ? getSeedRecords() : {})
     const parsed = JSON.parse(saved)
     if (!parsed.projects) parsed.projects = []
     return normalizeRecordsByModule(parsed)

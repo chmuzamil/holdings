@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { RECORDS_KEY, SETTINGS_KEY, migrateLegacyStorage } from './storage'
+import { DEMO_VERSION_KEY, RECORDS_KEY, SETTINGS_KEY, isDemoDataStale, migrateLegacyStorage } from './storage'
 
 function memoryStorage(initial = {}) {
   const data = new Map(Object.entries(initial))
@@ -35,5 +35,15 @@ describe('migrateLegacyStorage', () => {
     const storage = memoryStorage()
     migrateLegacyStorage(storage)
     expect(storage.dump()).toEqual({})
+  })
+})
+
+describe('isDemoDataStale', () => {
+  it('replaces demo data from an older version once, then keeps the visitor’s changes', () => {
+    const storage = memoryStorage({ [RECORDS_KEY]: '{"domains":[]}' })
+    expect(isDemoDataStale(storage, '0.4.2')).toBe(true)
+    expect(isDemoDataStale(storage, '0.4.2')).toBe(false)
+    expect(isDemoDataStale(storage, '0.5.0')).toBe(true)
+    expect(storage.getItem(DEMO_VERSION_KEY)).toBe('0.5.0')
   })
 })
