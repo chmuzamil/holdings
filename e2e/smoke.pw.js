@@ -10,6 +10,7 @@ const PAGES = [
   ['attention', 'Attention'],
   ['expiring', 'Expiring'],
   ['timeline', 'Timeline'],
+  ['infrastructure-map', 'Map'],
   ['impact', 'What breaks if…'],
   ['packs', 'Handover & exit'],
   ['projects', 'Projects'],
