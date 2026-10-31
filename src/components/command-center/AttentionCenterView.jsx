@@ -3,6 +3,9 @@ import { EmptyState } from '../EmptyState'
 import { getAttentionItems } from '../../lib/intelligence-helpers'
 import './command-center.css'
 
+// 'Renews in 3 days' reads as 'renews in 3 days' after a name, but 'DNS' stays 'DNS'.
+const lowerFirst = (text) => (/^[A-Z]{2}/.test(text) ? text : text.charAt(0).toLowerCase() + text.slice(1))
+
 const PRIORITY_LABELS = {
   critical: 'Do now',
   warning: 'Plan for',
@@ -40,7 +43,7 @@ export function AttentionCenterView({ records, flatRecords, setActivePage, serve
                   onClick={() => setActivePage(item.moduleKey)}
                 >
                   <div>
-                    <strong>{item.detail}: {item.label.charAt(0).toLowerCase() + item.label.slice(1)}</strong>
+                    <strong>{item.detail}: {lowerFirst(item.label)}</strong>
                     <small>{item.action}</small>
                   </div>
                   <span className="muted-xs" aria-hidden="true">Open →</span>

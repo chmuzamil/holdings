@@ -1,3 +1,4 @@
+import { autoRenewValue } from './domain-helpers'
 import { domainsByName } from './domain-import'
 import { findSecretsInRecord } from './secrets'
 
@@ -10,7 +11,6 @@ import { findSecretsInRecord } from './secrets'
 function notesFor(registrar, domain) {
   return [
     `Registered at ${registrar}.`,
-    domain.autoRenew === true ? 'Auto-renew is on.' : domain.autoRenew === false ? 'Auto-renew is OFF.' : '',
     domain.locked === false ? 'Transfer lock is off.' : '',
   ].filter(Boolean).join(' ')
 }
@@ -25,7 +25,9 @@ export function previewRegistrar(result, records) {
   return result.domains.map((domain) => {
     const existing = byName.get(domain.name)
     const expires = domain.expiresAt
-    const warnings = [domain.autoRenew === false && 'auto-renew is OFF', domain.locked === false && 'transfer lock is off'].filter(Boolean)
+    // When an update switches auto-renew to off, its change already says so.
+    const switchesOff = existing && existing.autoRenew !== 'off'
+    const warnings = [domain.autoRenew === false && !switchesOff && 'auto-renew is OFF', domain.locked === false && 'transfer lock is off'].filter(Boolean)
 
     let row
     if (!existing) {
@@ -36,6 +38,7 @@ export function previewRegistrar(result, records) {
         renewalDate: expires ?? '',
         expiryDate: expires ?? '',
         status: 'Active',
+        autoRenew: autoRenewValue(domain.autoRenew),
         notes: notesFor(registrar, domain),
         subdomains: [],
         connectedServerIds: [],
@@ -59,6 +62,12 @@ export function previewRegistrar(result, records) {
       } else if (expires && !existing.renewalDate) {
         patch.renewalDate = expires
         changes.push(`renewal date ${expires}`)
+      }
+      // Like the expiry date, the registrar knows whether it auto-renews.
+      const autoRenew = autoRenewValue(domain.autoRenew)
+      if (autoRenew && (existing.autoRenew || '') !== autoRenew) {
+        patch.autoRenew = autoRenew
+        changes.push(`auto-renew ${autoRenew}`)
       }
       row = { name: domain.name, status: changes.length ? 'update' : 'same', id: existing.id, patch, changes: changes.length ? [...changes, ...warnings] : warnings }
     }

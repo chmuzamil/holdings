@@ -112,7 +112,8 @@ export function getSeedRecords(now = new Date()) {
       renewalDate: d(9),
       expiryDate: d(9),
       status: 'Active',
-      notes: 'Main product domain. Auto-renew is OFF, renew by hand.',
+      autoRenew: 'off',
+      notes: 'Main product domain, renewed by hand.',
       subdomains: [
         { id: 'sub_shop_app', name: 'app', serverId: 'server_main', notes: 'Customer app' },
         { id: 'sub_shop_staging', name: 'staging', serverId: 'server_staging', notes: '' },
@@ -169,6 +170,7 @@ export function getSeedRecords(now = new Date()) {
       renewalDate: d(27),
       expiryDate: d(27),
       status: 'Active',
+      autoRenew: 'off',
       notes: 'Directory site, hosted on a static host.',
       subdomains: [],
       connectedProjectIds: ['project_cityguide'],

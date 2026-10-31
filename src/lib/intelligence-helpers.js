@@ -202,8 +202,27 @@ export function getAttentionItems(records, flatRecords, serverChanges = {}, upti
     })
   })
 
+  records.domains.forEach((domain) => {
+    const normalized = normalizeDomainRecord(domain)
+    // Auto-renew off and expiring soon: it lapses unless someone acts.
+    const days = daysUntilRenewal({ expiryDate: normalized.expiryDate || normalized.renewalDate })
+    if (normalized.autoRenew === 'off' && normalized.status !== 'Cancelled' && days !== null && days >= 0 && days <= 60) {
+      add({
+        id: `autorenew-off-${domain.id}`,
+        priority: days <= 30 ? 'critical' : 'warning',
+        label: 'Auto-renew is off',
+        detail: domain.name,
+        action: `Expires in ${days} day${days === 1 ? '' : 's'} and won\u2019t renew by itself. Renew it, or turn auto-renew on at ${normalized.provider || 'your registrar'}.`,
+        moduleKey: 'domains',
+        recordId: domain.id,
+      })
+    }
+  })
+
+  // A domain warned about above for auto-renew being off doesn't need a second reminder.
+  const warned = new Set(items.filter((item) => item.id.startsWith('autorenew-off-')).map((item) => item.recordId))
   flatRecords.filter(isRenewableRecord).forEach((record) => {
-    if (record.status === 'Cancelled') return
+    if (record.status === 'Cancelled' || (record.moduleKey === 'domains' && warned.has(record.id))) return
     const days = daysUntilRenewal(record)
     if (days === null) return
     const base = { moduleKey: record.moduleKey, recordId: record.id, detail: record.name }

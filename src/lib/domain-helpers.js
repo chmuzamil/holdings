@@ -120,10 +120,16 @@ export function normalizeDomainHost(name) {
   }
 }
 
+// '' means not known. Importers from registrars and Cloudflare fill it in.
+export const AUTO_RENEW_OPTIONS = [['', 'Not sure'], ['on', 'On'], ['off', 'Off']]
+export const autoRenewLabel = (value) => (value === 'on' ? 'On' : value === 'off' ? 'Off' : 'Not sure')
+export const autoRenewValue = (flag) => (flag === true ? 'on' : flag === false ? 'off' : '')
+
 export function normalizeDomainRecord(record) {
   const { serverId, subdomains, ...rest } = record
   return {
     ...rest,
+    autoRenew: record.autoRenew === 'on' || record.autoRenew === 'off' ? record.autoRenew : '',
     watch: normalizeWatch(record.watch),
     subdomains: normalizeSubdomains(record),
     health: normalizeDomainHealth(record),

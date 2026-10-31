@@ -50,9 +50,9 @@ describe('previewCloudflare', () => {
     expect(rows[0]).toMatchObject({ name: 'shop.example', status: 'add' })
     expect(rows[0].record).toMatchObject({
       provider: 'Cloudflare', cost: 0, renewalDate: '2027-03-14', expiryDate: '2027-03-14', connectedServerIds: ['srv_main'],
-      notes: 'DNS on Cloudflare (Free Website). Auto-renew is OFF.',
+      notes: 'DNS on Cloudflare (Free Website).', autoRenew: 'off',
     })
-    expect(rows[0].changes).toEqual(['registrar Cloudflare', 'expires 2027-03-14', '2 subdomains', 'linked to a server'])
+    expect(rows[0].changes).toEqual(['registrar Cloudflare', 'expires 2027-03-14', '2 subdomains', 'linked to a server', 'auto-renew is OFF'])
   })
 
   it('only fills in what is missing on existing domains, and never overwrites', () => {
