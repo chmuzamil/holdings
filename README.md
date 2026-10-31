@@ -86,11 +86,13 @@ npm run api
 Run it on your own server, with a login, so your data follows you between browsers:
 
 ```bash
-git clone https://github.com/chmuzamil/holdings.git
-cd holdings
-docker compose up -d
-docker compose logs holdings   # shows a one-time setup code
+docker run -d --name holdings --restart unless-stopped \
+  -p 127.0.0.1:8080:8080 -v holdings-data:/data \
+  ghcr.io/chmuzamil/holdings:latest
+docker logs holdings   # shows a one-time setup code
 ```
+
+The image is published for every release, for amd64 and arm64 (a Raspberry Pi or an ARM server works). Prefer Docker Compose? Use [docker-compose.yml](docker-compose.yml) from this repo.
 
 Open http://localhost:8080, enter the setup code and pick a password. You can add two-step login with an authenticator app in Settings. Everything lives in one SQLite file in a Docker volume. [docs/self-hosting.md](docs/self-hosting.md) covers HTTPS, settings, backups and what to do if you're locked out.
 

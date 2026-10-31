@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Published Docker image**: `ghcr.io/chmuzamil/holdings`, for amd64 and arm64, for every release. `docker-compose.yml` uses it, so self-hosting no longer needs a clone and a build; building from source still works.
 ## 0.4.0 (2026-10-31)
 
 Less typing: bring in what you already have from Cloudflare, your registrar, your server host and your payment provider, read-only and only after you have seen every change.
