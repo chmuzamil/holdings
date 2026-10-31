@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 (2026-10-31)
+
+Less typing: bring in what you already have from Cloudflare, your registrar, your server host and your payment provider, read-only and only after you have seen every change.
 
 ### Changed
 - Projects link revenue products in one list (`revenueProductIds`) for every source. Links saved as `stripeProductIds` are moved over when the data loads, so older exports keep their revenue.
