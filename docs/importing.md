@@ -1,6 +1,6 @@
 # Importing your data
 
-Everything is read in your browser. Nothing is uploaded anywhere.
+A spreadsheet (CSV) or a Holdings export (JSON) is read in your browser; nothing is uploaded anywhere. With the [self-hosted server](self-hosting.md), Holdings can also read what your providers already know (see the end of this page).
 
 ## From a spreadsheet (CSV)
 
@@ -30,3 +30,18 @@ Values Holdings reads:
 ## From a Holdings export (JSON)
 
 **Settings → Import JSON** loads a file from **Export JSON**, including exports from older versions of Holdings. It replaces everything in the browser, after asking. Exports also carry your handover pack settings (your name, who it is for, the note and the global runbook), and importing restores them; older exports without them still import. A file that contains anything looking like a real key, token or card number is refused as a whole, with where the problem is, and nothing is changed.
+
+## From your providers (self-hosted)
+
+With the self-hosted server, Holdings can read from the services you already use, with read-only keys where the provider offers them. Your server does the reading; keys are encrypted there and never sent back to the browser.
+
+| What | From | Where in Settings | Setup |
+|---|---|---|---|
+| Domains, subdomains, server links, expiry and auto-renew | Cloudflare | Import from Cloudflare | [Import from Cloudflare](self-hosting.md#import-from-cloudflare) |
+| Domains, expiry and auto-renew | Porkbun, Namecheap, Spaceship | Import from your registrar | [Import from your registrar](self-hosting.md#import-from-your-registrar) |
+| Servers with specs, IP, location and price | Hetzner Cloud, DigitalOcean, or your own JSON URL | Import servers | [Import servers](self-hosting.md#import-servers) |
+| Monthly revenue per project | Stripe, Lemon Squeezy, Paddle, or your own JSON URL | Revenue from Stripe, More revenue sources | [Revenue from Stripe](self-hosting.md#revenue-from-stripe), [More revenue sources](self-hosting.md#more-revenue-sources) |
+
+The domain and server imports work like the CSV import: press **Check**, see every item as **will add**, **will update** or **up to date**, untick what you don't want, and nothing changes until you press **Import**. Only empty details are filled in, with two exceptions where the provider knows best: the registrar import updates an expiry date that differs (shown as old → new first), and both domain imports update the auto-renew setting. A server's price is only filled in when its cost is 0. Anything that looks like a secret is left out, as everywhere else.
+
+Revenue is different: it isn't imported once. Link products to a project when you edit it, and its monthly revenue follows the provider from then on.

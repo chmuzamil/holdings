@@ -24,7 +24,8 @@
     "typecheck": "tsc -p packages/core && tsc -p packages/server && tsc -p packages/mcp",
     "build:server": "esbuild packages/server/src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=packages/server/dist/server.js",
     "server": "node packages/server/dist/server.js",
-    "build:mcp": "esbuild packages/mcp/src/index.ts --bundle --platform=node --format=esm --target=node22 --banner:js=\"#!/usr/bin/env node\" --outfile=packages/mcp/dist/holdings-mcp.js"
+    "build:mcp": "esbuild packages/mcp/src/index.ts --bundle --platform=node --format=esm --target=node22 --banner:js=\"#!/usr/bin/env node\" --outfile=packages/mcp/dist/holdings-mcp.js",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans": "^5.3.0",
@@ -35,6 +36,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.64.1",
     "@types/node": "^26.6.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

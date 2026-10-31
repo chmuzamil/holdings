@@ -33,3 +33,7 @@ holdings-export-*.json
 .claude/
 .code-review-graph/
 .serena/
+
+# Browser smoke test output
+test-results/
+playwright-report/
