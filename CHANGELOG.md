@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.4.1 (2026-10-31)
+
+A published Docker image, auto-renew on domains, and a browser test that opens every page.
 
 ### Added
 - **Published Docker image**: `ghcr.io/chmuzamil/holdings`, for amd64 and arm64, for every release. `docker-compose.yml` uses it, so self-hosting no longer needs a clone and a build; building from source still works.

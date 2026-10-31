@@ -1,7 +1,7 @@
 {
   "name": "@holdings/mcp",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Read-only MCP server for Holdings, so AI agents can answer questions about your portfolio.",
   "type": "module"
 }
