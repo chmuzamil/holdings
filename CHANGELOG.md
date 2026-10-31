@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.2 (2026-10-31)
+
+Two fixes for after an update.
+
+### Fixed
+- A tab opened before Holdings was updated (a new demo deploy, or a new container for self-hosters) went blank when it opened a page it hadn't loaded yet, because that page's file no longer existed. It now reloads once and shows the new version; if a reload happened moments before, it doesn't try again, so it can't loop.
+- In the demo, returning visitors kept the made-up data from their first visit, so they didn't see what was new. Demo data saved by an older version is now replaced once; changes you make in the demo still stay until the next version.
+
 ## 0.4.1 (2026-10-31)
 
 A published Docker image, auto-renew on domains, and a browser test that opens every page.
