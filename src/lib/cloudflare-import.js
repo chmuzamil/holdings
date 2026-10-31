@@ -1,3 +1,4 @@
+import { autoRenewValue } from './domain-helpers'
 import { domainsByName } from './domain-import'
 import { findSecretsInRecord } from './secrets'
 
@@ -47,7 +48,7 @@ export function previewCloudflare(result, records) {
   return result.domains.map((cf) => {
     const { subdomains, serverIds } = dnsDetails(cf, servers)
     const existing = byName.get(cf.name)
-    const notes = [`DNS on Cloudflare${cf.plan ? ` (${cf.plan})` : ''}.`, cf.status && cf.status !== 'active' ? `Zone is ${cf.status} in Cloudflare.` : '', cf.autoRenew === true ? 'Auto-renew is on.' : cf.autoRenew === false ? 'Auto-renew is OFF.' : '']
+    const notes = [`DNS on Cloudflare${cf.plan ? ` (${cf.plan})` : ''}.`, cf.status && cf.status !== 'active' ? `Zone is ${cf.status} in Cloudflare.` : '']
       .filter(Boolean).join(' ')
 
     let row
@@ -59,11 +60,12 @@ export function previewCloudflare(result, records) {
         renewalDate: cf.expiresAt ?? '',
         expiryDate: cf.expiresAt ?? '',
         status: 'Active',
+        autoRenew: autoRenewValue(cf.autoRenew),
         notes,
         subdomains,
         connectedServerIds: serverIds,
       }
-      const what = [cf.registrar && `registrar ${cf.registrar}`, cf.expiresAt && `expires ${cf.expiresAt}`, subdomains.length && `${subdomains.length} subdomain${subdomains.length === 1 ? '' : 's'}`, serverIds.length && 'linked to a server'].filter(Boolean)
+      const what = [cf.registrar && `registrar ${cf.registrar}`, cf.expiresAt && `expires ${cf.expiresAt}`, subdomains.length && `${subdomains.length} subdomain${subdomains.length === 1 ? '' : 's'}`, serverIds.length && 'linked to a server', cf.autoRenew === false && 'auto-renew is OFF'].filter(Boolean)
       row = { name: cf.name, status: 'add', record, changes: what }
     } else {
       const patch = {}
@@ -79,6 +81,11 @@ export function previewCloudflare(result, records) {
       if (!existing.expiryDate && cf.expiresAt) {
         patch.expiryDate = cf.expiresAt
         if (!changes.some((change) => change.startsWith('renewal'))) changes.push(`expiry date ${cf.expiresAt}`)
+      }
+      const autoRenew = autoRenewValue(cf.autoRenew)
+      if (autoRenew && (existing.autoRenew || '') !== autoRenew) {
+        patch.autoRenew = autoRenew
+        changes.push(`auto-renew ${autoRenew}`)
       }
       const known = new Set((existing.subdomains ?? []).map((sub) => String(sub.name).toLowerCase()))
       const newSubs = subdomains.filter((sub) => !known.has(sub.name))

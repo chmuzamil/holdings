@@ -2,6 +2,7 @@ import { Drawer } from '../ui/Drawer'
 import { Badge } from '../ui/Badge'
 import { Tabs } from '../ui/Tabs'
 import {
+  autoRenewLabel,
   flattenDnsRecords,
   getCountdownLabel,
   getCountdownVariant,
@@ -62,8 +63,8 @@ function OverviewTab({ record, records, servers, money, prettyDate, toUsd, fromU
             <span className="ui-kv-value">{prettyDate(record.expiryDate)}</span>
           </div>
           <div className="ui-kv-row">
-            <span className="ui-kv-label">Auto renew</span>
-            <span className="ui-kv-value">Not tracked</span>
+            <span className="ui-kv-label">Auto-renew</span>
+            <span className="ui-kv-value">{autoRenewLabel(record.autoRenew)}</span>
           </div>
           <div className="ui-kv-row">
             <span className="ui-kv-label">Subdomains</span>
