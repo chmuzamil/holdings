@@ -150,7 +150,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **Exit pack**: a one-click asset register and transfer checklist for selling a project (Markdown, JSON or print).
 - ✅ **Handover pack**: a passphrase-locked file for someone you trust, readable offline in any browser (AES-256-GCM, PBKDF2 with 600,000 iterations).
 - ✅ **MCP server** (read-only), so Claude, Cursor and other agents can answer questions like "what renews this month?" or "what breaks if this server dies?". It reads a JSON export, or live data from the self-hosted server with a read-only access token. See [docs/mcp.md](docs/mcp.md).
-- ✅ **Self-hosted mode**: one Docker container (Node + SQLite) with a login (password plus optional two-step codes) and saving to your server. Scheduled checks and notifications come next.
+- ✅ **Self-hosted mode**: one Docker container (Node + SQLite) with a login (password plus optional two-step codes) and saving to your server. Scheduled checks and notifications followed in v0.3.
 
 **v0.3: it watches for you** (released)
 - ✅ **Domain safety checks**: transfer lock, registration ending, nameservers, SPF, DMARC and DNSSEC, each with the next step.
@@ -186,12 +186,13 @@ npm test             # unit tests (Vitest)
 npm run lint         # ESLint
 npm run build        # production build
 npm run build:demo   # demo build with made-up data
+npm run test:browser # open every page of the demo build in a browser (Playwright)
 npm run build:server # bundle the self-hosted server
 npm run build:mcp    # bundle the read-only MCP server (docs/mcp.md)
 npm run server       # run it (see docs/self-hosting.md)
 ```
 
-CI runs lint, typecheck, tests and builds on Node 22 and 24 for every pull request, and builds and smoke-tests the Docker image.
+CI runs lint, typecheck, tests and builds on Node 22 and 24 for every pull request, opens every page of the demo build in a browser, and builds and smoke-tests the Docker image.
 
 Optional environment variables are listed in [.env.example](.env.example).
 
