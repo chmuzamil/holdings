@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- **Published Docker image**: `ghcr.io/chmuzamil/holdings`, for amd64 and arm64, for every release. `docker-compose.yml` uses it, so self-hosting no longer needs a clone and a build; building from source still works.
 - **Auto-renew on domains**: On, Off or Not sure, in the domain form and details. The Cloudflare and registrar imports fill it in (the registrar's answer wins, shown as a change before it is applied) instead of writing it into the notes. A domain with auto-renew off that expires within 60 days appears on the Attention page (urgent within 30 days) instead of a plain renewal reminder. In the AI agent connection it is part of the domain's details.
 
 ### Fixed

@@ -10,19 +10,29 @@ It is one Node.js process with one SQLite file. Nothing is sent to anyone else.
 
 ## With Docker
 
+Each release is published as `ghcr.io/chmuzamil/holdings`, for amd64 and arm64, tagged with its version (`0.4.1`), its minor version (`0.4`, which gets fixes) and `latest`. Download [docker-compose.yml](../docker-compose.yml) into an empty folder, then:
+
 ```bash
-git clone https://github.com/chmuzamil/holdings.git
-cd holdings
 docker compose up -d
-docker compose logs holdings
+docker compose logs holdings   # shows a one-time setup code
 ```
 
-The image is built from this repo on your machine. Data is kept in the `holdings-data` volume, so updating is:
+Or without Compose:
 
 ```bash
-git pull
-docker compose up -d --build
+docker run -d --name holdings --restart unless-stopped \
+  -p 127.0.0.1:8080:8080 -v holdings-data:/data \
+  ghcr.io/chmuzamil/holdings:latest
 ```
+
+Data is kept in the `holdings-data` volume, so updating is:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+To stay on one version line and only get fixes, use `ghcr.io/chmuzamil/holdings:0.4` instead of `latest`. To build the image yourself, clone this repo, replace the `image:` line in `docker-compose.yml` with `build: .`, and run `docker compose up -d --build`.
 
 By default the port is only open to the machine itself (`127.0.0.1:8080`). Put a reverse proxy with HTTPS in front, for example Caddy:
 

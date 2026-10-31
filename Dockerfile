@@ -1,7 +1,9 @@
 # Holdings with its optional server: one container, one SQLite file in /data.
 # See docs/self-hosting.md.
 
-FROM node:24-slim AS build
+# The build output is plain JavaScript and static files, so it is built once
+# on the build machine and copied into each platform's image.
+FROM --platform=$BUILDPLATFORM node:24-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/core/package.json packages/core/

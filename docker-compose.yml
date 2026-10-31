@@ -2,7 +2,9 @@
 # See docs/self-hosting.md for HTTPS and the other settings.
 services:
   holdings:
-    build: .
+    # The published image. To build from this repo instead, replace this line
+    # with "build: ." and use docker compose up -d --build.
+    image: ghcr.io/chmuzamil/holdings:latest
     restart: unless-stopped
     ports:
       # Only reachable from this machine. Put a reverse proxy with HTTPS in
