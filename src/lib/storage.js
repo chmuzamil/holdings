@@ -16,3 +16,15 @@ export function migrateLegacyStorage(storage) {
     if (legacyKey) storage.setItem(key, storage.getItem(legacyKey))
   })
 }
+
+export const DEMO_VERSION_KEY = 'holdings-demo-version'
+
+/**
+ * In the demo, made-up data saved by an older version is replaced, so a
+ * returning visitor sees what is new. Returns true when it should be.
+ */
+export function isDemoDataStale(storage, version) {
+  const saved = storage.getItem(DEMO_VERSION_KEY)
+  storage.setItem(DEMO_VERSION_KEY, version)
+  return saved !== version
+}
