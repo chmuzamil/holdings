@@ -15,7 +15,7 @@ If you run a handful of side projects, you probably have 20 domains at three reg
 
 It runs entirely in your browser. No account, no tracking, no server required. If you want it on every device, run it on your own server with one Docker command and a login.
 
-> **Status:** v0.3. On top of the asset register, "what breaks if…", the expiry radar, handover and exit packs, self-hosting, Stripe revenue and the MCP server, Holdings now watches for you: domain safety checks and change watch, clean-up suggestions and stale projects, a calendar feed, CSV import, runbooks, and (self-hosted) notifications, uptime status and a dead-man's switch. Still young: feedback and issues are very welcome.
+> **Status:** v0.4. On top of the asset register, "what breaks if…", the expiry radar, handover and exit packs, the MCP server and the watching added in v0.3 (domain change watch, clean-up suggestions, calendar feed, notifications, uptime status, dead-man's switch), Holdings now fills itself in: read-only imports from Cloudflare, Porkbun, Namecheap, Spaceship, Hetzner and DigitalOcean, and revenue from Stripe, Lemon Squeezy, Paddle or your own URL. Still young: feedback and issues are very welcome.
 
 ## Who it's for
 
@@ -161,7 +161,7 @@ These tools are great at what they do, and Holdings doesn't try to replace them.
 - ✅ **Domain change watch**: nameserver, registry status, expiry, DNSSEC and transfer-lock changes, on a schedule when self-hosted, sent once to your notification channels.
 - ✅ **Project stages and stale projects**: where each project is in its life, when you last worked on it, and a nudge when an idle project still costs money.
 
-**v0.4: less typing**
+**v0.4: less typing** (released)
 - ✅ Read-only import from Cloudflare: zones, DNS records as subdomains, and registrar expiry dates.
 - ✅ Read-only import from Porkbun, Namecheap and Spaceship: domains and expiry dates.
 - ✅ Read-only import of Hetzner Cloud and DigitalOcean servers, and of any other host through a custom JSON URL.
