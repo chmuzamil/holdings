@@ -4,6 +4,8 @@ The demo is the normal app built with `VITE_DEMO=true` (see `.env.demo`). It ope
 
 The last two lines of `.env.demo` add the Umami tracker that counts visits to holdings.chaudhery.com, plus three events: `demo_open`, and `github_click` and `self_host_docs_click` for the links in the banner and About. Remove them, or point them at your own Umami, if you host a public copy. Without them the build has no tracker. If you keep a tracker, add its origin to `script-src` and `connect-src` in the policy below, for example `script-src 'self' https://t.chaudhery.com` and `connect-src 'self' https://open.er-api.com https://api.github.com https://t.chaudhery.com`.
 
+To get errors from visitors' browsers in your Sentry or GlitchTip, add `VITE_SENTRY_DSN=<your DSN>` to `.env.demo.local` (git ignores it, and `npm run build:demo` reads it) and add the DSN's origin to `connect-src`, for example `connect-src 'self' https://open.er-api.com https://api.github.com https://errors.example`. Without it the build sends no errors. Events are reported with the environment `demo`. See [self-hosting.md](self-hosting.md#error-reporting) for what an event contains.
+
 ## Build
 
 ```bash
