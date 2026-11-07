@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.4.3 (2026-11-07)
+
+Optional error reporting, and visit counts for the public demo.
 
 ### Added
 - **Error reporting** (optional, off by default): send errors to your own Sentry-compatible service (Sentry, GlitchTip). Set `SENTRY_DSN` for the self-hosted server, or build with `VITE_SENTRY_DSN` for errors in the browser. No SDK is added: each event holds only the error, its stack, the version and the environment, never request bodies, headers, cookies, user details or your data, and anything that looks like a key, card number, email address or password is removed first. docs/self-hosting.md has the details.
