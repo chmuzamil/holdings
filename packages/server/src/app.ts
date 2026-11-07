@@ -47,6 +47,8 @@ export interface AppOptions {
   trustProxy?: boolean
   now?: () => number
   lookup?: (domain: string) => Promise<unknown>
+  /** Sends unexpected errors to Sentry/GlitchTip when SENTRY_DSN is set. */
+  reportError?: ((error: unknown) => unknown) | null
   /** fetch() used for Stripe; replaced in tests. */
   stripeFetch?: FetchLike
   /** Sends notifications; made here unless given (index.ts shares it with the daily check). */
@@ -823,6 +825,7 @@ export function createApp(options: AppOptions) {
     } catch (error) {
       if (error instanceof HttpError) return sendJson(response, error.status, { error: error.message, ...error.extra })
       console.error(`${method} ${url.pathname} failed:`, error)
+      options.reportError?.(error)
       sendJson(response, 500, { error: 'Something went wrong on the server. Check its logs.' })
     }
   }

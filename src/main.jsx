@@ -11,6 +11,10 @@ import App from './App.jsx'
 import { ServerGate } from './components/server/ServerGate'
 import { handlePreloadError } from './lib/reload-on-update'
 import { track } from './lib/analytics'
+import { startErrorReporting } from './lib/error-reporting'
+
+// Off unless the build has VITE_SENTRY_DSN.
+startErrorReporting()
 
 // A tab opened before an update reloads once instead of going blank.
 window.addEventListener('vite:preloadError', (event) => handlePreloadError(event))

@@ -338,6 +338,21 @@ describe('domain lookups and static files', () => {
     expect((await browser.call('GET', '/api/domain-lookup?domain=router.local')).status).toBe(400)
   })
 
+  it('reports unexpected errors, but not expected ones, when error reporting is on', async () => {
+    const reported: unknown[] = []
+    await new Promise((resolve) => server.close(resolve))
+    store.close()
+    await start({ reportError: (error) => reported.push(error), lookup: async () => { throw new Error('lookup broke') } })
+    const browser = await signedIn()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const response = await browser.call('GET', '/api/domain-lookup?domain=example.com')
+    expect(response.status).toBe(500)
+    expect(response.body).toEqual({ error: 'Something went wrong on the server. Check its logs.' })
+    expect((await browser.call('GET', '/api/domain-lookup?domain=router.local')).status).toBe(400)
+    expect(reported.map((error) => (error as Error).message)).toEqual(['lookup broke'])
+    vi.restoreAllMocks()
+  })
+
   it('serves the app with security headers and nothing outside it', async () => {
     const index = await fetch(`${base}/`)
     expect(index.status).toBe(200)

@@ -2,6 +2,8 @@ import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import http from 'node:http'
 import { join, resolve } from 'node:path'
+import { createErrorReporter } from '@holdings/core'
+import { version } from '../package.json'
 import { createApp } from './app'
 import { openStore } from './db'
 import { createDeadman } from './deadman'
@@ -17,6 +19,23 @@ const host = env.HOLDINGS_HOST || '127.0.0.1'
 const staticDir = env.HOLDINGS_STATIC_DIR ? resolve(env.HOLDINGS_STATIC_DIR) : null
 const secureCookies = env.HOLDINGS_SECURE_COOKIES !== 'false'
 const trustProxy = env.HOLDINGS_TRUST_PROXY === 'true'
+
+// Optional error reporting to Sentry or GlitchTip; off unless SENTRY_DSN is set.
+const reportError = createErrorReporter({
+  dsn: env.SENTRY_DSN ?? '',
+  release: `holdings@${version}`,
+  environment: env.SENTRY_ENVIRONMENT || 'production',
+  platform: 'node',
+  send: (url, body) => fetch(url, { method: 'POST', body, signal: AbortSignal.timeout(5000) }),
+})
+if (reportError) {
+  console.log('Error reporting is on (SENTRY_DSN).')
+  // Report a crash, then exit as Node would have.
+  process.on('uncaughtException', (error) => {
+    console.error(error)
+    void reportError(error).finally(() => process.exit(1))
+  })
+}
 
 mkdirSync(dataDir, { recursive: true, mode: 0o700 })
 const store = openStore(join(dataDir, 'holdings.db'))
@@ -45,7 +64,7 @@ deadman.start()
 // Domain change watch: off until turned on; then checks every domain on its interval.
 const domainWatch = createDomainWatch({ store, notifier, lookup: (domain) => lookupDomain(domain) })
 domainWatch.start()
-const server = http.createServer(createApp({ store, secretKey, setupCode, staticDir, secureCookies, trustProxy, notifier, deadman, domainWatch }))
+const server = http.createServer(createApp({ store, secretKey, setupCode, staticDir, secureCookies, trustProxy, notifier, deadman, domainWatch, reportError }))
 server.listen(port, host, () => {
   console.log(`Holdings server listening on http://${host}:${port}${staticDir ? '' : ' (API only)'}`)
   if (!secureCookies) console.log('Warning: HOLDINGS_SECURE_COOKIES=false. Only do this on a trusted network.')

@@ -92,6 +92,8 @@ All settings are environment variables.
 | `HOLDINGS_TRUST_PROXY` | `false` | Set `true` behind a reverse proxy (nginx, Caddy) so failed logins are counted per real visitor. |
 | `HOLDINGS_SECRET_KEY` | generated | 64 hex characters. Encrypts the authenticator secret. If not set, a key is created in `secret.key` in the data folder. |
 | `HOLDINGS_SETUP_CODE` | random | Fix the first-run setup code instead of reading it from the log. |
+| `SENTRY_DSN` | not set | Optional. Sends the server's unexpected errors to any Sentry-compatible service (Sentry, GlitchTip). See [Error reporting](#error-reporting). |
+| `SENTRY_ENVIRONMENT` | `production` | Optional. The environment name shown with each error. |
 
 Put it behind HTTPS (for example nginx or Caddy) before using it over the internet.
 
@@ -280,6 +282,15 @@ npm run server -- --reset-login
 ```
 
 This removes the login and signs out every device. **Your data is kept.** Start the server again and create a new login with the new setup code from the log.
+
+## Error reporting
+
+Off unless you turn it on. Holdings can send errors to your own account on any Sentry-compatible service (Sentry, GlitchTip), so you hear about crashes without reading logs.
+
+- **Server:** set `SENTRY_DSN` to your project's DSN. Unexpected errors in API requests (the ones that answer "Something went wrong on the server") and crashes are sent. Wrong input, failed logins and other expected answers are not.
+- **Browser:** build the app with `VITE_SENTRY_DSN` set (in `.env.local` or the environment of `npm run build`). Uncaught errors in the page are sent from the visitor's browser, without cookies or a referrer. The Docker image is built without it, and the built-in server's Content-Security-Policy only allows its own list, so this is for the static build you host yourself: add the DSN's origin to `connect-src` (see [hosting-the-demo.md](hosting-the-demo.md)). `VITE_SENTRY_ENVIRONMENT` sets the environment name.
+
+Each event holds only the error's type and message, its stack (file, function, line), the Holdings version and the environment name. There is no SDK and no session replay: request bodies, headers, cookies, IP addresses, user details and your data are never part of an event. (Like any web request, the service itself sees the address the event came from; turn off IP storage there if you don't want it kept.) Messages and file names are also cleaned before sending: anything that looks like a key or token, a card number, an email address, a password or a URL query is replaced. The same error is sent once per run, and at most 10 a minute.
 
 ## How it protects you
 

@@ -40,6 +40,8 @@ test.beforeEach(async ({ page }) => {
     contentType: 'text/javascript',
     body: 'window.umamiEvents = []; window.umami = { track: (name, data) => window.umamiEvents.push([name, data]) }',
   }))
+  // A local build with VITE_SENTRY_DSN (.env.demo.local) must not report test runs.
+  await page.route(/\/api\/[\w-]+\/envelope\//, (route) => route.fulfill({ body: '{}' }))
   // Start from the demo's own made-up data every time.
   await page.addInitScript(() => {
     if (!sessionStorage.getItem('smoke-started')) {
